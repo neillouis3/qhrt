@@ -26,14 +26,14 @@ export default function Navbar({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <header className="bg-white dark:bg-navy flex translate-z-0 z-1000 flex-row justify-between items-center w-full ring-1 ring-border px-6 py-3 sticky top-0">
+    <header className="bg-background/70 dark:bg-background/70 backdrop-blur-sm flex translate-z-0 z-1000 flex-row justify-between items-center w-full px-6 py-3 sticky top-0">
       <div className="flex items-center gap-6">
         <Link
           href={logoHref}
           onClick={(e) => {
             if (!navigate(logoHref)) e.preventDefault();
           }}
-          className="text-lg font-bold text-navy dark:text-white hover:opacity-80 transition-opacity"
+          className="text-lg font-normal tracking-tight text-foreground hover:opacity-70 transition-opacity"
         >
           {logo}
         </Link>

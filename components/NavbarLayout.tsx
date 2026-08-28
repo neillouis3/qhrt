@@ -81,13 +81,13 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
     <div className="flex items-center gap-2">
       <a
         href="/auth/login"
-        className="px-3 py-1.5 text-sm font-medium text-muted hover:text-navy dark:hover:text-white transition-colors"
+        className="px-3 py-1.5 text-sm font-normal text-muted hover:text-foreground transition-opacity hover:opacity-70"
       >
         Log in
       </a>
       <a
         href="/auth/login"
-        className="px-3 py-1.5 text-sm font-medium rounded-md bg-primary text-white hover:bg-primary-dark transition-colors dark:bg-primary-light dark:hover:bg-primary"
+        className="px-3 py-1.5 text-sm font-normal rounded-lg bg-primary text-white hover:opacity-80 transition-opacity"
       >
         Sign up
       </a>
