@@ -1,7 +1,17 @@
+import path from 'path';
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  turbopack: {
+    root: path.join(__dirname),
+  },
+  async redirects() {
+    return [
+      { source: '/auth', destination: '/login', permanent: true },
+      { source: '/auth/login', destination: '/login', permanent: true },
+      { source: '/auth/signup', destination: '/signup', permanent: true },
+    ];
+  },
   async headers() {
     return [
       {

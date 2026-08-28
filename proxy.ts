@@ -1,48 +1,58 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { supabaseServer } from '@/lib/supabaseClient';
+import {
+  createRequestClient,
+  hasSupabaseAuthCookie,
+  supabaseServer,
+} from '@/lib/supabaseClient';
 
 export async function proxy(request: NextRequest) {
-  // Skip API routes - they handle their own auth
-  if (request.nextUrl.pathname.startsWith('/api/')) {
+  const { pathname } = request.nextUrl;
+
+  // Skip API routes and static files — they don't need session checks.
+  if (
+    pathname.startsWith('/api/') ||
+    pathname.startsWith('/_next/') ||
+    /\.(?:ico|png|jpg|jpeg|svg|webp|gif|txt|woff2?)$/.test(pathname)
+  ) {
     return NextResponse.next();
   }
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll().map((cookie) => ({
-            name: cookie.name,
-            value: cookie.value,
-          }));
-        },
-        setAll(cookies) {
-          // No-op in proxy — cookies are read-only here
-        },
-      },
-    }
-  );
-
-  // Verify the user's session via Supabase JWT (server-side)
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-
-  const { pathname } = request.nextUrl;
   const isAdminRoute =
     pathname.startsWith('/dashboard') ||
     pathname.startsWith('/content') ||
     pathname.startsWith('/users') ||
     pathname.startsWith('/analytics');
-  const isUserRoute = pathname.startsWith('/home') || pathname.startsWith('/sessions');
-  const isAuthRoute = pathname.startsWith('/auth');
+  const isUserRoute =
+    pathname.startsWith('/home') ||
+    pathname.startsWith('/sessions') ||
+    pathname.startsWith('/assessments') ||
+    pathname.startsWith('/conversations') ||
+    pathname.startsWith('/journeys') ||
+    pathname.startsWith('/diary') ||
+    pathname.startsWith('/onboarding') ||
+    pathname.startsWith('/breathe');
+  const isSettingsRoute = pathname.startsWith('/settings');
+  const isAuthRoute =
+    pathname === '/login' || pathname === '/signup' || pathname === '/reset-password';
 
-  const isAuthenticated = !error && !!user;
+  if (!isAdminRoute && !isUserRoute && !isSettingsRoute && !isAuthRoute) {
+    return NextResponse.next();
+  }
+
+  let response = NextResponse.next({ request });
+  const supabase = createRequestClient(request, (cookies) => {
+    cookies.forEach(({ name, value }) => request.cookies.set(name, value));
+    response = NextResponse.next({ request });
+    cookies.forEach(({ name, value, options }) => {
+      response.cookies.set(name, value, options);
+    });
+  });
+
+  const user = hasSupabaseAuthCookie(request)
+    ? (await supabase.auth.getUser()).data.user
+    : null;
+  const isAuthenticated = !!user;
   const needsRole =
     (isAdminRoute && isAuthenticated) ||
     (isUserRoute && isAuthenticated) ||
@@ -62,7 +72,7 @@ export async function proxy(request: NextRequest) {
   // Protect admin routes
   if (isAdminRoute) {
     if (!isAuthenticated) {
-      return NextResponse.redirect(new URL('/auth/login', request.url));
+      return NextResponse.redirect(new URL('/login', request.url));
     }
 
     if (role !== 'admin') {
@@ -73,34 +83,76 @@ export async function proxy(request: NextRequest) {
   // Protect user routes
   if (isUserRoute) {
     if (!isAuthenticated) {
-      return NextResponse.redirect(new URL('/auth/login', request.url));
+      return NextResponse.redirect(new URL('/login', request.url));
     }
 
     // Admins get redirected to dashboard
     if (role === 'admin') {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
+
+    if (pathname === '/onboarding' && user) {
+      const { data: progress } = await supabaseServer
+        .from('user_progress')
+        .select('intake_completed')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (progress?.intake_completed) {
+        return NextResponse.redirect(new URL('/home', request.url));
+      }
+    }
+  }
+
+  if (isSettingsRoute && !isAuthenticated) {
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
   // Redirect authenticated users away from auth pages
   if (isAuthRoute && isAuthenticated) {
-    const redirectUrl = role === 'admin' ? '/dashboard' : '/home';
-    return NextResponse.redirect(new URL(redirectUrl, request.url));
+    if (pathname === '/reset-password') {
+      return response;
+    }
+    if (pathname === '/login' || role === 'admin') {
+      const redirectUrl = role === 'admin' ? '/dashboard' : '/home';
+      return NextResponse.redirect(new URL(redirectUrl, request.url));
+    }
+
+    const { data: progress } = await supabaseServer
+      .from('user_progress')
+      .select('intake_completed')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (progress?.intake_completed) {
+      return NextResponse.redirect(new URL('/home', request.url));
+    }
+
+    return response;
   }
 
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {
   matcher: [
-    '/((?!api|_next/static|_next/image).*)',
+    '/home/:path*',
     '/dashboard/:path*',
     '/content/:path*',
     '/users/:path*',
     '/analytics/:path*',
-    '/home/:path*',
     '/sessions/:path*',
-    '/auth/:path*',
+    '/assessments/:path*',
+    '/conversations/:path*',
+    '/journeys/:path*',
+    '/diary/:path*',
+    '/breathe',
+    '/breathe/:path*',
+    '/onboarding',
+    '/settings/:path*',
+    '/login',
+    '/signup',
+    '/reset-password',
   ],
 };
 
