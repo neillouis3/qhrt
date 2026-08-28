@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
 import Modal from './Modal';
+import { useTheme } from './ThemeProvider';
 
 export interface SettingsModalProps {
   isOpen: boolean;
@@ -9,7 +9,8 @@ export interface SettingsModalProps {
 }
 
 export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
-  const [darkMode, setDarkMode] = useState(false);
+  const { theme, setTheme } = useTheme();
+  const darkMode = theme === 'dark';
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Settings">
@@ -48,7 +49,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               <span className="text-sm text-foreground dark:text-muted">Dark Mode</span>
               <button
                 type="button"
-                onClick={() => setDarkMode((v) => !v)}
+                onClick={() => setTheme(darkMode ? 'light' : 'dark')}
                 className={`relative w-11 h-6 rounded-full transition-colors ${
                   darkMode ? 'bg-primary' : 'bg-border'
                 }`}
