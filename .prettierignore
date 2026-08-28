@@ -1,0 +1,198 @@
+# DEPENDENCIES
+node_modules
+/.pnp
+.pnp.*
+
+# LOCK FILES
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+bun.lockb
+composer.lock
+Gemfile.lock
+**/*-lock.*
+**/*.lock
+
+# NEXT.JS BUILDS
+/.next/
+/out/
+/.turbo
+
+# PRODUCTION BUILDS
+/build
+/dist
+/coverage
+
+# GENERATED FILES
+next-env.d.ts
+*.tsbuildinfo
+**/*.d.ts
+**/generated/**
+.next/types/**
+**/*.generated.*
+
+# MINIFIED/BUNDLED FILES
+**/*.min.*
+**/*.bundle.*
+**/*.chunk.*
+**/*.umd.*
+**/*.prod.*
+
+# SOURCE MAPS
+**/*.map
+
+# CONFIGURATION FILES
+*.config.*
+*rc.*
+.*rc
+tsconfig*.json
+jsconfig*.json
+.prettierrc*
+.eslintrc*
+.babelrc*
+.browserslistrc
+.editorconfig
+.gitignore
+.gitattributes
+.nvmrc
+.yarnrc*
+.npmrc
+.pnpmrc
+drizzle.config.ts
+next.config.ts
+tailwind.config.ts
+postcss.config.mjs
+eslint.config.mjs
+vite.config.*
+webpack.config.*
+rollup.config.*
+
+# ALL DOT FILES/FOLDERS (avoid .git, .vscode, this file, etc.)
+.*
+.*/
+
+# BUT ALLOW SPECIFIC SAFE DOT FILES IF NEEDED
+!.prettierrc.json
+!.prettierignore
+
+# BINARY/MEDIA FILES (can be corrupted by text formatting)
+*.ico
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.svg
+*.pdf
+*.woff
+*.woff2
+*.ttf
+*.eot
+*.mp4
+*.mp3
+*.wav
+*.avi
+*.mov
+*.exe
+*.dll
+*.so
+*.dylib
+*.wasm
+
+# DATABASE & MIGRATION FILES
+*.sql
+*.db
+*.sqlite*
+/supabase/**
+/migrations/**
+/prisma/**
+schema.prisma
+*.schema
+
+# SCRIPTS AND UTILITIES
+/scripts/**
+
+# DATA FILES (can have specific formatting requirements)
+*.json
+*.xml
+*.csv
+*.yaml
+*.yml
+*.toml
+*.ini
+
+# DOCUMENTATION
+*.md
+*.mdx
+/docs/**
+/documentation/**
+README*
+CHANGELOG*
+LICENSE*
+CONTRIBUTING*
+
+# VENDOR/EXTERNAL CODE
+/vendor/**
+/external/**
+/third-party/**
+/public/lib/**
+/public/vendor/**
+
+# TEMPORARY/CACHE FILES
+*.tmp
+*.temp
+*.cache
+*.log
+*.pid
+
+# BACKUP FILES
+*.bak
+*.backup
+*.old
+*.orig
+*.rej
+
+# ENVIRONMENT FILES
+.env*
+
+# SYSTEM FILES
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# PACKAGE MANAGER SPECIFIC
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+.npm/
+.pnpm/
+node_modules.nosync
+
+# IDE/EDITOR FILES
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# COMPRESSED ARCHIVES
+*.zip
+*.tar
+*.gz
+*.7z
+*.rar
+*.dmg
+
+# CERTIFICATES AND KEYS
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# =============================================================================
+# RESULT: Only safe source files will be formatted:
+# .js, .jsx, .ts, .tsx, .css, .scss, .less, .html, .htm, .vue
+# =============================================================================
