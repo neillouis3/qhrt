@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800">
+  <rect width="800" height="800" fill="#1e1e1e" />
+  <g style="mix-blend-mode:screen" opacity="0.9">
+    <circle cx="400" cy="270" r="150" fill="#f8c8e4" opacity="0.55" />
+    <circle cx="513" cy="335" r="150" fill="#d4c4f5" opacity="0.55" />
+    <circle cx="513" cy="465" r="150" fill="#b5ddf5" opacity="0.55" />
+    <circle cx="400" cy="530" r="150" fill="#c5efc7" opacity="0.55" />
+    <circle cx="287" cy="465" r="150" fill="#f2edbc" opacity="0.55" />
+    <circle cx="287" cy="335" r="150" fill="#f8c4bc" opacity="0.55" />
+  </g>
+</svg>
