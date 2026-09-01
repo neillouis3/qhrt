@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { supabaseServer } from '@/lib/supabaseClient';
+import { createRequestClient, supabaseServer } from '@/lib/supabaseClient';
 import { rateLimit } from '@/lib/rateLimiter';
 
 export async function POST(request: NextRequest) {
@@ -27,25 +26,11 @@ export async function POST(request: NextRequest) {
     let response = NextResponse.json({});
 
     // Create a server client with getAll/setAll cookie handlers
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll().map((cookie) => ({
-              name: cookie.name,
-              value: cookie.value,
-            }));
-          },
-          setAll(cookies) {
-            cookies.forEach((cookie) => {
-              response.cookies.set({ name: cookie.name, value: cookie.value, ...cookie.options });
-            });
-          },
-        },
-      }
-    );
+    const supabase = createRequestClient(request, (cookies) => {
+      cookies.forEach((cookie) => {
+        response.cookies.set(cookie.name, cookie.value, cookie.options);
+      });
+    });
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
