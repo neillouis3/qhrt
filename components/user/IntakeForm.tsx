@@ -38,11 +38,11 @@ const initialData: IntakeData = {
 };
 
 const steps = [
-  { key: 'presenting', title: 'What brings you here?' },
-  { key: 'current', title: 'How are you right now?' },
-  { key: 'regulation', title: 'When things feel overwhelming' },
-  { key: 'sleep', title: 'Sleep' },
-  { key: 'goals', title: 'Your goals' },
+  { key: 'presenting', title: 'What do you want to focus on?' },
+  { key: 'current', title: 'Wellness & resilience audit' },
+  { key: 'regulation', title: 'When stress runs high' },
+  { key: 'sleep', title: 'Sleep & rest habits' },
+  { key: 'goals', title: 'Your coaching goals' },
 ];
 
 export default function IntakeForm({ onComplete, onCancel }: IntakeFormProps) {
@@ -111,14 +111,16 @@ export default function IntakeForm({ onComplete, onCancel }: IntakeFormProps) {
       <div className="mt-6 space-y-4">
         {step === 0 && (
           <>
-            <p className="text-sm text-muted">What best describes why you are here?</p>
+            <p className="text-sm text-muted">
+              Choose a learning focus — we use this to suggest workbooks, not to diagnose or treat.
+            </p>
             <div className="space-y-2">
               {[
-                { value: 'anxiety', label: 'Anxiety / stress' },
-                { value: 'trauma', label: 'Trauma-related symptoms' },
-                { value: 'depression', label: 'Depression / low mood' },
-                { value: 'overwhelm', label: 'Emotional overwhelm' },
-                { value: 'sleep', label: 'Sleep difficulty' },
+                { value: 'anxiety', label: 'Manage daily stress & worry' },
+                { value: 'sleep', label: 'Improve sleep & rest routines' },
+                { value: 'overwhelm', label: 'Build boundaries & resilience' },
+                { value: 'depression', label: 'Motivation, mood & habits' },
+                { value: 'trauma', label: 'Mindfulness & grounding practices' },
               ].map((opt) => (
                 <button
                   key={opt.value}
@@ -147,12 +149,15 @@ export default function IntakeForm({ onComplete, onCancel }: IntakeFormProps) {
 
         {step === 1 && (
           <>
-            <p className="text-sm text-muted">On a scale of 1–10, how would you rate:</p>
+            <p className="text-sm text-muted">
+              Optional habit check-in (1 = low, 10 = high). This curates content — not a clinical
+              score.
+            </p>
             <div className="space-y-4">
               {[
-                { key: 'stress' as const, label: 'Stress' },
-                { key: 'emotionalIntensity' as const, label: 'Emotional intensity' },
-                { key: 'bodyTension' as const, label: 'Body tension' },
+                { key: 'stress' as const, label: 'Daily stress load' },
+                { key: 'emotionalIntensity' as const, label: 'Emotional reactivity' },
+                { key: 'bodyTension' as const, label: 'Physical tension' },
               ].map(({ key, label }) => (
                 <div key={key}>
                   <div className="flex justify-between text-sm mb-1">
@@ -182,16 +187,14 @@ export default function IntakeForm({ onComplete, onCancel }: IntakeFormProps) {
 
         {step === 2 && (
           <>
-            <p className="text-sm text-muted">
-              When you feel overwhelmed, what happens most often?
-            </p>
+            <p className="text-sm text-muted">When stress is high, what shows up most often?</p>
             <div className="space-y-2">
               {[
-                { value: 'racing', label: 'Racing thoughts' },
-                { value: 'tension', label: 'Physical tension' },
-                { value: 'flooding', label: 'Emotional flooding' },
-                { value: 'shutdown', label: 'Shutdown / numbness' },
-                { value: 'focus', label: 'Difficulty focusing' },
+                { value: 'racing', label: 'Busy mind / racing thoughts' },
+                { value: 'tension', label: 'Tension in the body' },
+                { value: 'flooding', label: 'Hard to slow down emotionally' },
+                { value: 'shutdown', label: 'Withdraw or go quiet' },
+                { value: 'focus', label: 'Hard to focus on one thing' },
               ].map((opt) => (
                 <button
                   key={opt.value}
@@ -220,7 +223,7 @@ export default function IntakeForm({ onComplete, onCancel }: IntakeFormProps) {
 
         {step === 3 && (
           <>
-            <p className="text-sm text-muted">How would you describe your sleep?</p>
+            <p className="text-sm text-muted">How are your sleep habits lately?</p>
             <div className="space-y-2">
               {[
                 { value: 'good' as SleepQuality, label: 'Good' },
@@ -246,10 +249,10 @@ export default function IntakeForm({ onComplete, onCancel }: IntakeFormProps) {
 
         {step === 4 && (
           <>
-            <p className="text-sm text-muted">What would you like to improve most?</p>
+            <p className="text-sm text-muted">What outcome would make this worthwhile for you?</p>
             <textarea
               rows={4}
-              placeholder="Tell us what matters most to you..."
+              placeholder="e.g. calmer evenings, clearer boundaries, a steadier morning routine…"
               value={data.goals}
               onChange={(e) => update({ goals: e.target.value })}
               className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary dark:focus:border-primary-light resize-none"
@@ -273,7 +276,7 @@ export default function IntakeForm({ onComplete, onCancel }: IntakeFormProps) {
           disabled={loading}
           className="px-6 py-2 text-sm font-medium text-white bg-primary hover:bg-primary-dark rounded-lg transition-colors dark:bg-primary-light dark:hover:bg-primary disabled:opacity-50"
         >
-          {step === steps.length - 1 ? (loading ? 'Saving...' : 'Save intake') : 'Continue'}
+          {step === steps.length - 1 ? (loading ? 'Saving...' : 'Save preferences') : 'Continue'}
         </button>
       </div>
     </div>
