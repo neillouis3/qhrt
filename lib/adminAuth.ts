@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { supabaseServer } from '@/lib/supabaseClient';
+import {
+  createRequestClient,
+  hasSupabaseAuthCookie,
+  supabaseServer,
+} from '@/lib/supabaseClient';
 import { checkCsrfOrigin } from '@/lib/csrf';
 
 const MUTATING_METHODS = new Set(['POST', 'PATCH', 'PUT', 'DELETE']);
@@ -27,21 +30,11 @@ export async function requireAdmin(request: NextRequest): Promise<null | NextRes
   const csrf = enforceCsrf(request);
   if (csrf) return csrf;
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll() {
-          // No-op — read only.
-        },
-      },
-    }
-  );
+  if (!hasSupabaseAuthCookie(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
+  const supabase = createRequestClient(request);
   const {
     data: { user },
     error,
@@ -70,25 +63,15 @@ export async function requireAdmin(request: NextRequest): Promise<null | NextRes
  */
 export async function requireUser(
   request: NextRequest
-): Promise<null | { user: { id: string } } | NextResponse> {
+): Promise<null | { user: { id: string; user_metadata?: Record<string, unknown> } } | NextResponse> {
   const csrf = enforceCsrf(request);
   if (csrf) return csrf;
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll() {
-          // No-op — read only.
-        },
-      },
-    }
-  );
+  if (!hasSupabaseAuthCookie(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
+  const supabase = createRequestClient(request);
   const {
     data: { user },
     error,
@@ -98,5 +81,5 @@ export async function requireUser(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  return { user: { id: user.id } };
+  return { user: { id: user.id, user_metadata: user.user_metadata } };
 }
