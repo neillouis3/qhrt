@@ -51,16 +51,19 @@ function fetchSessionInternal(): Promise<FetchResult> {
   // If a request is already in flight, share it (deduplication)
   if (inFlightRequest) return inFlightRequest;
 
-  inFlightRequest = fetch('/api/auth/session')
+  inFlightRequest = fetch('/api/auth/session', { cache: 'no-store' })
     .then(async (res) => {
       if (res.ok) {
-        const data = (await res.json()) as SessionData;
-        cachedSession = data;
+        const data = (await res.json()) as SessionData | { user: null };
+        if (!data.user) {
+          cachedSession = null;
+          cachedAt = 0;
+          return { data: null, error: null };
+        }
+        cachedSession = data as SessionData;
         cachedAt = Date.now();
-        return { data, error: null };
+        return { data: cachedSession, error: null };
       }
-      // 401 = not logged in (expected); other statuses are real errors.
-      if (res.status === 401) return { data: null, error: null };
       return { data: null, error: `Session request failed (${res.status})` };
     })
     .catch((err) => ({
@@ -96,12 +99,11 @@ export function useSession() {
     fetchSessionInternal().then((result) => applyResult(result.data, result.error));
 
     // Listen for refetch signals (login/logout events from anywhere in the app)
-    const currentToken = tokenRef.current;
     const checkToken = () => {
-      if (refetchToken !== currentToken && mountedRef.current) {
-        tokenRef.current = refetchToken;
-        fetchSessionInternal().then((result) => applyResult(result.data, result.error));
-      }
+      if (!mountedRef.current || refetchToken === tokenRef.current) return;
+      tokenRef.current = refetchToken;
+      setLoading(true);
+      fetchSessionInternal().then((result) => applyResult(result.data, result.error));
     };
 
     refetchListeners.add(checkToken);
