@@ -1,7 +1,15 @@
 'use client';
 
 import { createContext, useContext } from 'react';
-import { NavbarLinksContextValue } from '@/components/NavbarContext';
+
+export interface NavItem {
+  name: string;
+  path: string;
+}
+
+export interface NavbarLinksContextValue {
+  adminLinks?: NavItem[];
+}
 
 const NavbarLinksContext = createContext<NavbarLinksContextValue>({});
 
