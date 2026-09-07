@@ -1,15 +1,15 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
-import Script from 'next/script';
+import { Geist_Mono, Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
-import NavbarLayout from '@/components/NavbarLayout';
-import NavbarProvider from '@/components/NavbarProvider';
-import { ThemeProvider } from '@/components/ThemeProvider';
-import { NavItem } from '@/components/NavbarContext';
+import NavbarLayout from '@/components/nav/NavbarLayout';
+import NavbarProvider from '@/components/nav/NavbarProvider';
+import { Providers } from '@/app/providers';
+import type { NavItem } from '@/components/nav/NavbarProvider';
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
+const plusJakartaSans = Plus_Jakarta_Sans({
+  variable: '--font-plus-jakarta',
+  subsets: ['latin', 'latin-ext'],
+  display: 'swap',
 });
 
 const geistMono = Geist_Mono({
@@ -22,19 +22,14 @@ export const metadata: Metadata = {
     default: 'QHRT',
     template: '%s | QHRT',
   },
-  description: 'QHRT application',
+  description:
+    'Self-guided wellness and resilience coaching — educational workbooks for stress, habits, and mindset. Not therapy or medical care.',
 };
 
 const adminLinks: NavItem[] = [
   { name: 'Dashboard', path: '/dashboard' },
   { name: 'Users', path: '/users' },
   { name: 'Content', path: '/content' },
-  { name: 'Analytics', path: '/analytics' },
-];
-
-const userLinks: NavItem[] = [
-  { name: 'Home', path: '/home' },
-  { name: 'Sessions', path: '/sessions' },
 ];
 
 export default function RootLayout({
@@ -46,21 +41,14 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${plusJakartaSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans bg-background text-foreground">
-        <Script
-          id="theme-init"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `try{if(localStorage.getItem('theme')==='dark'){document.documentElement.classList.add('dark');document.documentElement.style.colorScheme='dark'}}catch(e){}`,
-          }}
-        />
-        <ThemeProvider>
-          <NavbarProvider value={{ adminLinks, userLinks }}>
+        <Providers>
+          <NavbarProvider value={{ adminLinks }}>
             <NavbarLayout>{children}</NavbarLayout>
           </NavbarProvider>
-        </ThemeProvider>
+        </Providers>
       </body>
     </html>
   );
