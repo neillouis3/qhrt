@@ -1,119 +1,50 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import Modal from '@/components/Modal';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import Link from 'next/link';
+import { Button, Typography, buttonVariants } from '@heroui/react';
+import Modal from '@/components/ui/Modal';
+import FocusSessionLayout from '@/components/layout/FocusSessionLayout';
+import { FocusContentSkeleton } from '@/components/layout/PageSkeleton';
+import ProgressNav, { type ProgressStepStatus } from '@/components/session/ProgressNav';
 import type {
+  EngineSessionState,
   TherapeuticEngine,
   TherapeuticPhase,
-  PhaseObservation,
 } from '@/lib/types/therapeutic-engine';
+import { SessionOverview, SessionRecapFooter } from '@/components/session/SessionRecap';
+import { buildJourneyRecap } from '@/lib/journeyRecap';
+import type { PhaseObservation } from '@/lib/types/therapeutic-engine';
 
-// ---------------------------------------------------------------------------
-// Phase name translation - map technical keys to client-friendly label
-// ---------------------------------------------------------------------------
-const PHASE_DISPLAY_NAMES: Record<string, string> = {
-  conscious_regulatory_activation: 'Getting Started',
-  aee_resolution: 'Finding Balance',
-  universal_reverse_sequential: 'Clearing the Path',
-  fd_reverse_sequential: 'Focusing In',
-  current_conscious_program: 'Building New Patterns',
-  universal_activation: 'Integrating Changes',
-  fd_activation: 'Making It Real',
-  conscious_release: 'Wrapping Up',
+function phaseStepStatus(status: string): ProgressStepStatus {
+  if (status === 'completed') return 'complete';
+  if (status === 'active') return 'current';
+  if (status === 'skipped_by_rule') return 'skipped';
+  if (status === 'requires_attention') return 'attention';
+  return 'upcoming';
+}
+
+const PHASE_INDEX: Record<number, string> = {
+  1: '1',
+  2: '2',
+  3: '3A',
+  4: '3B',
+  5: '4',
+  6: '5',
+  7: '6',
+  8: '7',
 };
 
-function getPhaseDisplayName(phase: { phase_key?: string; name: string }) {
-  return phase.phase_key ? (PHASE_DISPLAY_NAMES[phase.phase_key] ?? phase.name) : phase.name;
-}
-
-// ---------------------------------------------------------------------------
-// Phase status icon helper
-// -----------------------------------------------------------------------------------
-function phaseStatusIcon(status: string) {
-  switch (status) {
-    case 'completed':
-      return '✓';
-    case 'active':
-      return '▶';
-    case 'skipped_by_rule':
-      return '—';
-    case 'requires_attention':
-      return '!';
-    default:
-      return '○';
-  }
-}
-
-function phaseStatusColor(status: string) {
-  switch (status) {
-    case 'completed':
-      return 'text-green-500 dark:text-green-400';
-    case 'active':
-      return 'text-blue-500 dark:text-blue-400';
-    case 'skipped_by_rule':
-      return 'text-gray-400 dark:text-gray-500';
-    case 'requires_attention':
-      return 'text-yellow-500 dark:text-yellow-400';
-    default:
-      return 'text-muted dark:text-gray-600';
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Phase Stepper — shows all 8 phases with status indicators
-// ---------------------------------------------------------------------------
-interface PhaseStepperProps {
-  phases: TherapeuticPhase[];
-  currentOrder: number;
-}
-
-function PhaseStepper({ phases, currentOrder }: PhaseStepperProps) {
-  // Label mapping for display (3A / 3B convention)
-  const phaseLabels: Record<number, string> = {
-    1: '1',
-    2: '2',
-    3: '3A',
-    4: '3B',
-    5: '4',
-    6: '5',
-    7: '6',
-    8: '7',
-  };
-
+function JourneyProgress({ phases }: { phases: TherapeuticPhase[] }) {
   return (
-    <div className="flex flex-col gap-2">
-      {phases.map((phase) => {
-        const isActive = phase.status === 'active';
-        const label = phaseLabels[phase.phase_order] || String(phase.phase_order);
-
-        return (
-          <div
-            key={phase.id}
-            className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-              isActive
-                ? 'bg-blue-500/10 border border-blue-500/30'
-                : 'border border-transparent hover:bg-muted/5'
-            }`}
-          >
-            <span className={`text-base font-bold w-6 ${phaseStatusColor(phase.status)}`}>
-              {phaseStatusIcon(phase.status)}
-            </span>
-            <span className="font-medium text-xs text-muted dark:text-gray-500 w-5">{label}</span>
-            <span
-              className={`flex-1 text-sm ${
-                isActive
-                  ? 'text-foreground font-medium dark:text-white'
-                  : phase.status === 'completed'
-                    ? 'text-muted dark:text-gray-400 line-through'
-                    : 'text-muted dark:text-gray-500'
-              }`}
-            >
-              {getPhaseDisplayName(phase)}
-            </span>
-          </div>
-        );
-      })}
-    </div>
+    <ProgressNav
+      items={phases.map((phase) => ({
+        id: phase.id,
+        index: PHASE_INDEX[phase.phase_order] || String(phase.phase_order),
+        label: phase.name,
+        status: phaseStepStatus(phase.status),
+      }))}
+    />
   );
 }
 
@@ -236,19 +167,13 @@ function ObservationForm({ onSave, onCancel }: ObservationFormProps) {
         />
       </div>
 
-      <div className="flex gap-3 justify-end mt-2">
-        <button
-          onClick={onCancel}
-          className="px-4 py-2 border border-border rounded-lg text-sm text-muted hover:text-foreground hover:bg-muted/5 transition-colors disabled:opacity-50 dark:border-gray-700"
-        >
+      <div className="flex justify-end gap-2 pt-2">
+        <Button size="sm" variant="tertiary" onPress={onCancel}>
           Cancel
-        </button>
-        <button
-          onClick={handleSave}
-          className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors"
-        >
+        </Button>
+        <Button size="sm" variant="primary" onPress={handleSave}>
           Save Reflections
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -272,16 +197,36 @@ export default function TherapeuticSessionView({
   const [engine, setEngine] = useState<TherapeuticEngine | null>(null);
   const [phases, setPhases] = useState<TherapeuticPhase[]>([]);
   const [currentPhase, setCurrentPhase] = useState<TherapeuticPhase | null>(null);
+  const [domainName, setDomainName] = useState<string | null>(null);
+  const [domainDescription, setDomainDescription] = useState<string | null>(null);
+  const [showOverview, setShowOverview] = useState(true);
   const [loading, setLoading] = useState(true);
   const [transitioning, setTransitioning] = useState(false);
   const [savingObservations, setSavingObservations] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showObservationForm, setShowObservationForm] = useState(false);
+  const [observations, setObservations] = useState<PhaseObservation[]>([]);
+  const hasLoadedRef = useRef(false);
+
+  const applyEngineState = (state: EngineSessionState) => {
+    setEngine(state.engine);
+    setPhases(state.allPhases);
+    setCurrentPhase(state.currentPhase);
+    setObservations(state.observations ?? []);
+    setDomainName(state.functionalDomain?.name ?? null);
+    setDomainDescription(state.functionalDomain?.description ?? null);
+    const alreadyStarted =
+      state.engine.status === 'running' ||
+      state.engine.status === 'paused' ||
+      state.engine.status === 'completed' ||
+      state.allPhases.some((phase) => phase.status === 'completed');
+    if (alreadyStarted) setShowOverview(false);
+  };
 
   // Fetch engine state
   const fetchState = useCallback(async () => {
     try {
-      setLoading(true);
+      if (!hasLoadedRef.current) setLoading(true);
       setError(null);
 
       const res = await fetch(`/api/therapeutic-engine/${engineId}`);
@@ -290,11 +235,14 @@ export default function TherapeuticSessionView({
         throw new Error(err.error ?? 'Failed to load engine state');
       }
       const data = await res.json();
-      const state = data.state;
+      const state = data.state as EngineSessionState;
+      applyEngineState(state);
+      hasLoadedRef.current = true;
 
-      setEngine(state.engine);
-      setPhases(state.allPhases);
-      setCurrentPhase(state.currentPhase);
+      if (state.engine.status === 'paused') {
+        await fetch(`/api/therapeutic-engine/${engineId}/resume`, { method: 'POST' });
+        setEngine({ ...state.engine, status: 'running' });
+      }
     } catch (err) {
       console.error('[TherapeuticSessionView] Failed to fetch state:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
@@ -306,35 +254,6 @@ export default function TherapeuticSessionView({
   useEffect(() => {
     fetchState();
   }, [fetchState]);
-
-  // Transition to next phase
-  const handleTransition = useCallback(async () => {
-    setTransitioning(true);
-    setError(null);
-
-    try {
-      const res = await fetch(`/api/therapeutic-engine/${engineId}/transition`, {
-        method: 'POST',
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error ?? 'Failed to transition phase');
-      }
-
-      const data = await res.json();
-      if (data.state) {
-        setEngine(data.state.engine);
-        setPhases(data.state.allPhases);
-        setCurrentPhase(data.state.currentPhase);
-      }
-    } catch (err) {
-      console.error('[TherapeuticSessionView] Failed to transition:', err);
-      setError(err instanceof Error ? err.message : 'Unknown error');
-    } finally {
-      setTransitioning(false);
-    }
-  }, [engineId]);
 
   // Save observations
   const handleSaveObservations = useCallback(
@@ -367,7 +286,7 @@ export default function TherapeuticSessionView({
     [engineId, currentPhase, engine?.current_phase_order]
   );
 
-  // Pause session
+  // Pause session and leave, same as assessments.
   const handlePause = useCallback(async () => {
     try {
       const res = await fetch(`/api/therapeutic-engine/${engineId}/pause`, {
@@ -379,35 +298,43 @@ export default function TherapeuticSessionView({
         throw new Error(err.error ?? 'Failed to pause session');
       }
 
-      // Refresh state
-      fetchState();
+      onClose?.();
     } catch (err) {
       console.error('[TherapeuticSessionView] Failed to pause:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
     }
-  }, [engineId, fetchState]);
+  }, [engineId, onClose]);
 
-  // Resume session
-  const handleResume = useCallback(async () => {
+  const handleGoBack = useCallback(async () => {
+    const order = currentPhase?.phase_order ?? engine?.current_phase_order ?? 1;
+    if (order <= 1) {
+      setShowOverview(true);
+      return;
+    }
+
+    setTransitioning(true);
+    setError(null);
+
     try {
-      const res = await fetch(`/api/therapeutic-engine/${engineId}/resume`, {
+      const res = await fetch(`/api/therapeutic-engine/${engineId}/back`, {
         method: 'POST',
       });
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error ?? 'Failed to resume session');
+        throw new Error(err.error ?? 'Failed to go back');
       }
 
-      // Refresh state
-      fetchState();
+      const data = await res.json();
+      if (data.state) applyEngineState(data.state);
     } catch (err) {
-      console.error('[TherapeuticSessionView] Failed to resume:', err);
+      console.error('[TherapeuticSessionView] Failed to go back:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setTransitioning(false);
     }
-  }, [engineId, fetchState]);
+  }, [engineId, currentPhase?.phase_order, engine?.current_phase_order]);
 
-  // Complete current phase and transition
   const handleCompletePhase = useCallback(async () => {
     setTransitioning(true);
     setError(null);
@@ -415,7 +342,6 @@ export default function TherapeuticSessionView({
     try {
       const currentOrder = currentPhase?.phase_order ?? engine?.current_phase_order;
 
-      // Save observations if any were entered
       const res = await fetch(`/api/therapeutic-engine/${engineId}/complete-phase`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -427,224 +353,197 @@ export default function TherapeuticSessionView({
         throw new Error(err.error ?? 'Failed to complete phase');
       }
 
-      // Refresh state after completing the phase
-      await fetchState();
-
-      // Only transition if this wasn't the last phase
-      // (Phase 8 completion marks the engine as 'completed', so no transition needed)
-      if (currentOrder !== 8) {
-        await handleTransition();
+      if (currentOrder === 8) {
+        await fetchState();
+        return;
       }
+
+      const next = await fetch(`/api/therapeutic-engine/${engineId}/transition`, {
+        method: 'POST',
+      });
+
+      if (!next.ok) {
+        const err = await next.json().catch(() => ({}));
+        throw new Error(err.error ?? 'Failed to continue');
+      }
+
+      const data = await next.json();
+      if (data.state) applyEngineState(data.state);
     } catch (err) {
       console.error('[TherapeuticSessionView] Failed to complete phase:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setTransitioning(false);
     }
-  }, [
-    engineId,
-    handleTransition,
-    fetchState,
-    currentPhase?.phase_order,
-    engine?.current_phase_order,
-  ]);
+  }, [engineId, fetchState, currentPhase?.phase_order, engine?.current_phase_order]);
 
-  // Check if engine is completed (all phases done)
+  const displayPhase =
+    currentPhase ??
+    phases.find((phase) => phase.phase_order === engine?.current_phase_order) ??
+    null;
+  const phaseBody =
+    displayPhase?.client_script?.trim() || displayPhase?.description?.trim() || '';
+
   const isEngineCompleted = engine?.status === 'completed';
-  const isEnginePaused = engine?.status === 'paused';
 
-  // ---------------------------------------------------------------------------
-  // Loading state
-  // ---------------------------------------------------------------------------
+  const journeyRecap = useMemo(
+    () => buildJourneyRecap(phases, observations),
+    [phases, observations]
+  );
+  const progress = <JourneyProgress phases={phases} />;
+  const overviewTitle = domainName ?? 'Journey';
+
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 gap-4">
-        <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
-        <p className="text-sm text-muted dark:text-gray-400">Loading your journey...</p>
-      </div>
+      <FocusSessionLayout progress={progress}>
+        <FocusContentSkeleton />
+      </FocusSessionLayout>
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // Error state
-  // ---------------------------------------------------------------------------
   if (error && !engine) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 gap-4">
-        <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-        <button
-          onClick={fetchState}
-          className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors"
-        >
-          Retry
-        </button>
-      </div>
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Paused state overlay
-  // ---------------------------------------------------------------------------
-  if (isEnginePaused) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12 gap-4">
-        <div className="text-4xl mb-2">⏸</div>
-        <h3 className="text-lg font-medium text-foreground dark:text-white">On a Break</h3>
-        <p className="text-sm text-muted dark:text-gray-400 text-center max-w-md">
-          Your journey is paused. You can pick up right where you left off whenever you're ready.
-        </p>
-        <div className="flex gap-3 mt-4">
-          <button
-            onClick={handleResume}
-            className="px-6 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors"
-          >
-            Continue Your Journey
-          </button>
-          <button
-            onClick={onClose}
-            className="px-6 py-2 border border-border rounded-lg text-sm text-muted hover:text-foreground hover:bg-muted/5 transition-colors dark:border-gray-700"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Completed state
-  // ---------------------------------------------------------------------------
-  if (isEngineCompleted) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12 gap-4">
-        <div className="text-4xl mb-2">✓</div>
-        <h3 className="text-lg font-medium text-foreground dark:text-white">Journey Complete</h3>
-        <p className="text-sm text-muted dark:text-gray-400 text-center max-w-md">
-          You've completed all steps of this journey. Your progress has been saved.
-        </p>
-        <button
-          onClick={onClose}
-          className="px-6 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors mt-4"
-        >
-          Close
-        </button>
-      </div>
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Main session view
-  // ---------------------------------------------------------------------------
-  return (
-    <div className="flex flex-col gap-6">
-      {/* Error banner */}
-      {error && (
-        <div className="px-4 py-3 bg-red-500/10 border border-red-500/30 rounded-lg text-sm text-red-600 dark:text-red-400">
+      <FocusSessionLayout progress={progress}>
+        <Typography type="body-sm" className="text-danger">
           {error}
-        </div>
-      )}
-
-      {/* Session header */}
-      <div className="flex items-center justify-between">
+        </Typography>
         <div>
-          <h2 className="text-lg font-semibold text-foreground dark:text-white">Your Journey</h2>
-          {currentPhase && (
-            <p className="text-sm text-muted dark:text-gray-400">
-              Step {currentPhase.phase_order}: {getPhaseDisplayName(currentPhase)}
-            </p>
-          )}
+          <Button size="sm" variant="primary" onPress={fetchState}>
+            Retry
+          </Button>
         </div>
-        <div className="flex items-center gap-2">
-          <span
-            className={`px-3 py-1 rounded-full text-xs font-medium ${
-              engine?.status === 'running'
-                ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
-                : 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400'
-            }`}
+      </FocusSessionLayout>
+    );
+  }
+
+  if (isEngineCompleted) {
+    const recapTitle = domainName?.trim() || 'Your journey';
+    return (
+      <FocusSessionLayout
+        progress={progress}
+        title={recapTitle}
+        subtitle="That's it. Here's what you went through."
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <Link href="/home" className={buttonVariants({ size: 'sm', variant: 'primary' })}>
+              Home
+            </Link>
+            {onClose ? (
+              <Button size="sm" variant="outline" onPress={onClose}>
+                Journeys
+              </Button>
+            ) : (
+              <Link href="/journeys" className={buttonVariants({ size: 'sm', variant: 'outline' })}>
+                Journeys
+              </Link>
+            )}
+          </div>
+        }
+      >
+        <SessionRecapFooter
+          sessionTitle={recapTitle}
+          recap={journeyRecap}
+          sourceKind="journey"
+          sourceId={engineId}
+          readOnlyNote="Read-only recap of your journey notes and reflections."
+        />
+      </FocusSessionLayout>
+    );
+  }
+
+  if (showOverview) {
+    return (
+      <FocusSessionLayout
+        progress={progress}
+        title={overviewTitle}
+        subtitle={domainDescription ?? undefined}
+        actions={
+          <>
+            {onClose ? (
+              <Button size="sm" variant="outline" onPress={onClose}>
+                Take a break
+              </Button>
+            ) : null}
+            <Button size="sm" variant="primary" onPress={() => setShowOverview(false)}>
+              Begin
+            </Button>
+          </>
+        }
+      >
+        <SessionOverview
+          steps={phases.map((phase) => ({
+            id: phase.id,
+            index: PHASE_INDEX[phase.phase_order] || String(phase.phase_order),
+            label: phase.name,
+            description: phase.description,
+          }))}
+        />
+      </FocusSessionLayout>
+    );
+  }
+
+  return (
+    <FocusSessionLayout
+      progress={progress}
+      leadingActions={
+        displayPhase ? (
+          <Button
+            size="sm"
+            variant="tertiary"
+            isDisabled={transitioning}
+            onPress={handleGoBack}
           >
-            {engine?.status === 'running' ? 'In Progress' : engine?.status}
-          </span>
-        </div>
-      </div>
+            Back
+          </Button>
+        ) : undefined
+      }
+      actions={
+        displayPhase ? (
+          <>
+            <Button
+              size="sm"
+              variant="tertiary"
+              isDisabled={savingObservations}
+              onPress={() => setShowObservationForm(true)}
+            >
+              {savingObservations ? 'Saving...' : 'Add reflection'}
+            </Button>
+            <Button size="sm" variant="outline" onPress={handlePause}>
+              Take a break
+            </Button>
+            <Button
+              size="sm"
+              variant="primary"
+              isPending={transitioning}
+              isDisabled={transitioning}
+              onPress={handleCompletePhase}
+            >
+              Continue
+            </Button>
+          </>
+        ) : undefined
+      }
+    >
+      {error ? (
+        <Typography type="body-sm" className="text-danger">
+          {error}
+        </Typography>
+      ) : null}
 
-      {/* Two-column layout: phase stepper + current phase content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left: Phase Stepper */}
-        <div className="lg:col-span-1">
-          <h3 className="text-sm font-medium text-muted dark:text-gray-400 mb-3">Your Progress</h3>
-          <PhaseStepper phases={phases} currentOrder={engine?.current_phase_order ?? 1} />
-        </div>
-
-        {/* Right: Current Phase Content */}
-        <div className="lg:col-span-2 flex flex-col gap-4">
-          {currentPhase ? (
-            <>
-              {/* Client-facing prompt */}
-              <div className="rounded-xl border border-border bg-background p-6 dark:bg-navy">
-                <h3 className="text-base font-medium text-foreground dark:text-white mb-3">
-                  {getPhaseDisplayName(currentPhase)}
-                </h3>
-
-                {currentPhase.client_script ? (
-                  <div className="prose prose-sm dark:prose-invert max-w-none">
-                    {currentPhase.client_script.split('\n').map((paragraph, i) => (
-                      <p
-                        key={i}
-                        className="text-sm text-foreground dark:text-gray-300 leading-relaxed mb-2 last:mb-0"
-                      >
-                        {paragraph}
-                      </p>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted dark:text-gray-400 italic">
-                    Take a moment to reflect on this step.
-                  </p>
-                )}
-              </div>
-
-              {/* Phase actions */}
-              <div className="flex items-center gap-3 justify-end">
-                <button
-                  onClick={() => setShowObservationForm(true)}
-                  disabled={savingObservations}
-                  className="px-4 py-2 border border-border rounded-lg text-sm text-muted hover:text-foreground hover:bg-muted/5 transition-colors disabled:opacity-50 dark:border-gray-700"
-                >
-                  {savingObservations ? 'Saving...' : 'Add Reflection'}
-                </button>
-                <button
-                  onClick={handlePause}
-                  className="px-4 py-2 border border-border rounded-lg text-sm text-muted hover:text-foreground hover:bg-muted/5 transition-colors dark:border-gray-700"
-                >
-                  Take a Break
-                </button>
-                <button
-                  onClick={handleCompletePhase}
-                  disabled={transitioning}
-                  className="px-6 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors disabled:opacity-50"
-                >
-                  {transitioning ? (
-                    <span className="flex items-center gap-2">
-                      <div className="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full" />
-                      Transitioning...
-                    </span>
-                  ) : (
-                    'Continue'
-                  )}
-                </button>
-              </div>
-            </>
-          ) : (
-            <div className="flex items-center justify-center py-12">
-              <p className="text-sm text-muted dark:text-gray-400">
-                Take your time with this step.
-              </p>
-            </div>
+      {phaseBody ? (
+        <div className="flex flex-col gap-3">
+          {phaseBody.split('\n').map((paragraph, i) =>
+            paragraph.trim() ? (
+              <Typography key={i} type="body">
+                {paragraph}
+              </Typography>
+            ) : null
           )}
         </div>
-      </div>
+      ) : displayPhase ? (
+        <Typography type="body">{displayPhase.name}</Typography>
+      ) : null}
 
-      {/* Observation Modal */}
       <Modal
         isOpen={showObservationForm}
         onClose={() => setShowObservationForm(false)}
@@ -656,6 +555,6 @@ export default function TherapeuticSessionView({
           onCancel={() => setShowObservationForm(false)}
         />
       </Modal>
-    </div>
+    </FocusSessionLayout>
   );
 }
