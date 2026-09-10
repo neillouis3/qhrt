@@ -1,189 +1,207 @@
 'use client';
 
-import { useState } from 'react';
-import type { Prompt, PromptResponseOption, ResponseType } from '@/lib/types/conversation';
+import { useEffect, useState } from 'react';
+import {
+  Button,
+  Checkbox,
+  CheckboxGroup,
+  Label,
+  Radio,
+  RadioGroup,
+  Slider,
+  TextArea,
+  Typography,
+} from '@heroui/react';
+import type { Prompt, PromptResponseOption } from '@/lib/types/conversation';
 
 interface PromptCardProps {
   prompt: Prompt;
   responseOptions: PromptResponseOption[];
   onResponse: (value: string) => void;
+  hideSubmit?: boolean;
+  onDraftChange?: (value: string) => void;
 }
 
-export default function PromptCard({ prompt, responseOptions, onResponse }: PromptCardProps) {
+export default function PromptCard({
+  prompt,
+  responseOptions,
+  onResponse,
+  hideSubmit = false,
+  onDraftChange,
+}: PromptCardProps) {
   const [value, setValue] = useState('');
+
+  const setDraft = (next: string) => {
+    setValue(next);
+    onDraftChange?.(next);
+  };
 
   const handleSubmit = () => {
     if (!value.trim()) return;
     onResponse(value);
-    setValue('');
-  };
-
-  const handleSubmitWithOption = (optionValue: string) => {
-    onResponse(optionValue);
+    setDraft('');
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Allow Enter to submit for free_text (but Shift+Enter for newlines)
     if (e.key === 'Enter' && !e.shiftKey && prompt.response_type === 'free_text') {
       e.preventDefault();
       handleSubmit();
     }
   };
 
-  return (
-    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-      {/* Prompt text */}
-      <div className="rounded-xl border border-border bg-background p-5 dark:bg-navy">
-        <p className="text-lg font-medium text-foreground leading-relaxed dark:text-white">
-          {prompt.prompt_text}
-        </p>
-      </div>
+  const selectedChoices = value ? value.split(',').filter(Boolean) : [];
 
-      {/* Input based on response type */}
+  return (
+    <div className="flex flex-col gap-4">
+      <Typography type="body">{prompt.prompt_text}</Typography>
+
       {prompt.response_type === 'free_text' && (
-        <textarea
+        <TextArea
+          fullWidth
+          rows={4}
           value={value}
-          onChange={(e) => setValue(e.target.value)}
+          onChange={(e) => setDraft(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Type your response..."
-          rows={3}
-          className="w-full rounded-lg border border-border bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted focus:ring-2 focus:ring-primary focus:border-transparent resize-none dark:bg-navy dark:border-gray-700 dark:text-white"
+          aria-label={prompt.prompt_text}
         />
       )}
 
       {prompt.response_type === 'single_choice' && (
-        <div className="space-y-2">
+        <RadioGroup
+          value={value || undefined}
+          onChange={setDraft}
+          aria-label={prompt.prompt_text}
+          className="flex flex-col gap-2"
+        >
           {responseOptions.map((opt) => (
-            <button
-              key={opt.id}
-              onClick={() => handleSubmitWithOption(opt.option_value)}
-              className={`w-full text-left px-4 py-3 rounded-lg border transition-colors text-sm ${
-                value === opt.option_value
-                  ? 'border-primary bg-primary/10 text-foreground dark:bg-primary/10 dark:text-white'
-                  : 'border-border hover:border-primary/50 hover:bg-muted/5 text-foreground dark:border-gray-700 dark:hover:border-primary/30 dark:text-gray-200'
-              }`}
-            >
-              {opt.option_label}
-            </button>
+            <Radio key={opt.id} value={opt.option_value}>
+              <Radio.Content>
+                <Radio.Control>
+                  <Radio.Indicator />
+                </Radio.Control>
+                {opt.option_label}
+              </Radio.Content>
+            </Radio>
           ))}
-        </div>
+        </RadioGroup>
       )}
 
       {prompt.response_type === 'multiple_choice' && (
-        <div className="space-y-2">
+        <CheckboxGroup
+          value={selectedChoices}
+          onChange={(keys) => setDraft([...keys].filter(Boolean).join(','))}
+          aria-label={prompt.prompt_text}
+          className="flex flex-col gap-2"
+        >
           {responseOptions.map((opt) => (
-            <label
-              key={opt.id}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg border cursor-pointer transition-colors text-sm ${
-                value.includes(opt.option_value)
-                  ? 'border-primary bg-primary/10 dark:bg-primary/10'
-                  : 'border-border hover:border-primary/50 hover:bg-muted/5 dark:border-gray-700 dark:hover:border-primary/30'
-              }`}
-            >
-              <input
-                type="checkbox"
-                checked={value.includes(opt.option_value)}
-                onChange={(e) => {
-                  const vals = e.target.checked
-                    ? [...value.split(','), opt.option_value].filter(Boolean).join(',')
-                    : value
-                        .split(',')
-                        .filter((v) => v !== opt.option_value)
-                        .join(',');
-                  setValue(vals);
-                }}
-                className="accent-primary"
-              />
-              <span className="text-foreground dark:text-gray-200">{opt.option_label}</span>
-            </label>
+            <Checkbox key={opt.id} value={opt.option_value}>
+              <Checkbox.Content>
+                <Checkbox.Control>
+                  <Checkbox.Indicator />
+                </Checkbox.Control>
+                {opt.option_label}
+              </Checkbox.Content>
+            </Checkbox>
           ))}
-        </div>
+        </CheckboxGroup>
       )}
 
       {prompt.response_type === 'scale' && (
-        <ScaleInput options={responseOptions} onValueChange={handleSubmitWithOption} />
+        <ScaleInput
+          options={responseOptions}
+          promptText={prompt.prompt_text}
+          value={value}
+          onValueChange={setDraft}
+        />
       )}
 
-      {/* Submit button for free_text and multiple_choice */}
-      {(prompt.response_type === 'free_text' || prompt.response_type === 'multiple_choice') && (
-        <button
-          onClick={handleSubmit}
-          disabled={!value.trim()}
-          className="w-full px-4 py-3 bg-primary text-white rounded-lg font-medium text-sm hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Continue
-        </button>
-      )}
+      {(prompt.response_type === 'free_text' ||
+        prompt.response_type === 'multiple_choice' ||
+        prompt.response_type === 'single_choice' ||
+        prompt.response_type === 'scale') &&
+        !hideSubmit && (
+          <div className="flex justify-end">
+            <Button size="sm" variant="primary" isDisabled={!value.trim()} onPress={handleSubmit}>
+              Continue
+            </Button>
+          </div>
+        )}
     </div>
   );
 }
 
-// Scale input for scale-type prompts
 function ScaleInput({
   options,
+  promptText,
+  value,
   onValueChange,
 }: {
   options: PromptResponseOption[];
+  promptText: string;
+  value: string;
   onValueChange: (value: string) => void;
 }) {
-  const [selected, setSelected] = useState<number | null>(null);
-
-  // Try to parse numeric range from options
   const values = options
     .map((o) => {
       const num = parseInt(o.option_value, 10);
-      return isNaN(num) ? null : num;
+      return Number.isNaN(num) ? null : num;
     })
-    .filter(Boolean) as number[];
+    .filter((n): n is number => n != null);
 
   if (values.length < 2) {
-    // Fallback to option labels
     return (
-      <div className="space-y-2">
+      <RadioGroup
+        value={value || undefined}
+        onChange={onValueChange}
+        aria-label={promptText}
+        className="flex flex-col gap-2"
+      >
         {options.map((opt) => (
-          <button
-            key={opt.id}
-            onClick={() => {
-              setSelected(parseInt(opt.option_value, 10) ?? 0);
-              onValueChange(opt.option_value);
-            }}
-            className={`w-full text-left px-4 py-3 rounded-lg border transition-colors text-sm ${
-              selected === (parseInt(opt.option_value, 10) ?? -1)
-                ? 'border-primary bg-primary/10'
-                : 'border-border hover:bg-muted/5 dark:border-gray-700'
-            }`}
-          >
-            {opt.option_label}
-          </button>
+          <Radio key={opt.id} value={opt.option_value}>
+            <Radio.Content>
+              <Radio.Control>
+                <Radio.Indicator />
+              </Radio.Control>
+              {opt.option_label}
+            </Radio.Content>
+          </Radio>
         ))}
-      </div>
+      </RadioGroup>
     );
   }
 
   const min = Math.min(...values);
   const max = Math.max(...values);
+  const parsed = parseInt(value, 10);
+  const current = Number.isNaN(parsed) ? min : parsed;
+
+  useEffect(() => {
+    if (!value) onValueChange(String(min));
+  }, [min, onValueChange, value]);
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-4">
-        <span className="text-sm text-muted w-6 text-center">{min}</span>
-        <input
-          type="range"
-          min={min}
-          max={max}
-          value={selected ?? min}
-          onChange={(e) => {
-            const val = Number(e.target.value);
-            setSelected(val);
-            onValueChange(String(val));
-          }}
-          className="flex-1 accent-primary"
-        />
-        <span className="text-sm text-muted w-6 text-center">{max}</span>
-        <span className="text-lg font-semibold text-foreground w-8 text-center">
-          {selected ?? '—'}
-        </span>
+    <Slider
+      minValue={min}
+      maxValue={max}
+      step={1}
+      value={current}
+      onChange={(next) => {
+        const resolved = Array.isArray(next) ? (next[0] ?? current) : next;
+        onValueChange(String(resolved));
+      }}
+      aria-label={promptText}
+    >
+      <div className="flex items-center justify-between">
+        <Label>
+          {min} – {max}
+        </Label>
+        <Slider.Output />
       </div>
-    </div>
+      <Slider.Track>
+        <Slider.Fill />
+        <Slider.Thumb />
+      </Slider.Track>
+    </Slider>
   );
 }

@@ -1,15 +1,20 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import Link from 'next/link';
+import { Button, Typography, buttonVariants } from '@heroui/react';
 import PromptCard from '@/components/conversation/PromptCard';
-import DimensionProgress from '@/components/conversation/DimensionProgress';
-import ResponseHistory from '@/components/conversation/ResponseHistory';
+import FocusSessionLayout from '@/components/layout/FocusSessionLayout';
+import { FocusContentSkeleton } from '@/components/layout/PageSkeleton';
+import ProgressNav, { activeProgressIndex, linearProgressStatus } from '@/components/session/ProgressNav';
+import { SessionOverview, SessionRecapFooter } from '@/components/session/SessionRecap';
 import type {
   ConversationState,
   ConversationResponse,
   Prompt,
   PromptResponseOption,
   DimensionCompletionState,
+  SessionRecapData,
 } from '@/lib/types/conversation';
 
 interface ConversationViewProps {
@@ -23,23 +28,41 @@ export default function ConversationView({
   onClose,
   onComplete,
 }: ConversationViewProps) {
-  // State
   const [currentPrompt, setCurrentPrompt] = useState<Prompt | null>(null);
   const [responseOptions, setResponseOptions] = useState<PromptResponseOption[]>([]);
   const [responses, setResponses] = useState<ConversationResponse[]>([]);
   const [completedDimensions, setCompletedDimensions] = useState<DimensionCompletionState[]>([]);
-  const [allPrompts, setAllPrompts] = useState<Prompt[]>([]);
   const [isComplete, setIsComplete] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [modelName, setModelName] = useState('Guided workbook');
+  const [modelDescription, setModelDescription] = useState<string | null>(null);
+  const [showOverview, setShowOverview] = useState(true);
+  const [draft, setDraft] = useState('');
+  const [goingBack, setGoingBack] = useState(false);
+  const [recap, setRecap] = useState<SessionRecapData>({ entries: [] });
+  const [isRevisit, setIsRevisit] = useState(false);
 
-  // Track if we've already called onComplete to avoid double-firing
   const completedRef = useRef(false);
-  // Track whether the conversation was already-complete on initial load (i.e., "View" mode)
   const wasAlreadyCompleteRef = useRef(false);
 
-  // Fetch conversation state
+  const applyState = (state: ConversationState) => {
+    setCurrentPrompt(state.currentPrompt);
+    setResponseOptions(state.responseOptions);
+    setResponses(state.responses);
+    setCompletedDimensions(state.completedDimensions);
+    setIsComplete(state.isComplete);
+    if (state.knowledge_model_name) setModelName(state.knowledge_model_name);
+    if (state.knowledge_model_description !== undefined) {
+      setModelDescription(state.knowledge_model_description);
+    }
+    if (state.recap) setRecap(state.recap);
+    if (state.responses.length > 0 || state.isComplete) {
+      setShowOverview(false);
+    }
+  };
+
   const fetchState = useCallback(async () => {
     try {
       const res = await fetch(`/api/conversation/${conversationId}/state`);
@@ -49,19 +72,8 @@ export default function ConversationView({
       }
       const data = await res.json();
       const state: ConversationState = data.state;
-
-      setCurrentPrompt(state.currentPrompt);
-      setResponseOptions(state.responseOptions);
-      setResponses(state.responses);
-      setCompletedDimensions(state.completedDimensions);
-      setIsComplete(state.isComplete);
+      applyState(state);
       setError(null);
-
-      // Store all prompts from the knowledge model for response history display
-      if (state.prompts) {
-        setAllPrompts(state.prompts);
-      }
-
       return state.isComplete;
     } catch (err) {
       console.error('[ConversationView] Failed to fetch state:', err);
@@ -72,30 +84,25 @@ export default function ConversationView({
     }
   }, [conversationId]);
 
-  // Initial load
   useEffect(() => {
     fetchState().then((wasComplete) => {
-      // If already complete on load, mark it so onComplete doesn't fire
-      // (this happens when the user clicks "View" on a completed conversation)
       if (wasComplete) {
         wasAlreadyCompleteRef.current = true;
+        setIsRevisit(true);
       }
     });
   }, [fetchState]);
 
-  // Handle completion callback — only fire if we transitioned to complete (not already done)
   useEffect(() => {
     if (isComplete && !completedRef.current && !wasAlreadyCompleteRef.current) {
       completedRef.current = true;
       onComplete?.();
     }
-    // Reset flag when conversation changes
     if (!isComplete) {
       wasAlreadyCompleteRef.current = false;
     }
   }, [isComplete, onComplete]);
 
-  // Submit a response
   const handleResponse = useCallback(
     async (value: string) => {
       if (!currentPrompt || submitting) return;
@@ -119,16 +126,8 @@ export default function ConversationView({
         }
 
         const data = await res.json();
-        const state: ConversationState = data.state;
-
-        setCurrentPrompt(state.currentPrompt);
-        setResponseOptions(state.responseOptions);
-        setResponses(state.responses);
-        setCompletedDimensions(state.completedDimensions);
-        setIsComplete(state.isComplete);
-        if (state.prompts) {
-          setAllPrompts(state.prompts);
-        }
+        applyState(data.state);
+        setDraft('');
       } catch (err) {
         console.error('[ConversationView] Failed to submit response:', err);
         setError(err instanceof Error ? err.message : 'Unknown error');
@@ -139,7 +138,37 @@ export default function ConversationView({
     [conversationId, currentPrompt, submitting]
   );
 
-  // Handle manual completion
+  const handleGoBack = useCallback(async () => {
+    if (goingBack) return;
+    if (responses.length === 0) {
+      setShowOverview(true);
+      return;
+    }
+
+    setGoingBack(true);
+    setError(null);
+
+    try {
+      const res = await fetch(`/api/conversation/${conversationId}/back`, {
+        method: 'POST',
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error ?? 'Failed to go back');
+      }
+
+      const data = await res.json();
+      applyState(data.state);
+      setDraft('');
+    } catch (err) {
+      console.error('[ConversationView] Failed to go back:', err);
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setGoingBack(false);
+    }
+  }, [conversationId, goingBack, responses.length]);
+
   const handleComplete = useCallback(async () => {
     try {
       const res = await fetch(`/api/conversation/${conversationId}/complete`, {
@@ -151,141 +180,185 @@ export default function ConversationView({
         throw new Error(err.error ?? 'Failed to complete conversation');
       }
 
-      setIsComplete(true);
-      setCurrentPrompt(null);
-      setResponseOptions([]);
+      await fetchState();
     } catch (err) {
       console.error('[ConversationView] Failed to complete:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
     }
-  }, [conversationId]);
+  }, [conversationId, fetchState]);
 
-  // ---------------------------------------------------------------------------
-  // Render: Loading
-  // ---------------------------------------------------------------------------
+  const canSubmitDraft = draft.trim().length > 0;
+  const activeDimensionId = currentPrompt?.evidence_dimension_id ?? null;
+  const activeDimensionIndex = activeProgressIndex(
+    completedDimensions.map((dim) => ({ id: dim.dimension_id, is_complete: dim.is_complete })),
+    activeDimensionId
+  );
+  const progress = (
+    <ProgressNav
+      items={completedDimensions.map((dim, index) => ({
+        id: dim.dimension_id,
+        label: dim.dimension_name,
+        status: isComplete
+          ? dim.is_complete
+            ? 'complete'
+            : 'skipped'
+          : linearProgressStatus(index, activeDimensionIndex, dim.is_complete),
+      }))}
+    />
+  );
+
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 gap-4">
-        <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
-        <p className="text-sm text-muted dark:text-gray-400">Loading conversation...</p>
-      </div>
+      <FocusSessionLayout progress={progress}>
+        <FocusContentSkeleton />
+      </FocusSessionLayout>
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // Render: Completed
-  // ---------------------------------------------------------------------------
-  if (isComplete) {
+  if (error && responses.length === 0 && !currentPrompt) {
     return (
-      <div className="flex flex-col items-center text-center py-8 gap-6">
-        {/* Checkmark icon */}
-        <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center">
-          <svg
-            className="w-8 h-8 text-green-500"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-          </svg>
-        </div>
-
-        <div>
-          <h3 className="text-xl font-semibold text-foreground dark:text-white mb-2">
-            Conversation Complete
-          </h3>
-          <p className="text-sm text-muted dark:text-gray-400">
-            All dimensions have been assessed. Your responses have been recorded.
-          </p>
-        </div>
-
-        {/* Dimension summary */}
-        <DimensionProgress dimensions={completedDimensions} />
-
-        {/* Response history */}
-        {responses.length > 0 && (
-          <div className="w-full">
-            <ResponseHistory responses={responses} prompts={allPrompts} />
-          </div>
-        )}
-
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          className="px-6 py-3 bg-primary text-white rounded-lg font-medium text-sm hover:bg-primary-dark transition-colors"
-        >
-          Done
-        </button>
-      </div>
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Render: Active conversation
-  // ---------------------------------------------------------------------------
-  return (
-    <div className="flex flex-col gap-6">
-      {/* Error banner */}
-      {error && (
-        <div className="px-4 py-3 bg-red-500/10 border border-red-500/30 rounded-lg text-sm text-red-600 dark:text-red-400">
-          {error}
-          <button onClick={fetchState} className="ml-2 underline hover:no-underline">
+      <FocusSessionLayout progress={progress}>
+        <Typography type="body-sm" className="text-danger">
+          {error}{' '}
+          <button type="button" onClick={() => fetchState()} className="underline">
             Retry
           </button>
-        </div>
-      )}
+        </Typography>
+      </FocusSessionLayout>
+    );
+  }
 
-      {/* Dimension progress */}
-      <DimensionProgress
-        dimensions={completedDimensions}
-        currentDimensionId={currentPrompt?.evidence_dimension_id ?? null}
-      />
+  if (isComplete) {
+    const recapTitle = modelName.replace(/\s+assessment$/i, '').trim() || modelName;
+    return (
+      <FocusSessionLayout
+        progress={progress}
+        title={recapTitle}
+        subtitle={
+          isRevisit
+            ? 'Your saved answers from this workbook.'
+            : 'Here is what you wrote. Save it to your diary to revisit later.'
+        }
+        actions={
+          <Link href="/home" className={buttonVariants({ size: 'sm', variant: 'primary' })}>
+            Home
+          </Link>
+        }
+      >
+        <SessionRecapFooter
+          sessionTitle={recapTitle}
+          recap={recap}
+          sourceKind="session"
+          sourceId={conversationId}
+          readOnlyNote={
+            isRevisit
+              ? 'Read-only recap — you can review answers here without restarting the session.'
+              : undefined
+          }
+        />
+      </FocusSessionLayout>
+    );
+  }
 
-      {/* Current prompt */}
-      {currentPrompt && (
+  if (showOverview) {
+    return (
+      <FocusSessionLayout
+        progress={progress}
+        title={modelName}
+        subtitle={modelDescription ?? undefined}
+        actions={
+          <>
+            {onClose ? (
+              <Button size="sm" variant="outline" onPress={onClose}>
+                Take a break
+              </Button>
+            ) : null}
+            <Button size="sm" variant="primary" onPress={() => setShowOverview(false)}>
+              Begin
+            </Button>
+          </>
+        }
+      >
+        <SessionOverview
+          steps={completedDimensions.map((dim, index) => ({
+            id: dim.dimension_id,
+            index: String(index + 1),
+            label: dim.dimension_name,
+            description: dim.dimension_description,
+          }))}
+        />
+      </FocusSessionLayout>
+    );
+  }
+
+  return (
+    <FocusSessionLayout
+      progress={progress}
+      leadingActions={
+        <Button
+          size="sm"
+          variant="tertiary"
+          isDisabled={submitting || goingBack}
+          onPress={handleGoBack}
+        >
+          Back
+        </Button>
+      }
+      actions={
         <>
-          <div className="border-t border-border pt-4 dark:border-gray-700">
-            <PromptCard
-              key={currentPrompt.id} // Force re-mount on prompt change to reset state
-              prompt={currentPrompt}
-              responseOptions={responseOptions}
-              onResponse={handleResponse}
-            />
-          </div>
-
-          {/* Response history */}
-          {responses.length > 0 && <ResponseHistory responses={responses} prompts={allPrompts} />}
+          {onClose ? (
+            <Button
+              size="sm"
+              variant="outline"
+              isDisabled={submitting || goingBack}
+              onPress={onClose}
+            >
+              Take a break
+            </Button>
+          ) : null}
+          <Button
+            size="sm"
+            variant="primary"
+            isPending={submitting}
+            isDisabled={submitting || goingBack || (currentPrompt ? !canSubmitDraft : false)}
+            onPress={() => {
+              if (currentPrompt) {
+                void handleResponse(draft);
+                return;
+              }
+              void handleComplete();
+            }}
+          >
+            Continue
+          </Button>
         </>
-      )}
-
-      {/* No prompt but not complete — edge case, offer manual completion */}
-      {!currentPrompt && !isComplete && (
-        <div className="text-center py-8">
-          <p className="text-sm text-muted dark:text-gray-400 mb-4">
-            No more prompts to display. You can complete the conversation now.
-          </p>
-          <button
-            onClick={handleComplete}
-            className="px-6 py-3 bg-primary text-white rounded-lg font-medium text-sm hover:bg-primary-dark transition-colors"
-          >
-            Complete Conversation
+      }
+    >
+      {error ? (
+        <Typography type="body-sm" className="text-danger">
+          {error}{' '}
+          <button type="button" onClick={() => fetchState()} className="underline">
+            Retry
           </button>
-        </div>
-      )}
+        </Typography>
+      ) : null}
 
-      {/* Close / pause button */}
-      {onClose && (
-        <div className="border-t border-border pt-4 dark:border-gray-700">
-          <button
-            onClick={onClose}
-            disabled={submitting}
-            className="w-full px-4 py-2 border border-border rounded-lg text-sm text-muted hover:text-foreground hover:bg-muted/5 transition-colors disabled:opacity-50 dark:border-gray-700 dark:hover:bg-navy-light/10"
-          >
-            Pause & Exit
-          </button>
-        </div>
+      {currentPrompt ? (
+        <>
+          <PromptCard
+            key={currentPrompt.id}
+            prompt={currentPrompt}
+            responseOptions={responseOptions}
+            onResponse={handleResponse}
+            hideSubmit
+            onDraftChange={setDraft}
+          />
+        </>
+      ) : (
+        <Typography type="body-sm" color="muted">
+          No more prompts to display. You can finish this workbook when you are ready.
+        </Typography>
       )}
-    </div>
+    </FocusSessionLayout>
   );
 }
