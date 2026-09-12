@@ -46,7 +46,11 @@ export async function GET(
       return NextResponse.json({ error: 'Failed to load conversation state' }, { status: 500 });
     }
 
-    return NextResponse.json({ state });
+    return NextResponse.json({
+      state,
+      knowledge_model_name: state.knowledge_model_name,
+      knowledge_model_description: state.knowledge_model_description,
+    });
   } catch (err) {
     console.error('[api/conversation/state] GET error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

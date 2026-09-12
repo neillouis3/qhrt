@@ -20,6 +20,9 @@ export async function GET(request: NextRequest) {
       .order('name', { ascending: true });
 
     if (error) {
+      if (error.code === 'PGRST205' || error.code === '42P01') {
+        return NextResponse.json({ knowledge_models: [] });
+      }
       return apiError(error, '[api/conversation/models] GET');
     }
 
