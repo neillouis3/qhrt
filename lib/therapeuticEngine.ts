@@ -294,7 +294,13 @@ export async function getEngineSessionState(
     ]);
 
     const phases = (phasesRes.data || []) as TherapeuticPhase[];
-    const currentPhase = phases.find((p) => p.status === 'active') || null;
+    const activePhase = phases.find((p) => p.status === 'active') ?? null;
+    const currentPhase =
+      engine.status === 'completed'
+        ? activePhase
+        : (activePhase ??
+          phases.find((p) => p.phase_order === engine.current_phase_order) ??
+          null);
     const observations = (obsRes.data || []) as PhaseObservation[];
 
     // Check if transition to next phase is allowed
@@ -420,6 +426,94 @@ export async function transitionToNextPhase(
   } catch (err) {
     console.error('[therapeuticEngine] transitionToNextPhase error:', err);
     return { success: false, message: 'An error occurred during phase transition.' };
+  }
+}
+
+// ----------------------------------------------------------------------------
+// Return to Previous Phase
+// Reactivates the previous phase so the client can revisit it.
+// ----------------------------------------------------------------------------
+export async function transitionToPreviousPhase(
+  engineId: string,
+  client?: SupabaseClient
+): Promise<{ success: boolean; message: string; newState?: EngineSessionState }> {
+  const db = client ?? supabaseServer;
+  try {
+    const state = await getEngineSessionState(engineId, db);
+    if (!state) return { success: false, message: 'Engine not found.' };
+
+    const currentOrder = state.engine.current_phase_order;
+    if (currentOrder <= 1) {
+      return { success: false, message: 'Already at the first step.' };
+    }
+
+    let prevOrder = currentOrder - 1;
+    while (prevOrder >= 1) {
+      const phase = state.allPhases.find((p) => p.phase_order === prevOrder);
+      if (phase && phase.status !== 'skipped_by_rule') break;
+      prevOrder -= 1;
+    }
+
+    if (prevOrder < 1) {
+      return { success: false, message: 'No previous step to return to.' };
+    }
+
+    const { error: step1Error } = await db
+      .from('therapeutic_phases')
+      .update({ status: 'not_started', started_at: null, completed_at: null })
+      .eq('engine_id', engineId)
+      .eq('phase_order', currentOrder);
+
+    if (step1Error) {
+      console.error('[therapeuticEngine] go-back step 1 failed:', step1Error);
+      return { success: false, message: 'Failed to leave the current step.' };
+    }
+
+    const { error: step2Error } = await db
+      .from('therapeutic_phases')
+      .update({ status: 'active', completed_at: null, started_at: new Date().toISOString() })
+      .eq('engine_id', engineId)
+      .eq('phase_order', prevOrder);
+
+    if (step2Error) {
+      await db
+        .from('therapeutic_phases')
+        .update({ status: 'active' })
+        .eq('engine_id', engineId)
+        .eq('phase_order', currentOrder);
+      console.error('[therapeuticEngine] go-back step 2 failed:', step2Error);
+      return { success: false, message: 'Failed to reopen the previous step.' };
+    }
+
+    const { error: step3Error } = await db
+      .from('therapeutic_engines')
+      .update({ current_phase_order: prevOrder, status: 'running' })
+      .eq('id', engineId);
+
+    if (step3Error) {
+      await db
+        .from('therapeutic_phases')
+        .update({ status: 'active' })
+        .eq('engine_id', engineId)
+        .eq('phase_order', currentOrder);
+      await db
+        .from('therapeutic_phases')
+        .update({ status: 'completed' })
+        .eq('engine_id', engineId)
+        .eq('phase_order', prevOrder);
+      console.error('[therapeuticEngine] go-back step 3 failed:', step3Error);
+      return { success: false, message: 'Failed to update engine state.' };
+    }
+
+    const newState = await getEngineSessionState(engineId, db);
+    return {
+      success: true,
+      message: `Returned to Phase ${prevOrder}.`,
+      newState: newState ?? undefined,
+    };
+  } catch (err) {
+    console.error('[therapeuticEngine] transitionToPreviousPhase error:', err);
+    return { success: false, message: 'An error occurred returning to the previous step.' };
   }
 }
 
