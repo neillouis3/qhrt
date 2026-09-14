@@ -6,7 +6,9 @@
 
 import { supabaseServer } from '@/lib/supabaseClient';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { buildSessionRecap } from '@/lib/sessionRecap';
 import type {
+  KnowledgeModel,
   KnowledgeModelFull,
   Prompt,
   BranchRule,
@@ -30,13 +32,17 @@ export async function loadKnowledgeModel(
   client?: SupabaseClient
 ): Promise<KnowledgeModelFull | null> {
   const db = client ?? supabaseServer;
-  // Fetch dimensions
-  const { data: dimensions, error: dimError } = await db
-    .from('evidence_dimensions')
-    .select('*')
-    .eq('knowledge_model_id', knowledgeModelId)
-    .eq('is_active', true)
-    .order('priority', { ascending: true });
+  const [modelResult, dimResult] = await Promise.all([
+    db.from('knowledge_models').select('*').eq('id', knowledgeModelId).single(),
+    db
+      .from('evidence_dimensions')
+      .select('*')
+      .eq('knowledge_model_id', knowledgeModelId)
+      .eq('is_active', true)
+      .order('priority', { ascending: true }),
+  ]);
+
+  const { data: dimensions, error: dimError } = dimResult;
 
   if (dimError || !dimensions) {
     console.error('[conversationEngine] Failed to load dimensions:', dimError);
@@ -134,7 +140,7 @@ export async function loadKnowledgeModel(
   const evidenceFields: EvidenceField[] = fieldsResult.data ?? [];
 
   return {
-    model: null, // Not loaded here; caller can fetch separately
+    model: (modelResult.data as KnowledgeModel | null) ?? null,
     dimensions,
     prompts,
     responseOptions,
@@ -288,6 +294,54 @@ export async function processResponse(
 }
 
 // ----------------------------------------------------------------------------
+// Go back to the previous prompt by removing the latest response
+// ----------------------------------------------------------------------------
+export async function goBackToPreviousPrompt(
+  conversationId: string,
+  client?: SupabaseClient
+): Promise<ConversationState | null> {
+  const db = client ?? supabaseServer;
+  const km = await loadKnowledgeModelForConversation(conversationId, db);
+  if (!km) return null;
+
+  const { data: lastResponse, error: lastError } = await db
+    .from('conversation_responses')
+    .select('*')
+    .eq('conversation_id', conversationId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (lastError || !lastResponse) {
+    return getConversationState(conversationId, km, db);
+  }
+
+  const previousPromptId = lastResponse.prompt_id as string;
+
+  const { error: deleteError } = await db
+    .from('conversation_responses')
+    .delete()
+    .eq('id', lastResponse.id);
+
+  if (deleteError) {
+    console.error('[conversationEngine] Failed to remove last response:', deleteError);
+    return null;
+  }
+
+  await db
+    .from('conversations')
+    .update({
+      current_prompt_id: previousPromptId,
+      status: 'active',
+      completed_at: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', conversationId);
+
+  return getConversationState(conversationId, km, db);
+}
+
+// ----------------------------------------------------------------------------
 // Get the full conversation state (for resume or current view)
 // ----------------------------------------------------------------------------
 export async function getConversationState(
@@ -374,6 +428,13 @@ export async function getConversationState(
     completedDimensions,
     isComplete: conversation.status === 'completed',
     prompts: km.prompts, // Include all prompts for response history display
+    recap: buildSessionRecap({
+      prompts: km.prompts,
+      responses: responses ?? [],
+      optionsByPromptId: km.responseOptions,
+    }),
+    knowledge_model_name: km.model?.name ?? 'Assessment',
+    knowledge_model_description: km.model?.description ?? null,
   };
 }
 
@@ -594,6 +655,7 @@ function evaluateDimensionCompletion(
     return {
       dimension_id: dim.id,
       dimension_name: dim.name,
+      dimension_description: dim.description ?? null,
       is_complete: respondedKeys.length === requiredKeys.length && requiredKeys.length > 0,
       responded_prompt_keys: respondedKeys,
       required_prompt_keys: requiredKeys,

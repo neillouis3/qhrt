@@ -175,9 +175,23 @@ export interface KnowledgeModelFull {
 export interface DimensionCompletionState {
   dimension_id: string;
   dimension_name: string;
+  dimension_description: string | null;
   is_complete: boolean;
   responded_prompt_keys: string[];
   required_prompt_keys: string[];
+}
+
+// ----------------------------------------------------------------------------
+// Session recap (shown when a conversation is complete)
+// ----------------------------------------------------------------------------
+export interface SessionRecapEntry {
+  id: string;
+  prompt: string;
+  answer: string;
+}
+
+export interface SessionRecapData {
+  entries: SessionRecapEntry[];
 }
 
 // ----------------------------------------------------------------------------
@@ -191,6 +205,9 @@ export interface ConversationState {
   completedDimensions: DimensionCompletionState[];
   isComplete: boolean;
   prompts?: Prompt[]; // All prompts in the knowledge model (for response history)
+  recap: SessionRecapData;
+  knowledge_model_name: string;
+  knowledge_model_description: string | null;
 }
 
 // ----------------------------------------------------------------------------
