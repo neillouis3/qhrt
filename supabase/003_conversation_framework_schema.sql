@@ -25,14 +25,14 @@ CREATE TABLE IF NOT EXISTS knowledge_models (
 
 ALTER TABLE knowledge_models ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY "Admin full access on knowledge_models" ON knowledge_models;
+DROP POLICY IF EXISTS "Admin full access on knowledge_models" ON knowledge_models;
 CREATE POLICY "Admin full access on knowledge_models"
   ON knowledge_models FOR ALL
   TO authenticated
   USING (EXISTS (SELECT 1 FROM user_roles WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'))
   WITH CHECK (EXISTS (SELECT 1 FROM user_roles WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'));
 
-DROP POLICY "Authenticated can view active knowledge_models" ON knowledge_models;
+DROP POLICY IF EXISTS "Authenticated can view active knowledge_models" ON knowledge_models;
 CREATE POLICY "Authenticated can view active knowledge_models"
   ON knowledge_models FOR SELECT
   TO authenticated
@@ -56,14 +56,14 @@ CREATE TABLE IF NOT EXISTS evidence_dimensions (
 
 ALTER TABLE evidence_dimensions ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY "Admin full access on evidence_dimensions" ON evidence_dimensions;
+DROP POLICY IF EXISTS "Admin full access on evidence_dimensions" ON evidence_dimensions;
 CREATE POLICY "Admin full access on evidence_dimensions"
   ON evidence_dimensions FOR ALL
   TO authenticated
   USING (EXISTS (SELECT 1 FROM user_roles WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'))
   WITH CHECK (EXISTS (SELECT 1 FROM user_roles WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'));
 
-DROP POLICY "Authenticated can view active evidence_dimensions" ON evidence_dimensions;
+DROP POLICY IF EXISTS "Authenticated can view active evidence_dimensions" ON evidence_dimensions;
 CREATE POLICY "Authenticated can view active evidence_dimensions"
   ON evidence_dimensions FOR SELECT
   TO authenticated
@@ -89,14 +89,14 @@ CREATE TABLE IF NOT EXISTS prompts (
 
 ALTER TABLE prompts ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY "Admin full access on prompts" ON prompts;
+DROP POLICY IF EXISTS "Admin full access on prompts" ON prompts;
 CREATE POLICY "Admin full access on prompts"
   ON prompts FOR ALL
   TO authenticated
   USING (EXISTS (SELECT 1 FROM user_roles WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'))
   WITH CHECK (EXISTS (SELECT 1 FROM user_roles WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'));
 
-DROP POLICY "Authenticated can view active prompts" ON prompts;
+DROP POLICY IF EXISTS "Authenticated can view active prompts" ON prompts;
 CREATE POLICY "Authenticated can view active prompts"
   ON prompts FOR SELECT
   TO authenticated
@@ -118,14 +118,14 @@ CREATE TABLE IF NOT EXISTS prompt_response_options (
 
 ALTER TABLE prompt_response_options ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY "Admin full access on prompt_response_options" ON prompt_response_options;
+DROP POLICY IF EXISTS "Admin full access on prompt_response_options" ON prompt_response_options;
 CREATE POLICY "Admin full access on prompt_response_options"
   ON prompt_response_options FOR ALL
   TO authenticated
   USING (EXISTS (SELECT 1 FROM user_roles WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'))
   WITH CHECK (EXISTS (SELECT 1 FROM user_roles WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'));
 
-DROP POLICY "Authenticated can view prompt_response_options" ON prompt_response_options;
+DROP POLICY IF EXISTS "Authenticated can view prompt_response_options" ON prompt_response_options;
 CREATE POLICY "Authenticated can view prompt_response_options"
   ON prompt_response_options FOR SELECT
   TO authenticated
@@ -148,14 +148,14 @@ CREATE TABLE IF NOT EXISTS branch_rules (
 
 ALTER TABLE branch_rules ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY "Admin full access on branch_rules" ON branch_rules;
+DROP POLICY IF EXISTS "Admin full access on branch_rules" ON branch_rules;
 CREATE POLICY "Admin full access on branch_rules"
   ON branch_rules FOR ALL
   TO authenticated
   USING (EXISTS (SELECT 1 FROM user_roles WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'))
   WITH CHECK (EXISTS (SELECT 1 FROM user_roles WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'));
 
-DROP POLICY "Authenticated can view active branch_rules" ON branch_rules;
+DROP POLICY IF EXISTS "Authenticated can view active branch_rules" ON branch_rules;
 CREATE POLICY "Authenticated can view active branch_rules"
   ON branch_rules FOR SELECT
   TO authenticated
@@ -176,14 +176,14 @@ CREATE TABLE IF NOT EXISTS completion_rules (
 
 ALTER TABLE completion_rules ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY "Admin full access on completion_rules" ON completion_rules;
+DROP POLICY IF EXISTS "Admin full access on completion_rules" ON completion_rules;
 CREATE POLICY "Admin full access on completion_rules"
   ON completion_rules FOR ALL
   TO authenticated
   USING (EXISTS (SELECT 1 FROM user_roles WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'))
   WITH CHECK (EXISTS (SELECT 1 FROM user_roles WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'));
 
-DROP POLICY "Authenticated can view active completion_rules" ON completion_rules;
+DROP POLICY IF EXISTS "Authenticated can view active completion_rules" ON completion_rules;
 CREATE POLICY "Authenticated can view active completion_rules"
   ON completion_rules FOR SELECT
   TO authenticated
@@ -208,14 +208,14 @@ ALTER TABLE evidence_fields ALTER COLUMN evidence_dimension_id DROP NOT NULL;
 
 ALTER TABLE evidence_fields ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY "Admin full access on evidence_fields" ON evidence_fields;
+DROP POLICY IF EXISTS "Admin full access on evidence_fields" ON evidence_fields;
 CREATE POLICY "Admin full access on evidence_fields"
   ON evidence_fields FOR ALL
   TO authenticated
   USING (EXISTS (SELECT 1 FROM user_roles WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'))
   WITH CHECK (EXISTS (SELECT 1 FROM user_roles WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'));
 
-DROP POLICY "Authenticated can view evidence_fields" ON evidence_fields;
+DROP POLICY IF EXISTS "Authenticated can view evidence_fields" ON evidence_fields;
 CREATE POLICY "Authenticated can view evidence_fields"
   ON evidence_fields FOR SELECT
   TO authenticated
@@ -239,14 +239,14 @@ CREATE TABLE IF NOT EXISTS conversations (
 
 ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY "Admin full access on conversations" ON conversations;
+DROP POLICY IF EXISTS "Admin full access on conversations" ON conversations;
 CREATE POLICY "Admin full access on conversations"
   ON conversations FOR ALL
   TO authenticated
   USING (EXISTS (SELECT 1 FROM user_roles WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'))
   WITH CHECK (EXISTS (SELECT 1 FROM user_roles WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'));
 
-DROP POLICY "Users can access own conversations" ON conversations;
+DROP POLICY IF EXISTS "Users can access own conversations" ON conversations;
 CREATE POLICY "Users can access own conversations"
   ON conversations FOR ALL
   TO authenticated
@@ -268,14 +268,14 @@ CREATE TABLE IF NOT EXISTS conversation_responses (
 
 ALTER TABLE conversation_responses ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY "Admin full access on conversation_responses" ON conversation_responses;
+DROP POLICY IF EXISTS "Admin full access on conversation_responses" ON conversation_responses;
 CREATE POLICY "Admin full access on conversation_responses"
   ON conversation_responses FOR ALL
   TO authenticated
   USING (EXISTS (SELECT 1 FROM user_roles WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'))
   WITH CHECK (EXISTS (SELECT 1 FROM user_roles WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'));
 
-DROP POLICY "Users can access responses from own conversations" ON conversation_responses;
+DROP POLICY IF EXISTS "Users can access responses from own conversations" ON conversation_responses;
 CREATE POLICY "Users can access responses from own conversations"
   ON conversation_responses FOR ALL
   TO authenticated
@@ -299,14 +299,14 @@ CREATE TABLE IF NOT EXISTS evidence_records (
 
 ALTER TABLE evidence_records ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY "Admin full access on evidence_records" ON evidence_records;
+DROP POLICY IF EXISTS "Admin full access on evidence_records" ON evidence_records;
 CREATE POLICY "Admin full access on evidence_records"
   ON evidence_records FOR ALL
   TO authenticated
   USING (EXISTS (SELECT 1 FROM user_roles WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'))
   WITH CHECK (EXISTS (SELECT 1 FROM user_roles WHERE user_roles.user_id = auth.uid() AND user_roles.role = 'admin'));
 
-DROP POLICY "Users can access evidence from own conversations" ON evidence_records;
+DROP POLICY IF EXISTS "Users can access evidence from own conversations" ON evidence_records;
 CREATE POLICY "Users can access evidence from own conversations"
   ON evidence_records FOR ALL
   TO authenticated
