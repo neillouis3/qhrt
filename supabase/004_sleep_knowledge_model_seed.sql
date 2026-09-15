@@ -19,7 +19,7 @@ BEGIN
   -- 1. Create the Sleep Knowledge Model
   -- ============================================================================
   INSERT INTO knowledge_models (name, description, version, is_active)
-  VALUES ('Sleep Assessment', 'Comprehensive sleep assessment covering initiation, maintenance, termination, quality, emotional state, physiological activity, and sleep position.', '1.0', true)
+  VALUES ('Sleep Assessment', 'How falling asleep, staying asleep, and waking up have been going — including restlessness, dreams, and how your body feels at night.', '1.0', true)
   RETURNING id INTO v_km_id;
 
   IF v_km_id IS NULL THEN
