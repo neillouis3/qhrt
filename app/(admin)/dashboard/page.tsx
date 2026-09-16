@@ -1,438 +1,819 @@
 /**
- * Admin Dashboard
- * Overview stats, recent users, and quick actions.
- * Filtering/sorting/pagination for the full user list lives on /users.
+ * Admin dashboard — signups, sessions, ratings, and stress impact.
  */
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import type { ReactNode } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useSession, clearSessionCache } from '@/hooks/useSession';
+import { createPortal } from 'react-dom';
+import { Button, Typography, buttonVariants } from '@heroui/react';
+import AppCard from '@/components/ui/AppCard';
+import { PageHeader } from '@/components/layout/UserPageShell';
+import { DashboardBodySkeleton } from '@/components/layout/PageSkeleton';
+import UserPageShell from '@/components/layout/UserPageShell';
+import ErrorState from '@/components/layout/ErrorState';
+import { ContentWizard } from '@/components/admin/content/ContentWizard';
+import { Toast } from '@/components/admin/content/shared/Toast';
 
-interface AdminStats {
+const ADMIN_QUICK_LINKS = [
+  { name: 'Users', href: '/users' },
+  { name: 'Content', href: '/content' },
+  { name: 'Analytics', href: '/analytics' },
+] as const;
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+interface AnalyticsData {
+  // Overview
   totalUsers: number;
+  totalSessions: number;
   intakeCompleted: number;
-  sessionsCompleted: number;
+  activeUsers7d: number;
+  activeUsers30d: number;
+
+  // Trends (last 30 days)
+  signupsByDay: Array<{ date: string; count: number }>;
+  sessionsByDay: Array<{ date: string; count: number }>;
+  moodByDay: Array<{ date: string; avg_mood: number | null }> | null;
+
+  // Ratings & feedback
+  ratingDistribution: {
+    distribution: Record<number, number>;
+    total: number;
+    avgRating: number;
+  } | null;
+
+  // Stress metrics
+  stressReduction: {
+    avgBefore: number;
+    avgAfter: number;
+    reductionPercent: number;
+    userCount: number;
+  } | null;
 }
 
-interface RecentUser {
-  id: string;
-  email: string;
-  role: string;
-  intake_completed: boolean;
-  sessions_completed: number;
-  created_at: string;
+// ---------------------------------------------------------------------------
+// Tooltip Portal Component
+// ---------------------------------------------------------------------------
+
+interface TooltipPosition {
+  x: number;
+  y: number;
 }
 
-export default function AdminDashboard() {
-  // Use shared session hook - no redundant /api/auth/session fetch
-  const { session } = useSession();
-  const router = useRouter();
-  const [stats, setStats] = useState<AdminStats>({
-    totalUsers: 0,
-    intakeCompleted: 0,
-    sessionsCompleted: 0,
+interface TooltipContent {
+  label: string;
+  value: string | number;
+  date: string;
+}
+
+function ChartTooltip({
+  position,
+  content,
+}: {
+  position: TooltipPosition | null;
+  content: TooltipContent | null;
+}) {
+  if (!position || !content) return null;
+
+  return createPortal(
+    <div
+      className="pointer-events-none fixed z-[9999] rounded-lg bg-default/90 px-3 py-2"
+      style={{
+        left: position.x,
+        top: position.y - 50,
+        transform: 'translateX(-50%)',
+      }}
+    >
+      <p className="text-sm">{content.value} {content.label}</p>
+      <p className="text-xs text-muted">{content.date}</p>
+    </div>,
+    document.body
+  );
+}
+
+function parseDay(date: string): Date {
+  const [year, month, day] = date.slice(0, 10).split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function formatDay(date: string): string {
+  return parseDay(date).toLocaleDateString('en', { month: 'short', day: 'numeric' });
+}
+
+function formatDayLong(date: string): string {
+  return parseDay(date).toLocaleDateString('en', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
   });
-  const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loggingOut, setLoggingOut] = useState(false);
+}
 
-  const handleLogout = async () => {
-    if (loggingOut) return;
-    setLoggingOut(true);
-    try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-    } catch {
-      // Even if the request fails, clear the local cache and redirect.
-    } finally {
-      clearSessionCache();
-      router.push('/auth/login');
-      router.refresh();
-    }
-  };
+function integerTicks(max: number): number[] {
+  const top = Math.max(Math.ceil(max), 1);
+  if (top <= 1) return [1, 0];
+  if (top === 2) return [2, 1, 0];
+  const ticks = [top, Math.round((top * 2) / 3), Math.round(top / 3), 0];
+  return ticks.filter((value, index, all) => all.indexOf(value) === index);
+}
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Fetch admin stats and recent users in parallel (session already handled by useSession)
-        const [statsRes, usersRes] = await Promise.all([
-          fetch('/api/admin/stats'),
-          fetch('/api/admin/users?limit=5'),
-        ]);
+function xTickIndexes(length: number): number[] {
+  if (length <= 7) return Array.from({ length }, (_, i) => i);
+  const ticks = new Set<number>([0, length - 1]);
+  for (let k = 1; k <= 3; k++) {
+    ticks.add(Math.round((k / 4) * (length - 1)));
+  }
+  return [...ticks].sort((a, b) => a - b);
+}
 
-        if (statsRes.ok) {
-          const statsData = await statsRes.json();
-          setStats(statsData);
-        }
+function AxisChart({
+  height,
+  yTicks,
+  yMin = 0,
+  yMax,
+  xLabels,
+  yFormat = (n) => String(n),
+  children,
+}: {
+  height: number;
+  yTicks: number[];
+  yMin?: number;
+  yMax: number;
+  xLabels: Array<{ index: number; date: string; count: number }>;
+  yFormat?: (n: number) => string;
+  children: ReactNode;
+}) {
+  const plotTop = 16;
+  const span = yMax - yMin || 1;
+  const yOf = (value: number) => plotTop + (1 - (value - yMin) / span) * (height - plotTop);
 
-        if (usersRes.ok) {
-          const usersData = await usersRes.json();
-          setRecentUsers(usersData.users ?? []);
-        }
-      } catch (err) {
-        console.error('[AdminDashboard] Error fetching data:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  // Prefer the user's display name from Supabase user_metadata (set at signup
-  // or via profile update); fall back to the local part of the email.
-  const metaName =
-    typeof session?.user?.user_metadata?.full_name === 'string'
-      ? (session.user.user_metadata.full_name as string)
-      : typeof session?.user?.user_metadata?.name === 'string'
-        ? (session.user.user_metadata.name as string)
-        : null;
-  const displayName = metaName || session?.user?.email?.split('@')[0] || 'Admin';
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
-
-  const statCards = [
-    {
-      label: 'Total Users',
-      value: stats.totalUsers,
-      icon: (
-        <svg
-          className="h-6 w-6"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={1.5}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"
-          />
-        </svg>
-      ),
-      color: 'from-primary to-primary-light',
-    },
-    {
-      label: 'Intake Completed',
-      value: `${stats.intakeCompleted}`,
-      icon: (
-        <svg
-          className="h-6 w-6"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={1.5}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
-        </svg>
-      ),
-      color: 'from-accent to-emerald-400',
-    },
-    {
-      label: 'Sessions Completed',
-      value: stats.sessionsCompleted,
-      icon: (
-        <svg
-          className="h-6 w-6"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={1.5}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
-        </svg>
-      ),
-      color: 'from-blue-500 to-indigo-500',
-    },
-  ];
-
-  if (loading) {
-    return (
-      <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-navy">
-        <div className="flex flex-col items-center gap-4 py-32">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="text-muted">Loading dashboard...</p>
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex gap-2">
+        <div className="relative w-8 shrink-0" style={{ height }}>
+          {yTicks.map((tick) => (
+            <span
+              key={tick}
+              className="absolute right-0 -translate-y-1/2 text-[11px] leading-none text-muted"
+              style={{ top: yOf(tick) }}
+            >
+              {yFormat(tick)}
+            </span>
+          ))}
         </div>
+        <div className="relative min-w-0 flex-1" style={{ height }}>
+          {children}
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <div className="w-8 shrink-0" />
+        <div className="relative h-5 min-w-0 flex-1">
+          {xLabels.map(({ index, date, count }) => {
+            const isFirst = index === 0;
+            const isLast = index === count - 1;
+            return (
+              <span
+                key={`${date}-${index}`}
+                className={`absolute top-0 whitespace-nowrap text-[11px] leading-none text-muted ${
+                  isFirst ? '' : isLast ? '-translate-x-full' : '-translate-x-1/2'
+                }`}
+                style={{ left: `${((index + 0.5) / count) * 100}%` }}
+              >
+                {formatDay(date)}
+              </span>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BarChart({
+  data,
+  height = 180,
+  barColor = 'fill-primary',
+  label,
+}: {
+  data: Array<{ date: string; count: number }>;
+  height?: number;
+  barColor?: string;
+  label: string;
+}) {
+  const [tooltip, setTooltip] = useState<{ pos: TooltipPosition; content: TooltipContent } | null>(
+    null
+  );
+  const maxCount = Math.max(...data.map((d) => d.count), 1);
+  const ticks = integerTicks(maxCount);
+  const plotTop = 16;
+  const usable = height - plotTop;
+  const fixedWidth = 600;
+  const slotWidth = fixedWidth / Math.max(data.length, 1);
+  const barWidth = Math.max(slotWidth * 0.55, 3);
+  const barOffset = (slotWidth - barWidth) / 2;
+  const yMax = Math.max(maxCount, ticks[0] ?? 1);
+
+  return (
+    <AxisChart
+      height={height}
+      yTicks={ticks}
+      yMax={yMax}
+      xLabels={xTickIndexes(data.length).map((index) => ({
+        index,
+        date: data[index].date,
+        count: data.length,
+      }))}
+    >
+      <ChartTooltip position={tooltip?.pos ?? null} content={tooltip?.content ?? null} />
+      <svg
+        viewBox={`0 0 ${fixedWidth} ${height}`}
+        className="h-full w-full"
+        preserveAspectRatio="none"
+      >
+        {ticks.map((tick) => {
+          const y = plotTop + (1 - tick / yMax) * usable;
+          return (
+            <line
+              key={tick}
+              x1={0}
+              y1={y}
+              x2={fixedWidth}
+              y2={y}
+              stroke="currentColor"
+              className="text-muted/25"
+              strokeWidth="1"
+              strokeDasharray={tick === 0 ? '0' : '3 3'}
+            />
+          );
+        })}
+        {data.map((d, i) => {
+          const barHeight = (d.count / yMax) * usable;
+          const slotX = i * slotWidth;
+          return (
+            <g key={d.date}>
+              <rect
+                x={slotX + barOffset}
+                y={height - barHeight}
+                width={barWidth}
+                height={Math.max(barHeight, 0)}
+                className={barColor}
+                rx={2}
+                opacity={0.85}
+              />
+              <rect
+                x={slotX}
+                y={0}
+                width={slotWidth}
+                height={height}
+                fill="transparent"
+                onMouseEnter={(e) => {
+                  setTooltip({
+                    pos: { x: e.clientX, y: e.clientY },
+                    content: {
+                      label,
+                      value: d.count,
+                      date: formatDayLong(d.date),
+                    },
+                  });
+                }}
+                onMouseMove={(e) => {
+                  setTooltip((prev) =>
+                    prev ? { ...prev, pos: { x: e.clientX, y: e.clientY } } : null
+                  );
+                }}
+                onMouseLeave={() => setTooltip(null)}
+              />
+            </g>
+          );
+        })}
+      </svg>
+      {data.map((d, i) =>
+        d.count > 0 ? (
+          <span
+            key={`value-${d.date}`}
+            className="pointer-events-none absolute -translate-x-1/2 text-[11px] leading-none text-muted"
+            style={{
+              left: `${((i + 0.5) / data.length) * 100}%`,
+              top: plotTop + (1 - d.count / yMax) * usable - 12,
+            }}
+          >
+            {d.count}
+          </span>
+        ) : null
+      )}
+    </AxisChart>
+  );
+}
+
+function LineChart({
+  data,
+  height = 180,
+  lineColor = 'stroke-primary',
+}: {
+  data: Array<{ date: string; value: number | null }>;
+  height?: number;
+  lineColor?: string;
+}) {
+  const validData = data.filter((d) => d.value != null) as Array<{ date: string; value: number }>;
+  if (validData.length < 2) {
+    return (
+      <div className="flex items-center justify-center" style={{ minHeight: height }}>
+        <Typography type="body-sm" color="muted">
+          Not enough data to display
+        </Typography>
       </div>
     );
   }
 
+  const values = validData.map((d) => d.value);
+  const minVal = Math.min(...values);
+  const maxVal = Math.max(...values);
+  const yMin = minVal === maxVal ? Math.max(0, minVal - 1) : minVal;
+  const yMax = minVal === maxVal ? minVal + 1 : maxVal;
+  const range = yMax - yMin || 1;
+  const mid = yMin + range / 2;
+  const ticks = [yMax, mid, yMin].filter((value, index, all) => all.indexOf(value) === index);
+  const plotTop = 16;
+  const usable = height - plotTop;
+  const chartWidth = 600;
+  const yFormat = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
+  const yOf = (value: number) => plotTop + (1 - (value - yMin) / range) * usable;
+  const xOf = (i: number) => (i / Math.max(validData.length - 1, 1)) * chartWidth;
+  const points = validData.map((d, i) => `${xOf(i)},${yOf(d.value)}`).join(' ');
+
   return (
-    <div className="flex flex-col flex-1 bg-zinc-50 font-sans dark:bg-navy">
-      {/* Top gradient bar */}
-      <div className="h-1 w-full bg-gradient-to-r from-primary via-accent to-primary-light" />
+    <AxisChart
+      height={height}
+      yTicks={ticks}
+      yMin={yMin}
+      yMax={yMax}
+      yFormat={yFormat}
+      xLabels={xTickIndexes(validData.length).map((index) => ({
+        index,
+        date: validData[index].date,
+        count: validData.length,
+      }))}
+    >
+      <svg
+        viewBox={`0 0 ${chartWidth} ${height}`}
+        className="h-full w-full"
+        preserveAspectRatio="none"
+      >
+        {ticks.map((tick) => (
+          <line
+            key={tick}
+            x1={0}
+            y1={yOf(tick)}
+            x2={chartWidth}
+            y2={yOf(tick)}
+            stroke="currentColor"
+            className="text-muted/25"
+            strokeWidth="1"
+            strokeDasharray={tick === yMin ? '0' : '3 3'}
+          />
+        ))}
+        <polyline
+          points={points}
+          fill="none"
+          className={lineColor}
+          strokeWidth="2"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+          vectorEffect="non-scaling-stroke"
+        />
+        {validData.map((d, i) => (
+          <circle key={d.date} cx={xOf(i)} cy={yOf(d.value)} r="3" className="fill-primary" />
+        ))}
+      </svg>
+    </AxisChart>
+  );
+}
 
-      <div className="flex flex-1 w-full max-w-6xl mx-auto px-6 py-10">
-        <div className="w-full">
-          {/* Header */}
-          <div className="mb-10 flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-semibold text-navy dark:text-white tracking-tight">
-                {greeting}, {displayName}
-              </h1>
-              <p className="mt-1 text-muted">
-                QHRT Admin Dashboard — Overview &amp; user management
-              </p>
-            </div>
-            <button
-              onClick={handleLogout}
-              disabled={loggingOut}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-border bg-white px-5 text-sm font-medium text-muted transition-all hover:border-primary hover:text-primary disabled:opacity-60 dark:border-navy dark:bg-navy-light/30 dark:text-muted dark:hover:border-primary/60 dark:hover:text-primary-light"
-            >
-              <svg
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"
-                />
-              </svg>
-              {loggingOut ? 'Logging out…' : 'Logout'}
-            </button>
-          </div>
+// ---------------------------------------------------------------------------
+// Rating Distribution Bar
+// ---------------------------------------------------------------------------
 
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-3 gap-5 mb-10">
-            {statCards.map((stat) => (
+function RatingDistribution({
+  distribution,
+  total,
+}: {
+  distribution: Record<number, number>;
+  total: number;
+}) {
+  const maxCount = Math.max(...Object.values(distribution), 1);
+
+  return (
+    <div className="space-y-2">
+      {[5, 4, 3, 2, 1].map((star) => {
+        const count = distribution[star] ?? 0;
+        const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+        const barWidth = Math.round((count / maxCount) * 100);
+
+        return (
+          <div key={star} className="flex items-center gap-3">
+            <span className="text-sm text-muted w-6 text-right">{star}</span>
+            <svg width="20" height="20" className="flex-shrink-0">
+              <path
+                d="M10 1l2.39 4.84 5.34.78-3.87 3.77.91 5.32L10 13.47l-4.77 2.51.91-5.32L2.27 6.68l5.34-.78L10 1z"
+                className="fill-amber-400"
+              />
+            </svg>
+            <div className="flex-1 h-5 bg-muted/10 rounded-full overflow-hidden">
               <div
-                key={stat.label}
-                className="group relative overflow-hidden rounded-2xl border border-border bg-white p-6 shadow-sm transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 dark:border-navy/50 dark:bg-navy-light/20 dark:hover:border-primary/40"
-              >
-                {/* Gradient accent */}
-                <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${stat.color}`} />
+                className="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full transition-all"
+                style={{ width: `${barWidth}%` }}
+              />
+            </div>
+            <span className="text-sm text-muted w-12 text-right">
+              {count} ({pct}%)
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-xs font-medium uppercase tracking-wider text-muted">
-                      {stat.label}
-                    </p>
-                    <p className="mt-2 text-4xl font-bold text-navy dark:text-white tracking-tight">
-                      {typeof stat.value === 'number' ? stat.value : stat.value}
-                    </p>
-                  </div>
-                  <div
-                    className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${stat.color} text-white shadow-sm`}
-                  >
-                    {stat.icon}
-                  </div>
-                </div>
-              </div>
+// ---------------------------------------------------------------------------
+// Stat Card Component
+// ---------------------------------------------------------------------------
+
+function StatCard({
+  label,
+  value,
+  subtitle,
+}: {
+  label: string;
+  value: string | number;
+  subtitle?: string;
+}) {
+  return (
+    <AppCard className="p-5">
+      <Typography type="body-xs" color="muted">
+        {label}
+      </Typography>
+      <Typography type="h4" weight="normal">
+        {value}
+      </Typography>
+      {subtitle ? (
+        <Typography type="body-xs" color="muted">
+          {subtitle}
+        </Typography>
+      ) : null}
+    </AppCard>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main dashboard page
+// ---------------------------------------------------------------------------
+
+export default function AdminDashboard() {
+  const [data, setData] = useState<AnalyticsData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [timeRange, setTimeRange] = useState<'7d' | '30d'>('30d');
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [wizardToast, setWizardToast] = useState<{ message: string; type: 'success' | 'error' } | null>(
+    null
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    fetch('/api/admin/analytics')
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to fetch analytics');
+        return res.json();
+      })
+      .then((payload) => {
+        if (!cancelled) setData(payload);
+      })
+      .catch((err) => {
+        console.error('[AdminDashboard] Error:', err);
+        if (!cancelled) setError(err.message);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Filter data by time range
+  const filteredSignups = useMemo(() => {
+    if (!data?.signupsByDay) return [];
+    const days = timeRange === '7d' ? 7 : 30;
+    return data.signupsByDay.slice(-days);
+  }, [data, timeRange]);
+
+  const filteredSessions = useMemo(() => {
+    if (!data?.sessionsByDay) return [];
+    const days = timeRange === '7d' ? 7 : 30;
+    return data.sessionsByDay.slice(-days);
+  }, [data, timeRange]);
+
+  const filteredMood = useMemo(() => {
+    if (!data?.moodByDay) return null;
+    const days = timeRange === '7d' ? 7 : 30;
+    return data.moodByDay.slice(-days);
+  }, [data, timeRange]);
+
+  // Engagement rate
+  const engagementRate = useMemo(() => {
+    if (!data || data.totalUsers === 0) return null;
+    return Math.round((data.activeUsers30d / data.totalUsers) * 100);
+  }, [data]);
+
+  // Intake completion rate
+  const intakeCompletionRate = useMemo(() => {
+    if (!data || data.totalUsers === 0) return null;
+    return Math.round((data.intakeCompleted / data.totalUsers) * 100);
+  }, [data]);
+
+  if (loading) {
+    return (
+      <UserPageShell wide>
+        <PageHeader title="Dashboard" subtitle="Loading…" />
+        <DashboardBodySkeleton />
+      </UserPageShell>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <ErrorState
+        title="Dashboard unavailable"
+        description={error ?? 'Failed to load dashboard.'}
+        onRetry={() => window.location.reload()}
+        homeHref="/dashboard"
+        homeLabel="Dashboard"
+      />
+    );
+  }
+
+  return (
+    <UserPageShell wide>
+      <PageHeader
+        title="Dashboard"
+        subtitle="Signups, sessions, ratings, and stress impact"
+        actions={
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {(['7d', '30d'] as const).map((range) => (
+              <Button
+                key={range}
+                size="sm"
+                variant={timeRange === range ? 'primary' : 'ghost'}
+                onPress={() => setTimeRange(range)}
+              >
+                {range === '7d' ? '7 days' : '30 days'}
+              </Button>
             ))}
           </div>
+        }
+      />
 
-          {/* Main Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Recent Users Table */}
-            <div className="lg:col-span-2 rounded-2xl border border-border bg-white shadow-sm dark:border-navy/50 dark:bg-navy-light/20">
-              <div className="flex items-center justify-between px-6 py-5 border-b border-border dark:border-navy">
-                <h2 className="text-lg font-semibold text-navy dark:text-white">Recent Users</h2>
-                <Link
-                  href="/users"
-                  className="text-sm font-medium text-primary hover:text-primary-light dark:text-primary-light dark:hover:text-primary transition-colors"
-                >
-                  View all &rarr;
-                </Link>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border dark:border-navy">
-                      <th className="text-left px-6 py-3 text-xs font-medium uppercase tracking-wider text-muted">
-                        Email
-                      </th>
-                      <th className="text-left px-6 py-3 text-xs font-medium uppercase tracking-wider text-muted">
-                        Role
-                      </th>
-                      <th className="text-left px-6 py-3 text-xs font-medium uppercase tracking-wider text-muted">
-                        Intake
-                      </th>
-                      <th className="text-left px-6 py-3 text-xs font-medium uppercase tracking-wider text-muted">
-                        Sessions
-                      </th>
-                      <th className="text-left px-6 py-3 text-xs font-medium uppercase tracking-wider text-muted">
-                        Joined
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border dark:divide-navy">
-                    {recentUsers.length > 0 ? (
-                      recentUsers.map((u) => (
-                        <tr
-                          key={u.id}
-                          className="hover:bg-accent-lighter/30 dark:hover:bg-primary/5 transition-colors"
-                        >
-                          <td className="px-6 py-4 font-medium text-navy dark:text-white">
-                            {u.email}
-                          </td>
-                          <td className="px-6 py-4">
-                            <span
-                              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                                u.role === 'admin'
-                                  ? 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-light'
-                                  : 'bg-muted/10 text-muted dark:bg-navy dark:text-muted'
-                              }`}
-                            >
-                              {u.role}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            {u.intake_completed ? (
-                              <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                                <svg
-                                  className="h-4 w-4"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                  strokeWidth={2}
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    d="M5 13l4 4L19 7"
-                                  />
-                                </svg>
-                                Done
-                              </span>
-                            ) : (
-                              <span className="text-amber-600 dark:text-amber-400">Pending</span>
-                            )}
-                          </td>
-                          <td className="px-6 py-4 text-muted dark:text-muted">
-                            {u.sessions_completed}
-                          </td>
-                          <td className="px-6 py-4 text-muted dark:text-muted">
-                            {new Date(u.created_at).toLocaleDateString()}
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={5} className="px-6 py-12 text-center text-muted">
-                          No users found
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Quick Actions */}
-            <div className="rounded-2xl border border-border bg-white shadow-sm dark:border-navy/50 dark:bg-navy-light/20">
-              <div className="px-6 py-5 border-b border-border dark:border-navy">
-                <h2 className="text-lg font-semibold text-navy dark:text-white">Quick Actions</h2>
-              </div>
-              <div className="p-6 flex flex-col gap-3">
-                {[
-                  {
-                    label: 'Manage Users',
-                    href: '/users',
-                    icon: (
-                      <svg
-                        className="h-5 w-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={1.5}
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"
-                        />
-                      </svg>
-                    ),
-                  },
-                  {
-                    label: 'Manage Content',
-                    href: '/content',
-                    icon: (
-                      <svg
-                        className="h-5 w-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={1.5}
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
-                        />
-                      </svg>
-                    ),
-                  },
-                  {
-                    label: 'View Analytics',
-                    href: '/analytics',
-                    icon: (
-                      <svg
-                        className="h-5 w-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={1.5}
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"
-                        />
-                      </svg>
-                    ),
-                  },
-                ].map((action) => (
-                  <Link
-                    key={action.label}
-                    href={action.href}
-                    className="flex items-center gap-3 rounded-xl border border-border bg-accent-lighter/20 px-4 py-3.5 text-sm font-medium text-navy transition-all hover:border-primary hover:bg-accent-lighter hover:text-primary dark:border-navy dark:text-white dark:hover:border-primary/60 dark:hover:bg-primary/10"
-                  >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary-light text-white shadow-sm">
-                      {action.icon}
-                    </span>
-                    {action.label}
-                  </Link>
-                ))}
-              </div>
-
-              {/* System status */}
-              <div className="mx-6 mb-6 mt-2 rounded-xl border border-border bg-accent-lighter/40 p-4 dark:border-navy dark:bg-primary/5">
-                <div className="flex items-center gap-2">
-                  <span className="relative flex h-2.5 w-2.5">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                  </span>
-                  <span className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
-                    System Operational
-                  </span>
-                </div>
-                <p className="mt-1 ml-[14px] text-xs text-muted">All services responding</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="mt-12 pb-6 text-center text-xs text-muted">
-            &copy; {new Date().getFullYear() + ' '} QHRT Admin Panel — Built with Next.js &amp;
-            Supabase
-          </div>
+      <div className="flex flex-col gap-3">
+        <Typography type="body-xs" color="muted">
+          Quick links
+        </Typography>
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" variant="ghost" onPress={() => setWizardOpen(true)}>
+            Create content
+          </Button>
+          {ADMIN_QUICK_LINKS.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={buttonVariants({ size: 'sm', variant: 'ghost' })}
+            >
+              {item.name}
+            </Link>
+          ))}
         </div>
       </div>
-    </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <StatCard
+          label="Total users"
+          value={data.totalUsers}
+          subtitle={`${engagementRate != null ? `${engagementRate}%` : '—'} active (30d)`}
+        />
+        <StatCard
+          label="Total sessions"
+          value={data.totalSessions}
+          subtitle={`${data.activeUsers7d} active (7d)`}
+        />
+        <StatCard
+          label="Intake completion"
+          value={`${intakeCompletionRate ?? 0}%`}
+          subtitle={`${data.intakeCompleted} of ${data.totalUsers} users`}
+        />
+        <StatCard
+          label="Avg rating"
+          value={data.ratingDistribution?.avgRating?.toFixed(1) ?? '—'}
+          subtitle={
+            data.ratingDistribution ? `${data.ratingDistribution.total} ratings` : 'No data yet'
+          }
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <AppCard className="p-5">
+          <Typography type="body" className="mb-1">
+            User signups
+          </Typography>
+          <Typography type="body-xs" color="muted" className="mb-4">
+            New users registered per day
+          </Typography>
+          {filteredSignups.length > 0 ? (
+            <BarChart data={filteredSignups} barColor="fill-primary" label="signups" />
+          ) : (
+            <Typography type="body-sm" color="muted" className="py-12 text-center">
+              No signup data available
+            </Typography>
+          )}
+        </AppCard>
+
+        <AppCard className="p-5">
+          <Typography type="body" className="mb-1">
+            Session activity
+          </Typography>
+          <Typography type="body-xs" color="muted" className="mb-4">
+            Sessions completed per day
+          </Typography>
+          {filteredSessions.length > 0 ? (
+            <BarChart data={filteredSessions} barColor="fill-primary" label="sessions" />
+          ) : (
+            <Typography type="body-sm" color="muted" className="py-12 text-center">
+              No session data available
+            </Typography>
+          )}
+        </AppCard>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <AppCard className="p-5">
+          <Typography type="body" className="mb-1">
+            Mood trend
+          </Typography>
+          <Typography type="body-xs" color="muted" className="mb-4">
+            Average mood score over time
+          </Typography>
+          {filteredMood && filteredMood.some((d) => d.avg_mood != null) ? (
+            <LineChart data={filteredMood.map((d) => ({ date: d.date, value: d.avg_mood }))} />
+          ) : (
+            <Typography type="body-sm" color="muted" className="py-12 text-center">
+              Mood data will appear once users start logging moods
+            </Typography>
+          )}
+        </AppCard>
+
+        <AppCard className="p-5">
+          <Typography type="body" className="mb-1">
+            Rating distribution
+          </Typography>
+          <Typography type="body-xs" color="muted" className="mb-4">
+            Session ratings from users
+          </Typography>
+          {data.ratingDistribution ? (
+            <RatingDistribution
+              distribution={data.ratingDistribution.distribution}
+              total={data.ratingDistribution.total}
+            />
+          ) : (
+            <Typography type="body-sm" color="muted" className="py-12 text-center">
+              Rating data will appear once users start rating sessions
+            </Typography>
+          )}
+        </AppCard>
+      </div>
+
+      <AppCard className="p-5">
+        <Typography type="body" className="mb-1">
+          Stress reduction
+        </Typography>
+        <Typography type="body-xs" color="muted" className="mb-4">
+          Average stress before and after sessions
+        </Typography>
+        {data.stressReduction ? (
+          <div className="grid grid-cols-1 items-center gap-8 md:grid-cols-3">
+            <div className="text-center">
+              <Typography type="body-xs" color="muted" className="mb-2">
+                Avg stress (before)
+              </Typography>
+              <div className="relative inline-flex items-center justify-center">
+                <svg viewBox="0 0 36 36" className="h-28 w-28">
+                  <circle
+                    cx="18"
+                    cy="18"
+                    r="15.915"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    className="text-muted/10"
+                  />
+                  <circle
+                    cx="18"
+                    cy="18"
+                    r="15.915"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    className="text-danger"
+                    strokeDasharray={`${(data.stressReduction.avgBefore / 10) * 100} 100`}
+                    strokeLinecap="round"
+                    transform="rotate(-90 18 18)"
+                  />
+                </svg>
+                <span className="absolute text-2xl">
+                  {data.stressReduction.avgBefore.toFixed(1)}
+                </span>
+              </div>
+            </div>
+
+            <div className="text-center">
+              <Typography type="h4" weight="normal">
+                {data.stressReduction.reductionPercent > 0
+                  ? `${data.stressReduction.reductionPercent}%`
+                  : `${Math.abs(data.stressReduction.reductionPercent)}% ↑`}
+              </Typography>
+              <Typography type="body-sm" color="muted">
+                {data.stressReduction.reductionPercent > 0
+                  ? 'Average reduction'
+                  : 'Average increase'}
+              </Typography>
+              <Typography type="body-xs" color="muted" className="mt-2">
+                Based on {data.stressReduction.userCount} users with stress data
+              </Typography>
+            </div>
+
+            <div className="text-center">
+              <Typography type="body-xs" color="muted" className="mb-2">
+                Avg stress (after)
+              </Typography>
+              <div className="relative inline-flex items-center justify-center">
+                <svg viewBox="0 0 36 36" className="h-28 w-28">
+                  <circle
+                    cx="18"
+                    cy="18"
+                    r="15.915"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    className="text-muted/10"
+                  />
+                  <circle
+                    cx="18"
+                    cy="18"
+                    r="15.915"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    className="text-primary"
+                    strokeDasharray={`${(data.stressReduction.avgAfter / 10) * 100} 100`}
+                    strokeLinecap="round"
+                    transform="rotate(-90 18 18)"
+                  />
+                </svg>
+                <span className="absolute text-2xl">
+                  {data.stressReduction.avgAfter.toFixed(1)}
+                </span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <Typography type="body-sm" color="muted" className="py-12 text-center">
+            Stress metrics will appear once users complete sessions with stress tracking
+          </Typography>
+        )}
+      </AppCard>
+
+      <Typography type="body-xs" color="muted">
+        Some metrics populate as people use the platform. Mood, ratings, and engagement detail will
+        fill in over time.
+      </Typography>
+
+      <ContentWizard
+        isOpen={wizardOpen}
+        onClose={() => setWizardOpen(false)}
+        onSuccess={(message) => setWizardToast({ message, type: 'success' })}
+        onError={(message) => setWizardToast({ message, type: 'error' })}
+      />
+
+      {wizardToast ? (
+        <Toast
+          message={wizardToast.message}
+          type={wizardToast.type}
+          onClose={() => setWizardToast(null)}
+        />
+      ) : null}
+    </UserPageShell>
   );
 }
