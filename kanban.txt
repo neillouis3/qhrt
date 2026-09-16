@@ -1,0 +1,163 @@
+QHRT kanban — features
+Paste each block as a Notion card. First line = title.
+Suggested columns: Backlog / Doing / Review / Done
+
+---
+Recommended next step
+After onboarding, Home should suggest one thing: a session, a journey, or a short practice. Not a menu of five products.
+
+---
+Daily ritual
+Morning and evening versions of the check-in. Mood, one sentence, optional breathe. Builds a reason to open the app besides “do a program.”
+
+---
+Mood over time
+Turn diary moods and home check-ins into a simple week/month view. People want to see the shape of how they have been, not just today’s note.
+
+---
+Insights from what you already did
+After a few sessions, show patterns in plain language: you finish sleep work more than body work, evenings are heavier, you skip mid-journey, etc.
+
+---
+More than sleep
+A second and third program people can actually finish. Anxiety/activation, body tension, grief, or low mood — whatever the content team can stand behind.
+
+---
+Micro-practices
+Two-to-five minute tools next to full sessions: grounding, body scan, 5-4-3-2-1, a shorter breathe, a single prompt. For when they will not start a 15-minute session.
+
+---
+More breathing patterns
+Box, 4-7-8, longer exhale, count-only. Let people pick a pattern and save a default.
+
+---
+Sound
+Optional quiet audio under breathe and wind-down: rain, room tone, a simple tone. Mute by default. No stock spa playlist dumped on people.
+
+---
+Guided audio sessions
+Read the session prompts aloud (or record them) so someone can close their eyes. Especially for sleep and body work.
+
+---
+Wind-down for night
+A dedicated evening path: dimmer UI, slower breathe, one reflection, lights-out. Separate from “do a therapeutic engine at 11pm.”
+
+---
+Morning intention
+One prompt when they open the app before noon. Not a new product — a thin layer on Home.
+
+---
+Journal prompts
+Diary can offer a question of the day, or a prompt tied to the last session, instead of a blank page.
+
+---
+Session recap
+When a session ends, a one-screen recap: what you covered, what you wrote, optional save-to-diary. Then Home.
+
+---
+Homework between sessions
+A small thing to try before the next visit: notice one sensation, one evening without the phone in bed, etc. Shows up on Home until they mark it done.
+
+---
+Favorites and continue later
+Star a practice. Resume is already there — make it obvious, and let people pin the ones they actually repeat.
+
+---
+Programs as weeks
+Package a journey as “week 1–4” with a suggested pace and no shame if they drift. Progress that looks like a path, not a database of phases.
+
+---
+Goals they set themselves
+“Sleep through the night more often,” “less jaw tension,” written in their words. Tie sessions to a goal so Home has a north star.
+
+---
+Reminders
+Optional email or push: time they chose, once a day max. Easy to turn off. Never nag after they skip.
+
+---
+Streaks, gently
+A quiet “you showed up 4 days this week.” No fire emojis, no losing a streak as punishment.
+
+---
+Weekly letter to yourself
+Sunday (or their day) recap: moods, sessions done, one line they wrote. Exportable. Feels like a product, not an analytics dump.
+
+---
+French
+Canada. At least UI + a first program in FR. Language in Settings.
+
+---
+Install as an app
+PWA so it sits on the phone home screen. Offline for breathe + last diary draft would be a bonus later.
+
+---
+Crisis resources by region
+Not a crisis product, but a short list: local emergency, provincial mental-health lines, 988 where it applies. Link from Home and session chrome.
+
+---
+Share with a clinician
+Optional export or invite-only view: “here is what I have been working on.” User owns the switch. Default private.
+
+---
+Practitioner accounts
+A therapist or coach assigns a program, sees completion (not diary unless the user shares). Different from admin content editing.
+
+---
+Assigned path
+Admin/practitioner picks the next assessment or journey for a person so they are not staring at three catalogs.
+
+---
+Search and library
+One library of practices, sessions, and journeys with search. Nav stays short; the catalog lives in one place.
+
+---
+Custom session length
+Short / regular / unhurried. Same content, fewer prompts or more space.
+
+---
+Notifications that respect night
+No pings after a quiet-hours window they set.
+
+---
+Onboarding that routes you
+A few questions, then “start here” instead of dumping every tool on day one.
+
+---
+Revisit a finished session
+Read-only recap of answers without starting over. “What did I say that week.”
+
+---
+Body-first practices
+Scan, tension release, posture check — the physical side of QHRT as first-class, not only talk prompts.
+
+---
+Sleep toolkit
+Assessment + session + wind-down + optional diary tag for nights. One hub, not four separate pages.
+
+---
+Accessibility
+Larger type, reduced motion already started, screen reader pass on session prompts, captions if audio ships.
+
+---
+Community of one
+No social feed. If you ever do “you’re not the only one,” keep it anonymous stats (“other people also work on sleep”) not comments.
+
+---
+Research opt-in
+Anonymized, separate from care, easy no. Only if someone actually wants the data.
+
+---
+Waitlist / invite
+If you need to slow signups: invite codes, or a landing waitlist, without blocking the current intern demo.
+
+---
+More public story
+Landing/about that explains the method in human language (mind, body, emotion) and what a first week looks like. Screenshots of the calm UI, not admin tables.
+
+---
+Account that feels finished
+Forgot password, change password, delete account, download my data. Not flashy — table stakes so people trust a mental-health app.
+
+---
+i18n-ready content format
+So a second language or a second program is not a rewrite of every prompt component.

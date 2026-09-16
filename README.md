@@ -4,14 +4,16 @@ A Next.js-based web application that provides guided mental health resources and
 
 ## Tech Stack
 
+- **Runtime:** [Node.js](https://nodejs.org) 22 (`.nvmrc`; `engines.node` is `>=22`)
 - **Framework:** [Next.js 16](https://nextjs.org) (App Router)
-- **Language:** [TypeScript](https://www.typescriptlang.org/)
-- **UI:** [React 19](https://react.dev/) with [Tailwind CSS v4](https://tailwindcss.com/)
-- **Backend & Auth:** [Supabase](https://supabase.com) (PostgreSQL, Auth, Row-Level Security)
+- **UI:** [React 19](https://react.dev/), [HeroUI 3](https://www.heroui.com), [Tailwind CSS 4](https://tailwindcss.com), [Hugeicons](https://hugeicons.com), [next-themes](https://github.com/pacocoursey/next-themes)
+- **Language:** [TypeScript](https://www.typescriptlang.org/) 5
+- **Auth & data:** [Supabase](https://supabase.com) (PostgreSQL, Auth, Row-Level Security)
+- **Rate limiting:** [Upstash Redis](https://upstash.com) (optional; in-memory fallback locally)
 
 ## Prerequisites
 
-- **Node.js** 20+ and **npm** (or yarn/pnpm/bun)
+- **Node.js 22** and **npm**
 - A **Supabase** project with the database schema migrated (see `supabase/` for SQL migration files)
 
 ## Getting Started
@@ -48,6 +50,7 @@ supabase/004_sleep_knowledge_model_seed.sql
 supabase/005_therapeutic_engine_schema.sql
 supabase/006_body_composition_seed.sql
 supabase/007_mood_logs_and_ratings.sql
+supabase/008_diary_entries.sql
 ```
 
 ### 4. Run the development server
@@ -57,6 +60,15 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+### Supabase Auth URLs (password reset)
+
+In the [Supabase dashboard](https://supabase.com/dashboard) → **Authentication** → **URL Configuration**:
+
+- **Site URL:** your app origin (e.g. `http://localhost:3000` locally, or the value of `NEXT_PUBLIC_APP_ORIGIN` in production).
+- **Redirect URLs:** allow `{origin}/reset-password` for each environment (e.g. `http://localhost:3000/reset-password` and `https://your-domain.com/reset-password`).
+
+Forgot-password emails use `redirectTo` = `{NEXT_PUBLIC_APP_ORIGIN or request origin}/reset-password`. If reset links fail or land on the wrong host, check these settings first.
 
 ## npm Scripts
 
@@ -75,15 +87,15 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ```
 ├── app/                       # Next.js App Router pages & API routes
 │   ├── (admin)/               # Admin dashboard, users, content, analytics
-│   ├── (user)/                # User-facing home, sessions, intake
-│   ├── api/                   # REST API routes (auth, admin, conversation, etc.)
-│   └── auth/                  # Login/signup pages
+│   ├── (auth)/                # /login and /signup
+│   ├── (user)/                # Home, sessions, journeys, diary, assessments, settings
+│   └── api/                   # REST API routes (auth, admin, conversation, etc.)
 ├── components/                # Shared React components
 │   ├── admin/                 # Admin-specific UI (sidebar, content tabs, search)
 │   ├── conversation/          # Conversation & session UI
 │   ├── therapeutic/           # Therapeutic engine UI
 │   ├── LandingCta.tsx         # Client-side landing page CTA (session-aware)
-│   └── ...                    # Navbar, Dashboard, IntakeForm, AssessmentRenderer, etc.
+│   └── ...                    # Navbar, Home, coaching audits, sessions, etc.
 ├── hooks/                     # Custom React hooks (useSession, useNavigationGuard)
 ├── lib/                       # Utilities & clients
 │   ├── supabaseClient.ts      # Supabase client setup (anon + service role)
@@ -95,14 +107,14 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 │   ├── therapeuticEngine.ts   # Therapeutic engine logic
 │   └── types/                 # Shared TypeScript types (conversation, therapeutic engine)
 ├── proxy.ts                   # Auth/role routing proxy (middleware convention)
-├── supabase/                  # Database migrations & seed data (000–007)
+├── supabase/                  # Database migrations & seed data (000–008)
 └── public/                    # Static assets
 ```
 
 ## Architecture Overview
 
 ### User Flow
-1. **Landing** -> Unauthenticated users see a landing page; authenticated users are directed to their dashboard.
+1. **Landing** -> Unauthenticated users see a landing page; signed-in members go to `/home`, admins to `/dashboard`.
 2. **Intake & Condition Selection** -> New users select conditions and complete an intake assessment.
 3. **Sessions** -> Users engage with therapeutic sessions driven by knowledge models and the therapeutic engine.
 
