@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import Modal from '@/components/Modal';
+import { Table } from '@heroui/react';
+import Modal from '@/components/ui/Modal';
 import ContentErrorBoundary from '@/components/admin/ContentErrorBoundary';
 import { Toggle } from './shared/Toggle';
 import { ConfirmModal } from './shared/ConfirmModal';
 import { SearchBox } from './shared/SearchBox';
+import { TableRowActions } from './shared/TableRowActions';
 import type { Category } from './types';
 
 export function CategoriesTab({
@@ -123,8 +125,7 @@ export function CategoriesTab({
   return (
     <ContentErrorBoundary fallbackTitle="Categories failed to load">
       <div>
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">Condition Categories</h3>
+        <div className="mb-4 flex items-center justify-end">
           <div className="flex items-center gap-3">
             <SearchBox placeholder="Search categories…" onSearch={setSearch} />
             <button
@@ -150,59 +151,37 @@ export function CategoriesTab({
             <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border text-muted bg-muted/3 dark:bg-navy-light/5">
-                  <th className="text-left py-2.5 px-3 font-medium">Order</th>
-                  <th className="text-left py-2.5 px-3 font-medium">Name</th>
-                  <th className="text-left py-2.5 px-3 font-medium hidden md:table-cell">
-                    Description
-                  </th>
-                  <th className="text-center py-2.5 px-3 font-medium">Active</th>
-                  <th className="text-right py-2.5 px-3 font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {categories.map((cat) => (
-                  <tr
-                    key={cat.id}
-                    className="border-b border-border/50 hover:bg-muted/3 transition-colors"
-                  >
-                    <td className="py-2.5 px-3 text-muted">{cat.display_order}</td>
-                    <td className="py-2.5 px-3 font-medium">{cat.name}</td>
-                    <td className="py-2.5 px-3 text-muted hidden md:table-cell max-w-xs truncate">
-                      {cat.description || '—'}
-                    </td>
-                    <td className="py-2.5 px-3 text-center">
-                      <Toggle checked={cat.is_active} onChange={() => handleToggleActive(cat.id)} />
-                    </td>
-                    <td className="py-2.5 px-3 text-right">
-                      <button
-                        onClick={() => openEdit(cat)}
-                        className="text-primary hover:underline text-xs mr-3"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => setConfirmDelete(cat.id)}
-                        className="text-red-500 hover:underline text-xs"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {categories.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="py-8 text-center text-muted">
-                      No categories yet. Add one above.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <Table>
+            <Table.ScrollContainer>
+              <Table.Content aria-label="Condition categories">
+                <Table.Header>
+                  <Table.Column>Order</Table.Column>
+                  <Table.Column isRowHeader>Name</Table.Column>
+                  <Table.Column>Description</Table.Column>
+                  <Table.Column>Active</Table.Column>
+                  <Table.Column>Actions</Table.Column>
+                </Table.Header>
+                <Table.Body renderEmptyState={() => 'No categories yet. Add one above.'}>
+                  {categories.map((cat) => (
+                    <Table.Row key={cat.id} id={cat.id}>
+                      <Table.Cell>{cat.display_order}</Table.Cell>
+                      <Table.Cell>{cat.name}</Table.Cell>
+                      <Table.Cell>{cat.description || '—'}</Table.Cell>
+                      <Table.Cell>
+                        <Toggle checked={cat.is_active} onChange={() => handleToggleActive(cat.id)} />
+                      </Table.Cell>
+                      <Table.Cell>
+                        <TableRowActions
+                          onEdit={() => openEdit(cat)}
+                          onDelete={() => setConfirmDelete(cat.id)}
+                        />
+                      </Table.Cell>
+                    </Table.Row>
+                  ))}
+                </Table.Body>
+              </Table.Content>
+            </Table.ScrollContainer>
+          </Table>
         )}
 
         {/* Create/Edit Modal */}
@@ -222,7 +201,7 @@ export function CategoriesTab({
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
                 placeholder="Category name"
-                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background dark:bg-navy dark:border-navy focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>
             <div>
@@ -232,7 +211,7 @@ export function CategoriesTab({
                 onChange={(e) => setFormDesc(e.target.value)}
                 placeholder="Optional description"
                 rows={2}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background dark:bg-navy dark:border-navy focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>
             <div>
@@ -241,7 +220,7 @@ export function CategoriesTab({
                 type="number"
                 value={formOrder}
                 onChange={(e) => setFormOrder(parseInt(e.target.value) || 0)}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background dark:bg-navy dark:border-navy focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>
           </div>
