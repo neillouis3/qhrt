@@ -1,9 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import Modal from '@/components/Modal';
+import { Table } from '@heroui/react';
+import Modal from '@/components/ui/Modal';
+import FieldSelect from '@/components/ui/FieldSelect';
 import ContentErrorBoundary from '@/components/admin/ContentErrorBoundary';
 import { ConfirmModal } from './shared/ConfirmModal';
 import { loadConditions } from './shared/loadConditions';
 import { SearchBox } from './shared/SearchBox';
+import { TableRowActions } from './shared/TableRowActions';
 import type { Condition } from './types';
 
 export function QHRTMappingsTab({
@@ -131,40 +134,31 @@ export function QHRTMappingsTab({
       <div>
         <div className="flex justify-between items-center mb-4">
           <div>
-            <h3 className="text-lg font-semibold">QHRT Mappings</h3>
-            <p className="text-sm text-muted mt-0.5">
+            <p className="text-sm text-muted">
               Internal clinical framework data — not visible to users.
             </p>
           </div>
           <SearchBox placeholder="Search by condition…" onSearch={setSearch} />
         </div>
 
-        <div className="mb-4 flex gap-3">
-          <select
-            value={filterConditionId}
-            onChange={(e) => setFilterConditionId(e.target.value)}
-            className="px-3 py-2 text-sm rounded-lg border border-border bg-background dark:bg-navy dark:border-navy focus:outline-none focus:ring-2 focus:ring-primary/50"
-          >
-            <option value="">All conditions</option>
-            {conditions.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-          <select
-            onChange={(e) => {
-              if (e.target.value) openCreateForCondition(e.target.value);
+        <div className="mb-4 flex max-w-xl gap-3">
+          <FieldSelect
+            placeholder="All conditions"
+            selectedKey={filterConditionId || 'all'}
+            onChange={(key) => setFilterConditionId(key === 'all' ? '' : key)}
+            items={[
+              { id: 'all', name: 'All conditions' },
+              ...conditions.map((c) => ({ id: c.id, name: c.name })),
+            ]}
+          />
+          <FieldSelect
+            placeholder="Quick-edit condition…"
+            selectedKey=""
+            onChange={(key) => {
+              if (key) openCreateForCondition(key);
             }}
-            className="px-3 py-2 text-sm rounded-lg border border-border bg-background dark:bg-navy dark:border-navy focus:outline-none focus:ring-2 focus:ring-primary/50"
-          >
-            <option value="">Quick-edit condition...</option>
-            {conditions.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+            items={conditions.map((c) => ({ id: c.id, name: c.name }))}
+          />
         </div>
 
         {loading ? (
@@ -172,67 +166,35 @@ export function QHRTMappingsTab({
             <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border text-muted bg-muted/3 dark:bg-navy-light/5">
-                  <th className="text-left py-2.5 px-3 font-medium">Condition</th>
-                  <th className="text-left py-2.5 px-3 font-medium hidden md:table-cell">
-                    Primary Theme
-                  </th>
-                  <th className="text-left py-2.5 px-3 font-medium hidden lg:table-cell">
-                    Organ System
-                  </th>
-                  <th className="text-left py-2.5 px-3 font-medium hidden lg:table-cell">
-                    QHRT Focus
-                  </th>
-                  <th className="text-right py-2.5 px-3 font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {mappings.map((m) => (
-                  <tr
-                    key={m.id}
-                    className="border-b border-border/50 hover:bg-muted/3 transition-colors"
-                  >
-                    <td className="py-2.5 px-3 font-medium">
-                      {condNameMap[m.condition_id] || m.condition_id}
-                    </td>
-                    <td className="py-2.5 px-3 text-muted hidden md:table-cell max-w-xs truncate">
-                      {m.primary_emotional_theme || '—'}
-                    </td>
-                    <td className="py-2.5 px-3 text-muted hidden lg:table-cell max-w-xs truncate">
-                      {m.organ_system || '—'}
-                    </td>
-                    <td className="py-2.5 px-3 text-muted hidden lg:table-cell max-w-xs truncate">
-                      {m.qhrt_focus || '—'}
-                    </td>
-                    <td className="py-2.5 px-3 text-right">
-                      <button
-                        onClick={() => openEdit(m)}
-                        className="text-primary hover:underline text-xs mr-3"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => setConfirmDelete(m.id)}
-                        className="text-red-500 hover:underline text-xs"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {mappings.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="py-8 text-center text-muted">
-                      No mappings yet. Select a condition above to create one.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <Table>
+            <Table.ScrollContainer>
+              <Table.Content aria-label="QHRT mappings">
+                <Table.Header>
+                  <Table.Column isRowHeader>Condition</Table.Column>
+                  <Table.Column>Primary theme</Table.Column>
+                  <Table.Column>Organ system</Table.Column>
+                  <Table.Column>QHRT focus</Table.Column>
+                  <Table.Column>Actions</Table.Column>
+                </Table.Header>
+                <Table.Body renderEmptyState={() => 'No mappings yet. Select a condition above to create one.'}>
+                  {mappings.map((m) => (
+                    <Table.Row key={m.id} id={m.id}>
+                      <Table.Cell>{condNameMap[m.condition_id] || m.condition_id}</Table.Cell>
+                      <Table.Cell>{m.primary_emotional_theme || '—'}</Table.Cell>
+                      <Table.Cell>{m.organ_system || '—'}</Table.Cell>
+                      <Table.Cell>{m.qhrt_focus || '—'}</Table.Cell>
+                      <Table.Cell>
+                        <TableRowActions
+                          onEdit={() => openEdit(m)}
+                          onDelete={() => setConfirmDelete(m.id)}
+                        />
+                      </Table.Cell>
+                    </Table.Row>
+                  ))}
+                </Table.Body>
+              </Table.Content>
+            </Table.ScrollContainer>
+          </Table>
         )}
 
         {/* Edit Modal */}
@@ -253,7 +215,7 @@ export function QHRTMappingsTab({
                 value={formValues.condition_id}
                 onChange={(e) => setFormValues({ ...formValues, condition_id: e.target.value })}
                 disabled={!!editingId}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background dark:bg-navy dark:border-navy focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
               >
                 <option value="">Select condition</option>
                 {conditions.map((c) => (
@@ -272,7 +234,7 @@ export function QHRTMappingsTab({
                   onChange={(e) =>
                     setFormValues({ ...formValues, primary_emotional_theme: e.target.value })
                   }
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background dark:bg-navy dark:border-navy focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
               </div>
               <div>
@@ -285,7 +247,7 @@ export function QHRTMappingsTab({
                   onChange={(e) =>
                     setFormValues({ ...formValues, secondary_emotional_theme: e.target.value })
                   }
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background dark:bg-navy dark:border-navy focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
               </div>
             </div>
@@ -296,7 +258,7 @@ export function QHRTMappingsTab({
                   type="text"
                   value={formValues.organ_system}
                   onChange={(e) => setFormValues({ ...formValues, organ_system: e.target.value })}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background dark:bg-navy dark:border-navy focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
               </div>
               <div>
@@ -305,7 +267,7 @@ export function QHRTMappingsTab({
                   type="text"
                   value={formValues.gland_system}
                   onChange={(e) => setFormValues({ ...formValues, gland_system: e.target.value })}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background dark:bg-navy dark:border-navy focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
               </div>
             </div>
@@ -315,7 +277,7 @@ export function QHRTMappingsTab({
                 type="text"
                 value={formValues.qhrt_focus}
                 onChange={(e) => setFormValues({ ...formValues, qhrt_focus: e.target.value })}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background dark:bg-navy dark:border-navy focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>
             <div>
@@ -324,7 +286,7 @@ export function QHRTMappingsTab({
                 value={formValues.internal_notes}
                 onChange={(e) => setFormValues({ ...formValues, internal_notes: e.target.value })}
                 rows={2}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background dark:bg-navy dark:border-navy focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>
           </div>

@@ -1,8 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import Modal from '@/components/Modal';
+import { Table } from '@heroui/react';
+import Modal from '@/components/ui/Modal';
+import FieldSelect from '@/components/ui/FieldSelect';
 import ContentErrorBoundary from '@/components/admin/ContentErrorBoundary';
 import { ConfirmModal } from './shared/ConfirmModal';
 import { SearchBox } from './shared/SearchBox';
+import { TableRowActions } from './shared/TableRowActions';
 import type { Prompt, KnowledgeModel } from './types';
 
 export function PromptsTab({
@@ -111,8 +114,7 @@ export function PromptsTab({
   return (
     <ContentErrorBoundary fallbackTitle="Prompts failed to load">
       <div>
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">Prompts</h3>
+        <div className="mb-4 flex items-center justify-end">
           <div className="flex items-center gap-3">
             <SearchBox placeholder="Search prompts…" onSearch={setSearch} />
             <button
@@ -134,19 +136,16 @@ export function PromptsTab({
           </div>
         </div>
 
-        <div className="mb-3">
-          <select
-            value={filterModelId}
-            onChange={(e) => setFilterModelId(e.target.value)}
-            className="px-3 py-2 text-sm rounded-lg border border-border bg-background dark:bg-navy dark:border-navy focus:outline-none focus:ring-2 focus:ring-primary/50"
-          >
-            <option value="">All models</option>
-            {models.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name}
-              </option>
-            ))}
-          </select>
+        <div className="mb-3 max-w-xs">
+          <FieldSelect
+            placeholder="All models"
+            selectedKey={filterModelId || 'all'}
+            onChange={(key) => setFilterModelId(key === 'all' ? '' : key)}
+            items={[
+              { id: 'all', name: 'All models' },
+              ...models.map((m) => ({ id: m.id, name: m.name })),
+            ]}
+          />
         </div>
 
         {loading ? (
@@ -154,61 +153,37 @@ export function PromptsTab({
             <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border text-muted bg-muted/3 dark:bg-navy-light/5">
-                  <th className="text-left py-2.5 px-3 font-medium">Key</th>
-                  <th className="text-left py-2.5 px-3 font-medium hidden md:table-cell">Model</th>
-                  <th className="text-left py-2.5 px-3 font-medium hidden lg:table-cell">
-                    Response Type
-                  </th>
-                  <th className="text-center py-2.5 px-3 font-medium">Order</th>
-                  <th className="text-right py-2.5 px-3 font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {prompts.map((p) => (
-                  <tr
-                    key={p.id}
-                    className="border-b border-border/50 hover:bg-muted/3 transition-colors"
-                  >
-                    <td className="py-2.5 px-3 font-medium max-w-xs truncate">{p.prompt_key}</td>
-                    <td className="py-2.5 px-3 text-muted hidden md:table-cell">
-                      {modelNameMap[p.knowledge_model_id] || p.knowledge_model_id}
-                    </td>
-                    <td className="py-2.5 px-3 text-muted hidden lg:table-cell">
-                      <span className="px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary">
-                        {p.response_type}
-                      </span>
-                    </td>
-                    <td className="py-2.5 px-3 text-center">{p.display_order}</td>
-                    <td className="py-2.5 px-3 text-right">
-                      <button
-                        onClick={() => openEdit(p)}
-                        className="text-primary hover:underline text-xs mr-3"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => setConfirmDelete(p.id)}
-                        className="text-red-500 hover:underline text-xs"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {prompts.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="py-8 text-center text-muted">
-                      No prompts yet.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <Table>
+            <Table.ScrollContainer>
+              <Table.Content aria-label="Prompts">
+                <Table.Header>
+                  <Table.Column isRowHeader>Key</Table.Column>
+                  <Table.Column>Model</Table.Column>
+                  <Table.Column>Response type</Table.Column>
+                  <Table.Column>Order</Table.Column>
+                  <Table.Column>Actions</Table.Column>
+                </Table.Header>
+                <Table.Body renderEmptyState={() => 'No prompts yet.'}>
+                  {prompts.map((p) => (
+                    <Table.Row key={p.id} id={p.id}>
+                      <Table.Cell>{p.prompt_key}</Table.Cell>
+                      <Table.Cell>
+                        {modelNameMap[p.knowledge_model_id] || p.knowledge_model_id}
+                      </Table.Cell>
+                      <Table.Cell>{p.response_type}</Table.Cell>
+                      <Table.Cell>{p.display_order}</Table.Cell>
+                      <Table.Cell>
+                        <TableRowActions
+                          onEdit={() => openEdit(p)}
+                          onDelete={() => setConfirmDelete(p.id)}
+                        />
+                      </Table.Cell>
+                    </Table.Row>
+                  ))}
+                </Table.Body>
+              </Table.Content>
+            </Table.ScrollContainer>
+          </Table>
         )}
 
         <Modal
@@ -228,7 +203,7 @@ export function PromptsTab({
                   setFormValues({ ...formValues, knowledge_model_id: e.target.value })
                 }
                 disabled={!!editingId}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background dark:bg-navy dark:border-navy focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
               >
                 <option value="">Select model</option>
                 {models.map((m) => (
@@ -247,7 +222,7 @@ export function PromptsTab({
                 value={String(formValues.prompt_key ?? '')}
                 onChange={(e) => setFormValues({ ...formValues, prompt_key: e.target.value })}
                 placeholder="e.g. opening_question"
-                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background dark:bg-navy dark:border-navy focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>
             <div>
@@ -259,7 +234,7 @@ export function PromptsTab({
                 onChange={(e) => setFormValues({ ...formValues, prompt_text: e.target.value })}
                 placeholder="The actual prompt text"
                 rows={4}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background dark:bg-navy dark:border-navy focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -268,7 +243,7 @@ export function PromptsTab({
                 <select
                   value={String(formValues.response_type ?? 'free_text')}
                   onChange={(e) => setFormValues({ ...formValues, response_type: e.target.value })}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background dark:bg-navy dark:border-navy focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
                 >
                   <option value="free_text">Free Text</option>
                   <option value="scale">Scale</option>
@@ -284,7 +259,7 @@ export function PromptsTab({
                   onChange={(e) =>
                     setFormValues({ ...formValues, display_order: Number(e.target.value) })
                   }
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background dark:bg-navy dark:border-navy focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
               </div>
             </div>

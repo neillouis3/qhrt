@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import Modal from '@/components/Modal';
+import { Table } from '@heroui/react';
+import Modal from '@/components/ui/Modal';
 import ContentErrorBoundary from '@/components/admin/ContentErrorBoundary';
 import { ConfirmModal } from './shared/ConfirmModal';
 import { Toggle } from './shared/Toggle';
 import { SearchBox } from './shared/SearchBox';
+import { TableRowActions } from './shared/TableRowActions';
 import type { KnowledgeModel } from './types';
 
 export function KnowledgeModelsTab({
@@ -123,8 +125,7 @@ export function KnowledgeModelsTab({
   return (
     <ContentErrorBoundary fallbackTitle="Knowledge Models failed to load">
       <div>
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">Knowledge Models</h3>
+        <div className="mb-4 flex items-center justify-end">
           <div className="flex items-center gap-3">
             <SearchBox placeholder="Search models…" onSearch={setSearch} />
             <button
@@ -150,59 +151,37 @@ export function KnowledgeModelsTab({
             <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border text-muted bg-muted/3 dark:bg-navy-light/5">
-                  <th className="text-left py-2.5 px-3 font-medium">Name</th>
-                  <th className="text-left py-2.5 px-3 font-medium hidden md:table-cell">
-                    Description
-                  </th>
-                  <th className="text-center py-2.5 px-3 font-medium">Version</th>
-                  <th className="text-center py-2.5 px-3 font-medium">Active</th>
-                  <th className="text-right py-2.5 px-3 font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {models.map((m) => (
-                  <tr
-                    key={m.id}
-                    className="border-b border-border/50 hover:bg-muted/3 transition-colors"
-                  >
-                    <td className="py-2.5 px-3 font-medium">{m.name}</td>
-                    <td className="py-2.5 px-3 text-muted hidden md:table-cell">
-                      {m.description || '—'}
-                    </td>
-                    <td className="py-2.5 px-3 text-center">{m.version}</td>
-                    <td className="py-2.5 px-3 text-center">
-                      <Toggle checked={m.is_active} onChange={() => handleToggleActive(m.id)} />
-                    </td>
-                    <td className="py-2.5 px-3 text-right">
-                      <button
-                        onClick={() => openEdit(m)}
-                        className="text-primary hover:underline text-xs mr-3"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => setConfirmDelete(m.id)}
-                        className="text-red-500 hover:underline text-xs"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {models.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="py-8 text-center text-muted">
-                      No knowledge models yet.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <Table>
+            <Table.ScrollContainer>
+              <Table.Content aria-label="Knowledge models">
+                <Table.Header>
+                  <Table.Column isRowHeader>Name</Table.Column>
+                  <Table.Column>Description</Table.Column>
+                  <Table.Column>Version</Table.Column>
+                  <Table.Column>Active</Table.Column>
+                  <Table.Column>Actions</Table.Column>
+                </Table.Header>
+                <Table.Body renderEmptyState={() => 'No knowledge models yet.'}>
+                  {models.map((m) => (
+                    <Table.Row key={m.id} id={m.id}>
+                      <Table.Cell>{m.name}</Table.Cell>
+                      <Table.Cell>{m.description || '—'}</Table.Cell>
+                      <Table.Cell>{m.version}</Table.Cell>
+                      <Table.Cell>
+                        <Toggle checked={m.is_active} onChange={() => handleToggleActive(m.id)} />
+                      </Table.Cell>
+                      <Table.Cell>
+                        <TableRowActions
+                          onEdit={() => openEdit(m)}
+                          onDelete={() => setConfirmDelete(m.id)}
+                        />
+                      </Table.Cell>
+                    </Table.Row>
+                  ))}
+                </Table.Body>
+              </Table.Content>
+            </Table.ScrollContainer>
+          </Table>
         )}
 
         <Modal
@@ -221,7 +200,7 @@ export function KnowledgeModelsTab({
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
                 placeholder="Model name"
-                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background dark:bg-navy dark:border-navy focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>
             <div>
@@ -231,7 +210,7 @@ export function KnowledgeModelsTab({
                 onChange={(e) => setFormDesc(e.target.value)}
                 placeholder="Optional description"
                 rows={2}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background dark:bg-navy dark:border-navy focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>
             <div>
@@ -241,7 +220,7 @@ export function KnowledgeModelsTab({
                 value={formVersion}
                 onChange={(e) => setFormVersion(e.target.value)}
                 placeholder="e.g. 1.0"
-                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background dark:bg-navy dark:border-navy focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>
           </div>
