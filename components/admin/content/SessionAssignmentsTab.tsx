@@ -1,9 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import Modal from '@/components/Modal';
+import { Table } from '@heroui/react';
+import Modal from '@/components/ui/Modal';
+import FieldSelect from '@/components/ui/FieldSelect';
 import ContentErrorBoundary from '@/components/admin/ContentErrorBoundary';
 import { ConfirmModal } from './shared/ConfirmModal';
 import { loadConditions } from './shared/loadConditions';
 import { SearchBox } from './shared/SearchBox';
+import { TableRowActions } from './shared/TableRowActions';
 import type { Condition } from './types';
 
 export function SessionAssignmentsTab({
@@ -111,8 +114,7 @@ export function SessionAssignmentsTab({
   return (
     <ContentErrorBoundary fallbackTitle="Session Assignments failed to load">
       <div>
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">Session Assignments</h3>
+        <div className="mb-4 flex items-center justify-end">
           <div className="flex items-center gap-3">
             <SearchBox placeholder="Search by condition…" onSearch={setSearch} />
             <button
@@ -134,19 +136,16 @@ export function SessionAssignmentsTab({
           </div>
         </div>
 
-        <div className="mb-3">
-          <select
-            value={filterConditionId}
-            onChange={(e) => setFilterConditionId(e.target.value)}
-            className="px-3 py-2 text-sm rounded-lg border border-border bg-background dark:bg-navy dark:border-navy focus:outline-none focus:ring-2 focus:ring-primary/50"
-          >
-            <option value="">All conditions</option>
-            {conditions.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+        <div className="mb-3 max-w-xs">
+          <FieldSelect
+            placeholder="All conditions"
+            selectedKey={filterConditionId || 'all'}
+            onChange={(key) => setFilterConditionId(key === 'all' ? '' : key)}
+            items={[
+              { id: 'all', name: 'All conditions' },
+              ...conditions.map((c) => ({ id: c.id, name: c.name })),
+            ]}
+          />
         </div>
 
         {loading ? (
@@ -154,55 +153,35 @@ export function SessionAssignmentsTab({
             <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border text-muted bg-muted/3 dark:bg-navy-light/5">
-                  <th className="text-left py-2.5 px-3 font-medium">Condition</th>
-                  <th className="text-left py-2.5 px-3 font-medium">Session ID</th>
-                  <th className="text-center py-2.5 px-3 font-medium">#</th>
-                  <th className="text-center py-2.5 px-3 font-medium">Required</th>
-                  <th className="text-right py-2.5 px-3 font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {assignments.map((a) => (
-                  <tr
-                    key={a.id}
-                    className="border-b border-border/50 hover:bg-muted/3 transition-colors"
-                  >
-                    <td className="py-2.5 px-3 font-medium">
-                      {condNameMap[a.condition_id] || a.condition_id}
-                    </td>
-                    <td className="py-2.5 px-3 text-muted">{a.session_id}</td>
-                    <td className="py-2.5 px-3 text-center">{a.session_number}</td>
-                    <td className="py-2.5 px-3 text-center">{a.is_required ? '✓' : '—'}</td>
-                    <td className="py-2.5 px-3 text-right">
-                      <button
-                        onClick={() => openEdit(a)}
-                        className="text-primary hover:underline text-xs mr-3"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => setConfirmDelete(a.id)}
-                        className="text-red-500 hover:underline text-xs"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {assignments.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="py-8 text-center text-muted">
-                      No session assignments yet.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <Table>
+            <Table.ScrollContainer>
+              <Table.Content aria-label="Session assignments">
+                <Table.Header>
+                  <Table.Column isRowHeader>Condition</Table.Column>
+                  <Table.Column>Session ID</Table.Column>
+                  <Table.Column>#</Table.Column>
+                  <Table.Column>Required</Table.Column>
+                  <Table.Column>Actions</Table.Column>
+                </Table.Header>
+                <Table.Body renderEmptyState={() => 'No session assignments yet.'}>
+                  {assignments.map((a) => (
+                    <Table.Row key={a.id} id={a.id}>
+                      <Table.Cell>{condNameMap[a.condition_id] || a.condition_id}</Table.Cell>
+                      <Table.Cell>{a.session_id}</Table.Cell>
+                      <Table.Cell>{a.session_number}</Table.Cell>
+                      <Table.Cell>{a.is_required ? '✓' : '—'}</Table.Cell>
+                      <Table.Cell>
+                        <TableRowActions
+                          onEdit={() => openEdit(a)}
+                          onDelete={() => setConfirmDelete(a.id)}
+                        />
+                      </Table.Cell>
+                    </Table.Row>
+                  ))}
+                </Table.Body>
+              </Table.Content>
+            </Table.ScrollContainer>
+          </Table>
         )}
 
         {/* Create/Edit Modal */}
@@ -220,7 +199,7 @@ export function SessionAssignmentsTab({
               <select
                 value={String(formValues.condition_id ?? '')}
                 onChange={(e) => setFormValues({ ...formValues, condition_id: e.target.value })}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background dark:bg-navy dark:border-navy focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
               >
                 <option value="">Select condition</option>
                 {conditions.map((c) => (
@@ -239,7 +218,7 @@ export function SessionAssignmentsTab({
                 value={String(formValues.session_id ?? '')}
                 onChange={(e) => setFormValues({ ...formValues, session_id: e.target.value })}
                 placeholder="Session identifier"
-                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background dark:bg-navy dark:border-navy focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -251,7 +230,7 @@ export function SessionAssignmentsTab({
                   onChange={(e) =>
                     setFormValues({ ...formValues, session_number: Number(e.target.value) })
                   }
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background dark:bg-navy dark:border-navy focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
               </div>
               <div className="flex items-end pb-2">

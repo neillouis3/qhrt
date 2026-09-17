@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import Modal from '@/components/Modal';
+import { Table } from '@heroui/react';
+import Modal from '@/components/ui/Modal';
 import ContentErrorBoundary from '@/components/admin/ContentErrorBoundary';
 import { SearchBox } from './shared/SearchBox';
+import { TableRowActions } from './shared/TableRowActions';
 
 interface PhaseTemplate {
   id: string;
@@ -87,8 +89,7 @@ export function PhaseTemplatesTab({
   return (
     <ContentErrorBoundary fallbackTitle="Phase Templates failed to load">
       <div>
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">Phase Templates</h3>
+        <div className="mb-4 flex items-center justify-end">
           <div className="flex items-center gap-3">
             <SearchBox placeholder="Search templates…" onSearch={setSearch} />
             <button
@@ -113,44 +114,33 @@ export function PhaseTemplatesTab({
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
           </div>
-        ) : templates.length === 0 ? (
-          <div className="rounded-xl border border-border bg-background p-8 text-center dark:bg-navy">
-            <p className="text-muted dark:text-gray-400">No phase templates configured yet.</p>
-          </div>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-border dark:border-gray-700">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50 dark:bg-navy-light">
-                <tr>
-                  <th className="px-4 py-3 text-left font-medium">#</th>
-                  <th className="px-4 py-3 text-left font-medium">Key</th>
-                  <th className="px-4 py-3 text-left font-medium">Name</th>
-                  <th className="px-4 py-3 text-left font-medium">Client Script</th>
-                  <th className="px-4 py-3 text-right font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {templates.map((t) => (
-                  <tr key={t.id} className="border-t border-border dark:border-gray-700">
-                    <td className="px-4 py-3">{t.phase_order}</td>
-                    <td className="px-4 py-3 font-mono text-xs">{t.phase_key}</td>
-                    <td className="px-4 py-3">{t.name}</td>
-                    <td className="px-4 py-3 max-w-xs truncate text-muted dark:text-gray-400">
-                      {t.client_script || '—'}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <button
-                        onClick={() => openEdit(t)}
-                        className="px-2 py-1 text-xs text-muted hover:text-foreground transition-colors"
-                      >
-                        Edit
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <Table>
+            <Table.ScrollContainer>
+              <Table.Content aria-label="Phase templates">
+                <Table.Header>
+                  <Table.Column>#</Table.Column>
+                  <Table.Column>Key</Table.Column>
+                  <Table.Column isRowHeader>Name</Table.Column>
+                  <Table.Column>Client script</Table.Column>
+                  <Table.Column>Actions</Table.Column>
+                </Table.Header>
+                <Table.Body renderEmptyState={() => 'No phase templates configured yet.'}>
+                  {templates.map((t) => (
+                    <Table.Row key={t.id} id={t.id}>
+                      <Table.Cell>{t.phase_order}</Table.Cell>
+                      <Table.Cell>{t.phase_key}</Table.Cell>
+                      <Table.Cell>{t.name}</Table.Cell>
+                      <Table.Cell>{t.client_script || '—'}</Table.Cell>
+                      <Table.Cell>
+                        <TableRowActions onEdit={() => openEdit(t)} />
+                      </Table.Cell>
+                    </Table.Row>
+                  ))}
+                </Table.Body>
+              </Table.Content>
+            </Table.ScrollContainer>
+          </Table>
         )}
 
         <Modal
@@ -170,7 +160,7 @@ export function PhaseTemplatesTab({
                     type="number"
                     value={formValues.phase_order || ''}
                     onChange={(e) => setFormValues({ ...formValues, phase_order: e.target.value })}
-                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm dark:bg-navy dark:text-white"
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
                     placeholder="1–8"
                   />
                 </div>
@@ -182,7 +172,7 @@ export function PhaseTemplatesTab({
                     type="text"
                     value={formValues.phase_key || ''}
                     onChange={(e) => setFormValues({ ...formValues, phase_key: e.target.value })}
-                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm dark:bg-navy dark:text-white"
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
                     placeholder="e.g. conscious_regulatory_activation"
                   />
                 </div>
@@ -194,7 +184,7 @@ export function PhaseTemplatesTab({
                 type="text"
                 value={formValues.name || ''}
                 onChange={(e) => setFormValues({ ...formValues, name: e.target.value })}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm dark:bg-navy dark:text-white"
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
                 placeholder="Phase display name"
               />
             </div>
@@ -206,7 +196,7 @@ export function PhaseTemplatesTab({
                 value={formValues.description || ''}
                 onChange={(e) => setFormValues({ ...formValues, description: e.target.value })}
                 rows={2}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm dark:bg-navy dark:text-white"
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
               />
             </div>
             <div className="flex flex-col gap-1">
@@ -217,7 +207,7 @@ export function PhaseTemplatesTab({
                 value={formValues.client_script || ''}
                 onChange={(e) => setFormValues({ ...formValues, client_script: e.target.value })}
                 rows={3}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm dark:bg-navy dark:text-white"
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
               />
             </div>
             <div className="flex flex-col gap-1">
@@ -230,7 +220,7 @@ export function PhaseTemplatesTab({
                   setFormValues({ ...formValues, practitioner_protocol: e.target.value })
                 }
                 rows={3}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm dark:bg-navy dark:text-white"
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
               />
             </div>
             <div className="flex flex-col gap-1">
@@ -243,7 +233,7 @@ export function PhaseTemplatesTab({
                   setFormValues({ ...formValues, transition_rule_description: e.target.value })
                 }
                 rows={2}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm dark:bg-navy dark:text-white"
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
               />
             </div>
             <div className="flex gap-3 justify-end mt-2">
