@@ -1,6 +1,6 @@
 /**
  * Admin Analytics API
- * Extended stats for the /analytics dashboard — user engagement, ratings, stress trends, etc.
+ * Extended stats for the admin dashboard — user engagement, ratings, stress trends, etc.
  */
 
 import { NextResponse } from 'next/server';
