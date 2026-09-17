@@ -29,7 +29,6 @@ export function SeedDataTab({
   return (
     <ContentErrorBoundary fallbackTitle="Seed Data failed to load">
       <div>
-        <h3 className="text-lg font-semibold mb-4">Seed Data</h3>
         <p className="text-sm text-muted mb-6">
           Populate the condition library with the initial 7 categories and 60 conditions. This
           operation is idempotent — safe to re-run (existing records are preserved).

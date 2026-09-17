@@ -1,8 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import Modal from '@/components/Modal';
+import { Table } from '@heroui/react';
+import Modal from '@/components/ui/Modal';
+import FieldSelect from '@/components/ui/FieldSelect';
 import ContentErrorBoundary from '@/components/admin/ContentErrorBoundary';
 import { ConfirmModal } from './shared/ConfirmModal';
 import { SearchBox } from './shared/SearchBox';
+import { TableRowActions } from './shared/TableRowActions';
 import type { BranchRule, Prompt } from './types';
 
 export function BranchRulesTab({
@@ -114,8 +117,7 @@ export function BranchRulesTab({
   return (
     <ContentErrorBoundary fallbackTitle="Branch Rules failed to load">
       <div>
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">Branch Rules</h3>
+        <div className="mb-4 flex items-center justify-end">
           <div className="flex items-center gap-3">
             <SearchBox placeholder="Search rules…" onSearch={setSearch} />
             <button
@@ -137,19 +139,16 @@ export function BranchRulesTab({
           </div>
         </div>
 
-        <div className="mb-3">
-          <select
-            value={filterPromptId}
-            onChange={(e) => setFilterPromptId(e.target.value)}
-            className="px-3 py-2 text-sm rounded-lg border border-border bg-background dark:bg-navy dark:border-navy focus:outline-none focus:ring-2 focus:ring-primary/50"
-          >
-            <option value="">All prompts</option>
-            {prompts.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.prompt_key}
-              </option>
-            ))}
-          </select>
+        <div className="mb-3 max-w-xs">
+          <FieldSelect
+            placeholder="All prompts"
+            selectedKey={filterPromptId || 'all'}
+            onChange={(key) => setFilterPromptId(key === 'all' ? '' : key)}
+            items={[
+              { id: 'all', name: 'All prompts' },
+              ...prompts.map((p) => ({ id: p.id, name: p.prompt_key })),
+            ]}
+          />
         </div>
 
         {loading ? (
@@ -157,65 +156,41 @@ export function BranchRulesTab({
             <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border text-muted bg-muted/3 dark:bg-navy-light/5">
-                  <th className="text-left py-2.5 px-3 font-medium">Source Prompt</th>
-                  <th className="text-left py-2.5 px-3 font-medium hidden md:table-cell">
-                    Target Prompt
-                  </th>
-                  <th className="text-left py-2.5 px-3 font-medium hidden lg:table-cell max-w-xs">
-                    Condition
-                  </th>
-                  <th className="text-center py-2.5 px-3 font-medium">Priority</th>
-                  <th className="text-right py-2.5 px-3 font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rules.map((r) => (
-                  <tr
-                    key={r.id}
-                    className="border-b border-border/50 hover:bg-muted/3 transition-colors"
-                  >
-                    <td className="py-2.5 px-3 font-medium">
-                      {promptKeyMap[r.prompt_id] || r.prompt_id}
-                    </td>
-                    <td className="py-2.5 px-3 text-muted hidden md:table-cell">
-                      {promptKeyMap[r.target_prompt_id] || r.target_prompt_id}
-                    </td>
-                    <td className="py-2.5 px-3 text-muted hidden lg:table-cell max-w-xs truncate">
-                      {typeof r.condition_expression === 'string'
-                        ? r.condition_expression
-                        : JSON.stringify(r.condition_expression)}
-                    </td>
-                    <td className="py-2.5 px-3 text-center">{r.priority}</td>
-                    <td className="py-2.5 px-3 text-right">
-                      <button
-                        onClick={() => openEdit(r)}
-                        className="text-primary hover:underline text-xs mr-3"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => setConfirmDelete(r.id)}
-                        className="text-red-500 hover:underline text-xs"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {rules.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="py-8 text-center text-muted">
-                      No branch rules yet.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <Table>
+            <Table.ScrollContainer>
+              <Table.Content aria-label="Branch rules">
+                <Table.Header>
+                  <Table.Column isRowHeader>Source prompt</Table.Column>
+                  <Table.Column>Target prompt</Table.Column>
+                  <Table.Column>Condition</Table.Column>
+                  <Table.Column>Priority</Table.Column>
+                  <Table.Column>Actions</Table.Column>
+                </Table.Header>
+                <Table.Body renderEmptyState={() => 'No branch rules yet.'}>
+                  {rules.map((r) => (
+                    <Table.Row key={r.id} id={r.id}>
+                      <Table.Cell>{promptKeyMap[r.prompt_id] || r.prompt_id}</Table.Cell>
+                      <Table.Cell>
+                        {promptKeyMap[r.target_prompt_id] || r.target_prompt_id}
+                      </Table.Cell>
+                      <Table.Cell>
+                        {typeof r.condition_expression === 'string'
+                          ? r.condition_expression
+                          : JSON.stringify(r.condition_expression)}
+                      </Table.Cell>
+                      <Table.Cell>{r.priority}</Table.Cell>
+                      <Table.Cell>
+                        <TableRowActions
+                          onEdit={() => openEdit(r)}
+                          onDelete={() => setConfirmDelete(r.id)}
+                        />
+                      </Table.Cell>
+                    </Table.Row>
+                  ))}
+                </Table.Body>
+              </Table.Content>
+            </Table.ScrollContainer>
+          </Table>
         )}
 
         <Modal
@@ -233,7 +208,7 @@ export function BranchRulesTab({
                 value={String(formValues.prompt_id ?? '')}
                 onChange={(e) => setFormValues({ ...formValues, prompt_id: e.target.value })}
                 disabled={!!editingId}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background dark:bg-navy dark:border-navy focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
               >
                 <option value="">Select source prompt</option>
                 {prompts.map((p) => (
@@ -250,7 +225,7 @@ export function BranchRulesTab({
               <select
                 value={String(formValues.target_prompt_id ?? '')}
                 onChange={(e) => setFormValues({ ...formValues, target_prompt_id: e.target.value })}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background dark:bg-navy dark:border-navy focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
               >
                 <option value="">Select target prompt</option>
                 {prompts.map((p) => (
@@ -269,7 +244,7 @@ export function BranchRulesTab({
                 }
                 placeholder="JSON or string expression"
                 rows={3}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background dark:bg-navy dark:border-navy focus:outline-none focus:ring-2 focus:ring-primary/50 font-mono"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 font-mono"
               />
             </div>
             <div>
@@ -278,7 +253,7 @@ export function BranchRulesTab({
                 type="number"
                 value={String(formValues.priority ?? 0)}
                 onChange={(e) => setFormValues({ ...formValues, priority: Number(e.target.value) })}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background dark:bg-navy dark:border-navy focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>
           </div>

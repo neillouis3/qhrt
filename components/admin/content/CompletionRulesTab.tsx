@@ -1,8 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import Modal from '@/components/Modal';
+import { Table } from '@heroui/react';
+import Modal from '@/components/ui/Modal';
+import FieldSelect from '@/components/ui/FieldSelect';
 import ContentErrorBoundary from '@/components/admin/ContentErrorBoundary';
 import { ConfirmModal } from './shared/ConfirmModal';
 import { SearchBox } from './shared/SearchBox';
+import { TableRowActions } from './shared/TableRowActions';
 import type { CompletionRule, EvidenceDimension } from './types';
 
 export function CompletionRulesTab({
@@ -111,8 +114,7 @@ export function CompletionRulesTab({
   return (
     <ContentErrorBoundary fallbackTitle="Completion Rules failed to load">
       <div>
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">Completion Rules</h3>
+        <div className="mb-4 flex items-center justify-end">
           <div className="flex items-center gap-3">
             <SearchBox placeholder="Search rules…" onSearch={setSearch} />
             <button
@@ -134,19 +136,16 @@ export function CompletionRulesTab({
           </div>
         </div>
 
-        <div className="mb-3">
-          <select
-            value={filterDimId}
-            onChange={(e) => setFilterDimId(e.target.value)}
-            className="px-3 py-2 text-sm rounded-lg border border-border bg-background dark:bg-navy dark:border-navy focus:outline-none focus:ring-2 focus:ring-primary/50"
-          >
-            <option value="">All dimensions</option>
-            {dimensions.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name}
-              </option>
-            ))}
-          </select>
+        <div className="mb-3 max-w-xs">
+          <FieldSelect
+            placeholder="All dimensions"
+            selectedKey={filterDimId || 'all'}
+            onChange={(key) => setFilterDimId(key === 'all' ? '' : key)}
+            items={[
+              { id: 'all', name: 'All dimensions' },
+              ...dimensions.map((d) => ({ id: d.id, name: d.name })),
+            ]}
+          />
         </div>
 
         {loading ? (
@@ -154,57 +153,37 @@ export function CompletionRulesTab({
             <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border text-muted bg-muted/3 dark:bg-navy-light/5">
-                  <th className="text-left py-2.5 px-3 font-medium">Dimension</th>
-                  <th className="text-left py-2.5 px-3 font-medium hidden md:table-cell max-w-xs">
-                    Rule Expression
-                  </th>
-                  <th className="text-right py-2.5 px-3 font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rules.map((r) => (
-                  <tr
-                    key={r.id}
-                    className="border-b border-border/50 hover:bg-muted/3 transition-colors"
-                  >
-                    <td className="py-2.5 px-3 font-medium">
-                      {dimNameMap[r.evidence_dimension_id] || r.evidence_dimension_id}
-                    </td>
-                    <td className="py-2.5 px-3 text-muted hidden md:table-cell max-w-xs truncate font-mono text-xs">
-                      {typeof r.rule_expression === 'string'
-                        ? r.rule_expression
-                        : JSON.stringify(r.rule_expression)}
-                    </td>
-                    <td className="py-2.5 px-3 text-right">
-                      <button
-                        onClick={() => openEdit(r)}
-                        className="text-primary hover:underline text-xs mr-3"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => setConfirmDelete(r.id)}
-                        className="text-red-500 hover:underline text-xs"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {rules.length === 0 && (
-                  <tr>
-                    <td colSpan={3} className="py-8 text-center text-muted">
-                      No completion rules yet.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <Table>
+            <Table.ScrollContainer>
+              <Table.Content aria-label="Completion rules">
+                <Table.Header>
+                  <Table.Column isRowHeader>Dimension</Table.Column>
+                  <Table.Column>Rule expression</Table.Column>
+                  <Table.Column>Actions</Table.Column>
+                </Table.Header>
+                <Table.Body renderEmptyState={() => 'No completion rules yet.'}>
+                  {rules.map((r) => (
+                    <Table.Row key={r.id} id={r.id}>
+                      <Table.Cell>
+                        {dimNameMap[r.evidence_dimension_id] || r.evidence_dimension_id}
+                      </Table.Cell>
+                      <Table.Cell>
+                        {typeof r.rule_expression === 'string'
+                          ? r.rule_expression
+                          : JSON.stringify(r.rule_expression)}
+                      </Table.Cell>
+                      <Table.Cell>
+                        <TableRowActions
+                          onEdit={() => openEdit(r)}
+                          onDelete={() => setConfirmDelete(r.id)}
+                        />
+                      </Table.Cell>
+                    </Table.Row>
+                  ))}
+                </Table.Body>
+              </Table.Content>
+            </Table.ScrollContainer>
+          </Table>
         )}
 
         <Modal
@@ -224,7 +203,7 @@ export function CompletionRulesTab({
                   setFormValues({ ...formValues, evidence_dimension_id: e.target.value })
                 }
                 disabled={!!editingId}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background dark:bg-navy dark:border-navy focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
               >
                 <option value="">Select dimension</option>
                 {dimensions.map((d) => (
@@ -241,7 +220,7 @@ export function CompletionRulesTab({
                 onChange={(e) => setFormValues({ ...formValues, rule_expression: e.target.value })}
                 placeholder="JSON expression defining completion criteria"
                 rows={4}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background dark:bg-navy dark:border-navy focus:outline-none focus:ring-2 focus:ring-primary/50 font-mono"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 font-mono"
               />
             </div>
           </div>
