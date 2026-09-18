@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     const categories = [
       {
         name: 'Emotional Wellbeing',
-        description: 'Mental health, mood, and emotional balance',
+        description: 'Stress, mood, and emotional balance habits',
         display_order: 1,
       },
       {
