@@ -1,4 +1,4 @@
-import Modal from '@/components/Modal';
+import Modal from '@/components/ui/Modal';
 
 export function ConfirmModal({
   isOpen,
@@ -23,7 +23,7 @@ export function ConfirmModal({
       <div className="flex justify-end gap-3">
         <button
           onClick={onClose}
-          className="px-4 py-2 text-sm font-medium rounded-lg border border-border text-muted hover:bg-muted/5 transition-colors dark:border-navy"
+          className="rounded-lg border border-border px-4 py-2 text-sm text-muted hover:bg-default/40"
         >
           Cancel
         </button>
