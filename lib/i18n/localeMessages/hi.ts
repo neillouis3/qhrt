@@ -1,0 +1,158 @@
+import type { MessageTree } from '@/lib/i18n/messages';
+
+/** Hindi UI strings (app chrome; session content may stay in English). */
+export const hi: MessageTree = {
+  nav: {
+    home: 'होम',
+    sessions: 'सत्र',
+    diary: 'डायरी',
+    assessments: 'फ़ोकस क्षेत्र',
+    journeys: 'यात्राएँ',
+    about: 'हमारे बारे में',
+    contact: 'संपर्क',
+    login: 'लॉग इन',
+    signup: 'खाता बनाएँ',
+    dashboard: 'डैशबोर्ड पर जाएँ',
+  },
+  settings: {
+    title: 'सेटिंग्स',
+    group: {
+      account: 'खाता',
+      preferences: 'प्राथमिकताएँ',
+      support: 'सहायता',
+    },
+    tab: {
+      profile: 'प्रोफ़ाइल',
+      data: 'आपका डेटा',
+      home: 'होम',
+      appearance: 'दिखावट',
+      help: 'मदद',
+    },
+    appearance: {
+      title: 'दिखावट',
+      theme: 'थीम',
+      themePlaceholder: 'थीम',
+      language: 'भाषा',
+      languageDescription:
+        'ऐप मेनू और सामान्य लेबल। सत्र की सामग्री अभी अपनी मूल भाषा में रहती है।',
+    },
+    theme: {
+      light: 'हल्का',
+      dark: 'गहरा',
+      system: 'डिवाइस जैसा',
+    },
+    home: {
+      title: 'होम',
+      checkIn: 'होम चेक-इन',
+      checkInDescription: 'होम पर थम्स अप प्रॉम्प्ट दिखाएँ।',
+      practiceTime: 'आप आमतौर पर कब अभ्यास करते हैं',
+      practicePlaceholder: 'जब भी समय मिले',
+    },
+    profile: {
+      save: 'सहेजें',
+      saved: 'प्रोफ़ाइल सहेजी गई।',
+    },
+    data: {
+      title: 'आपका डेटा',
+      download: 'मेरा डेटा डाउनलोड करें',
+    },
+    help: {
+      title: 'मदद',
+      logout: 'लॉग आउट',
+      privacy: 'गोपनीयता',
+      terms: 'नियम',
+      contact: 'संपर्क',
+    },
+  },
+  home: {
+    greeting: {
+      hello: 'नमस्ते',
+      morning: 'सुप्रभात',
+      afternoon: 'नमस्कार',
+      evening: 'शुभ संध्या',
+    },
+    checkIn: {
+      prompt: 'त्वरित wellness चेक — आज कैसा लग रहा है?',
+      up: 'अच्छी बात। छोटी आदतें मिलकर बड़ा बदलाव लाती हैं।',
+      down: 'कठिन दिन होते हैं। तैयार हों तो एक छोटा कदम चुनें।',
+    },
+    browse: {
+      title: 'या ब्राउज़ करें',
+      sessions: 'सत्र',
+      diary: 'डायरी',
+      assessments: 'फ़ोकस क्षेत्र',
+      journeys: 'यात्राएँ',
+      breathe: 'साँस',
+    },
+    presence: {
+      one: 'इस सप्ताह आप 1 दिन आए।',
+      many: 'इस सप्ताह आप {count} दिन आए।',
+    },
+    checkInWeek: 'इस सप्ताह आपके wellness चेक-इन',
+    pinned: 'पिन किया',
+    tagline: 'Wellness और resilience coaching',
+    nextStep: {
+      label: 'सुझाया गया अगला कदम',
+      loading: 'आपका डैशबोर्ड लोड हो रहा है…',
+    },
+    recent: 'जहाँ छोड़ा था वहीं से जारी रखें',
+    tutorial: {
+      title: 'शुरुआत',
+      progress: '{done} में से {total} पूर्ण',
+      then: 'फिर',
+      go: 'जाएँ',
+    },
+    shortcuts: {
+      focusTitle: 'फ़ोकस क्षेत्र',
+      focusDescription:
+        'आपके चुने लक्ष्यों से मेल खाने वाली guided workbook — clinical assessment नहीं।',
+      focusCta: 'Workbook देखें',
+      diaryTitle: 'प्रतिबिंब डायरी',
+      diaryDescription: 'तनाव, आदतों या दिन के बारे में छोटा नोट।',
+      diaryCta: 'लिखें',
+    },
+    diary: {
+      section: 'प्रतिबिंब डायरी',
+      emptyTitle: 'अभी कोई entry नहीं',
+      emptyDescription:
+        'तनाव, सीमाओं या छोटी जीत के बारे में कुछ पंक्तियाँ — वैकल्पिक और निजी।',
+      emptyCta: 'पहली entry',
+      open: 'डायरी खोलें',
+      entriesWeek: 'इस सप्ताह entries',
+      streak: 'दिनों की लकीर',
+      avgWeek: 'इस सप्ताह औसत',
+      today: 'आज',
+      last7: 'पिछले 7 दिन',
+      written: 'लिखा',
+    },
+    pinnedHint: 'कुछ मिनट हों तो जल्दी जारी रखने के तरीके।',
+    checkInAria: {
+      doingWell: 'ठीक है',
+      toughDay: 'कठिन दिन',
+      week: 'इस सप्ताह wellness चेक-इन',
+      dayUp: '{day}: ठीक',
+      dayDown: '{day}: कठिन',
+      dayNone: '{day}: कोई चेक-इन नहीं',
+    },
+  },
+  time: {
+    night: 'रात',
+    dawn: 'भोर',
+    morning: 'सुबह',
+    afternoon: 'दोपहर',
+    evening: 'शाम',
+  },
+  crisis: {
+    compactStart:
+      'QHRT coaching और शिक्षा है, therapy या crisis care नहीं। US और Canada में कॉल या टेक्स्ट ',
+    compactMiddle: ' Suicide & Crisis Lifeline के लिए, या emergency में ',
+    compactEnd: '।',
+    intro:
+      'QHRT self-paced wellness coaching है, therapy या emergency सेवा नहीं। खतरे में हों तो नीचे दिए संसाधनों का उपयोग करें।',
+    line988: '988 Suicide & Crisis Lifeline (US और Canada)',
+    line988Detail: '988 पर कॉल या टेक्स्ट, 24/7।',
+    emergency: 'आपातकालीन सेवाएँ',
+    emergencyDetail:
+      'तत्काल खतरे में 911 (US/Canada) या स्थानीय emergency नंबर पर कॉल करें।',
+  },
+};
