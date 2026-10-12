@@ -3,7 +3,6 @@ import type { NextRequest } from 'next/server';
 import { createUserClient } from '@/lib/supabaseClient';
 import { requireUser } from '@/lib/adminAuth';
 import { apiError } from '@/lib/apiError';
-
 /**
  * POST — save assessment results for a user's selected condition.
  * body: { conditionId, answers: [{ questionId, answerValue }] }
