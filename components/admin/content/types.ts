@@ -118,6 +118,8 @@ export interface CompletionRule {
 }
 
 export type TabKey =
+  | 'assessment-builder'
+  | 'workbooks'
   | 'categories'
   | 'conditions'
   | 'symptoms'
