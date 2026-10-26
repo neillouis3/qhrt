@@ -24,15 +24,14 @@ const facts = [
 
 const features = [
   {
-    title: 'Guided programs',
-    description: 'Structured modules on stress, sleep, and habits — built for self-improvement at your pace.',
+    title: 'Focus-area check-ins',
+    description: 'Sleep, stress, habits, and more — each with its own questions, not one generic quiz.',
     icon: BookOpen02Icon,
   },
   {
-    title: 'Self-paced learning',
-    description:
-      'Work through content on your own schedule. Pause, revisit, and progress at a pace that feels right.',
-    icon: Clock01Icon,
+    title: 'Matching workbooks',
+    description: 'Answers route you to coaching content for that topic. Educational, not a diagnosis.',
+    icon: ChartIncreaseIcon,
   },
   {
     title: 'Private & secure',
@@ -40,14 +39,14 @@ const features = [
     icon: ShieldCheckIcon,
   },
   {
-    title: 'Accessible from anywhere',
-    description: 'No commute, no waiting rooms. Practice from wherever feels comfortable.',
-    icon: Globe02Icon,
+    title: 'At your pace',
+    description: 'Pause, retake, or skip. Work through a focus area when it fits, not on a program clock.',
+    icon: Clock01Icon,
   },
   {
-    title: 'Progress tracking',
-    description: 'Set goals, reflect on your journey, and see how far you have come.',
-    icon: ChartIncreaseIcon,
+    title: 'From anywhere',
+    description: 'Practice from wherever feels comfortable — no commute, no appointment slot.',
+    icon: Globe02Icon,
   },
   {
     title: 'Free to access',
@@ -114,19 +113,23 @@ export default function LandingPage() {
           <Typography type="h4" weight="normal">
             Why QHRT
           </Typography>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="grid grid-cols-1 gap-x-16 gap-y-10 sm:grid-cols-2">
             {features.map((feature) => (
-              <Card key={feature.title} variant="transparent" className={cardClass}>
-                <div className="flex size-9 items-center justify-center rounded-lg bg-accent-lighter dark:bg-primary/15">
+              <li key={feature.title} className="flex gap-4">
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-accent-lighter dark:bg-primary/15">
                   <LandingIcon icon={feature.icon} size={18} className="text-primary" />
                 </div>
-                <Card.Header>
-                  <Card.Title className="font-normal tracking-tight">{feature.title}</Card.Title>
-                </Card.Header>
-                <Card.Description>{feature.description}</Card.Description>
-              </Card>
+                <div className="flex min-w-0 flex-col gap-1 pt-0.5">
+                  <Typography type="body" className="font-normal tracking-tight">
+                    {feature.title}
+                  </Typography>
+                  <Typography type="body-sm" color="muted">
+                    {feature.description}
+                  </Typography>
+                </div>
+              </li>
             ))}
-          </div>
+          </ul>
         </section>
 
         <section className="py-24">
