@@ -2,9 +2,8 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseClient';
 import { requireAdmin } from '@/lib/adminAuth';
-import { apiError } from '@/lib/apiError';
-import { ASSESSMENT_COLUMNS, toDefinition } from '@/lib/assessments/server';
-import { validateAssessmentInput } from '@/lib/assessments/validate';
+import { apiError, missingRelation, schemaMissingResponse } from '@/lib/apiError';
+import { ASSESSMENT_COLUMNS, toDefinition, validateAssessmentInput } from '@/lib/assessments';
 
 const TAG = '[api/admin/assessments]';
 
@@ -33,7 +32,12 @@ export async function GET(request: NextRequest) {
     .order('display_order', { ascending: true })
     .order('created_at', { ascending: true });
 
-  if (error) return apiError(error, `${TAG} GET`);
+  if (error) {
+    if (missingRelation(error)) {
+      return schemaMissingResponse('Assessment', 'supabase/009_assessment_engine.sql');
+    }
+    return apiError(error, `${TAG} GET`);
+  }
   return NextResponse.json({ assessments: (data ?? []).map(toDefinition) });
 }
 

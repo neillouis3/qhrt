@@ -19,12 +19,10 @@ import {
 import SessionRow from '@/components/session/SessionRow';
 import { useLocale } from '@/context/LocaleContext';
 import UserPageShell from '@/components/layout/UserPageShell';
-import type { HomeActivityItem } from '@/lib/homeActivity';
+import { idlePracticeNext, type HomeActivityItem, type HomeNext, type TutorialStep } from '@/lib/home';
 import type { HomeDiaryStats as HomeDiaryStatsData } from '@/lib/diaryStats';
-import { idlePracticeNext, type HomeNext } from '@/lib/homeNext';
-import type { TutorialStep } from '@/lib/homeTutorial';
 import type { GentlePresence } from '@/lib/gentlePresence';
-import type { CheckInWeekDay } from '@/lib/homeCheckInHistory';
+import type { CheckInWeekDay } from '@/lib/homeCheckIn';
 import type { PinnedPractice } from '@/lib/pinnedPractices';
 import { usePinnedPractices } from '@/hooks/usePinnedPractices';
 import type { NameSource } from '@/lib/userName';
@@ -38,10 +36,8 @@ interface HomePageProps {
 }
 
 const BROWSE_HREFS = [
-  { key: 'sessions', href: '/sessions' },
   { key: 'diary', href: '/diary' },
   { key: 'assessments', href: '/assessments' },
-  { key: 'journeys', href: '/journeys' },
   { key: 'breathe', href: '/breathe' },
 ] as const;
 

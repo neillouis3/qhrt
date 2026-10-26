@@ -13,7 +13,7 @@ import {
 } from '@/lib/pinnedPractices';
 
 function isPinKind(value: unknown): value is PinKind {
-  return value === 'session' || value === 'journey' || value === 'breathe';
+  return value === 'assessment' || value === 'breathe';
 }
 
 async function readMeta(userId: string) {

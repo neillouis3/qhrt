@@ -5,7 +5,7 @@ import ContentErrorBoundary from '@/components/admin/ContentErrorBoundary';
 import { ConfirmModal } from '../shared/ConfirmModal';
 import { Toggle } from '../shared/Toggle';
 import { TableRowActions } from '../shared/TableRowActions';
-import type { Workbook } from '@/lib/assessments/types';
+import type { Workbook } from '@/lib/assessments';
 import { Field, PlusIcon, inputClass, primaryButtonClass, secondaryButtonClass } from './fields';
 
 interface WorkbookForm {

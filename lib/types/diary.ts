@@ -11,7 +11,7 @@ export interface DiaryEntry {
   updated_at: string;
 }
 
-export type DiaryCompletionKind = 'assessment' | 'conversation' | 'journey';
+export type DiaryCompletionKind = 'assessment';
 
 export interface DiaryCompletion {
   id: string;

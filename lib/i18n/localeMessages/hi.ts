@@ -4,10 +4,8 @@ import type { MessageTree } from '@/lib/i18n/messages';
 export const hi: MessageTree = {
   nav: {
     home: 'होम',
-    sessions: 'सत्र',
     diary: 'डायरी',
     assessments: 'फ़ोकस क्षेत्र',
-    journeys: 'यात्राएँ',
     about: 'हमारे बारे में',
     contact: 'संपर्क',
     login: 'लॉग इन',
@@ -78,10 +76,8 @@ export const hi: MessageTree = {
     },
     browse: {
       title: 'या ब्राउज़ करें',
-      sessions: 'सत्र',
       diary: 'डायरी',
       assessments: 'फ़ोकस क्षेत्र',
-      journeys: 'यात्राएँ',
       breathe: 'साँस',
     },
     presence: {

@@ -13,8 +13,7 @@ import {
   buttonVariants,
 } from '@heroui/react';
 import { useTheme } from 'next-themes';
-import { useSession, clearSessionCache } from '@/hooks/useSession';
-import { logoutOnClient } from '@/lib/logoutClient';
+import { useSession, clearSessionCache, logoutOnClient } from '@/hooks/useSession';
 import { namePartsFromUser } from '@/lib/userName';
 import { homeCheckInFromUser, practiceTimeFromUser, pronounsFromUser } from '@/lib/userSettings';
 import { ONBOARDING_PRACTICE_TIMES, ONBOARDING_PRONOUNS } from '@/lib/onboarding';

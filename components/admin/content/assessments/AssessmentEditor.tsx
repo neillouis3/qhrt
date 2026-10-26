@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react';
-import { scoreBounds } from '@/lib/assessments/scoring';
-import type {
-  AssessmentDefinition,
-  AssessmentOutcome,
-  AssessmentQuestion,
-  ScoringMethod,
-  Workbook,
-} from '@/lib/assessments/types';
+import {
+  scoreBounds,
+  type AssessmentDefinition,
+  type AssessmentOutcome,
+  type AssessmentQuestion,
+  type ScoringMethod,
+  type Workbook,
+} from '@/lib/assessments';
 import { QuestionEditor } from './QuestionEditor';
 import { OutcomeEditor } from './OutcomeEditor';
 import { Field, inputClass, primaryButtonClass, secondaryButtonClass } from './fields';

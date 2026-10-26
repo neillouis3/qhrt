@@ -3,9 +3,12 @@ import type { NextRequest } from 'next/server';
 import { requireUser } from '@/lib/adminAuth';
 import { apiError } from '@/lib/apiError';
 import { supabaseServer } from '@/lib/supabaseClient';
-import { getActiveAssessmentBySlug, withWorkbooks } from '@/lib/assessments/server';
-import { evaluateAssessment } from '@/lib/assessments/scoring';
-import { validateAnswers } from '@/lib/assessments/validate';
+import {
+  evaluateAssessment,
+  getActiveAssessmentBySlug,
+  validateAnswers,
+  withWorkbooks,
+} from '@/lib/assessments';
 
 /** POST — score answers, save the submission, and return workbook routing. */
 export async function POST(

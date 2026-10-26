@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import HomePageChrome from '@/components/home/HomePageChrome';
+import { HomePageChrome } from '@/components/home/HomeDashboardSections';
 
 export const metadata: Metadata = {
   title: 'Home',

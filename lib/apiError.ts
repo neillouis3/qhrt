@@ -15,6 +15,22 @@
  */
 import { NextResponse } from 'next/server';
 
+export function missingRelation(err: unknown): boolean {
+  if (!err || typeof err !== 'object') return false;
+  const code = 'code' in err ? String(err.code) : '';
+  return code === 'PGRST205' || code === '42P01';
+}
+
+export function schemaMissingResponse(label: string, sqlFile: string): NextResponse {
+  return NextResponse.json(
+    {
+      error: `${label} tables are missing. Run ${sqlFile} in the Supabase SQL Editor, then refresh.`,
+      code: 'SCHEMA_MISSING',
+    },
+    { status: 503 }
+  );
+}
+
 /** Map a caught/known error to a NextResponse with a generic message. */
 export function apiError(err: unknown, context?: string, status = 500): NextResponse {
   const message = err instanceof Error ? err.message : typeof err === 'string' ? err : String(err);

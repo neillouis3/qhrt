@@ -25,10 +25,7 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith('/analytics');
   const isUserRoute =
     pathname.startsWith('/home') ||
-    pathname.startsWith('/sessions') ||
     pathname.startsWith('/assessments') ||
-    pathname.startsWith('/conversations') ||
-    pathname.startsWith('/journeys') ||
     pathname.startsWith('/diary') ||
     pathname.startsWith('/onboarding') ||
     pathname.startsWith('/breathe');
@@ -141,10 +138,7 @@ export const config = {
     '/content/:path*',
     '/users/:path*',
     '/analytics/:path*',
-    '/sessions/:path*',
     '/assessments/:path*',
-    '/conversations/:path*',
-    '/journeys/:path*',
     '/diary/:path*',
     '/breathe',
     '/breathe/:path*',

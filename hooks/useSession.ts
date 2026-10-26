@@ -135,3 +135,8 @@ export function clearSessionCache() {
   inFlightRequest = null;
   notifyRefetch(); // Notify all mounted instances to re-fetch immediately
 }
+
+export async function logoutOnClient(): Promise<void> {
+  await fetch('/api/auth/logout', { method: 'POST', cache: 'no-store' });
+  clearSessionCache();
+}

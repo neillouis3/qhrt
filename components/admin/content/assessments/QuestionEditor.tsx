@@ -1,4 +1,4 @@
-import type { AnswerOption, AssessmentQuestion } from '@/lib/assessments/types';
+import type { AnswerOption, AssessmentQuestion } from '@/lib/assessments';
 import { Field, inputClass, smallButtonClass } from './fields';
 
 const SCALE_PRESETS: { id: string; label: string; options: AnswerOption[] }[] = [

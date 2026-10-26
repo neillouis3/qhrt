@@ -7,10 +7,8 @@ export type MessageTree = { [key: string]: string | MessageTree };
 const en: MessageTree = {
   nav: {
     home: 'Home',
-    sessions: 'Sessions',
     diary: 'Diary',
     assessments: 'Focus areas',
-    journeys: 'Journeys',
     about: 'About',
     contact: 'Contact',
     login: 'Log in',
@@ -80,10 +78,8 @@ const en: MessageTree = {
     },
     browse: {
       title: 'Or browse',
-      sessions: 'Sessions',
       diary: 'Diary',
       assessments: 'Focus areas',
-      journeys: 'Journeys',
       breathe: 'Breathe',
     },
     presence: {
@@ -160,10 +156,8 @@ const en: MessageTree = {
 const fr: MessageTree = {
   nav: {
     home: 'Accueil',
-    sessions: 'Séances',
     diary: 'Journal',
     assessments: 'Thèmes',
-    journeys: 'Parcours',
     about: 'À propos',
     contact: 'Contact',
     login: 'Connexion',
@@ -234,10 +228,8 @@ const fr: MessageTree = {
     },
     browse: {
       title: 'Ou parcourir',
-      sessions: 'Séances',
       diary: 'Journal',
       assessments: 'Thèmes',
-      journeys: 'Parcours',
       breathe: 'Respiration',
     },
     presence: {

@@ -1,14 +1,18 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { supabaseServer } from '@/lib/supabaseClient';
+import { createUserClient, supabaseServer } from '@/lib/supabaseClient';
 import { requireUser } from '@/lib/adminAuth';
 import { apiError } from '@/lib/apiError';
 import { toDateKey } from '@/lib/dateKey';
-import { homeCheckInDayFromUser, isHomeCheckInValue } from '@/lib/homeCheckIn';
-import { appendCheckInHistory, buildCheckInWeek } from '@/lib/homeCheckInHistory';
-import { appendPresenceDay, presenceDaysFromUserMetadata } from '@/lib/presenceDays';
-import { createUserClient } from '@/lib/supabaseClient';
-import { syncCheckInToDiary } from '@/lib/homeCheckInDiary';
+import {
+  appendCheckInHistory,
+  appendPresenceDay,
+  buildCheckInWeek,
+  homeCheckInDayFromUser,
+  isHomeCheckInValue,
+  presenceDaysFromUserMetadata,
+  syncCheckInToDiary,
+} from '@/lib/homeCheckIn';
 
 export async function GET(request: NextRequest) {
   const userResult = await requireUser(request);

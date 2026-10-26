@@ -4,9 +4,9 @@ import ContentErrorBoundary from '@/components/admin/ContentErrorBoundary';
 import { ConfirmModal } from '../shared/ConfirmModal';
 import { Toggle } from '../shared/Toggle';
 import { TableRowActions } from '../shared/TableRowActions';
-import type { AssessmentDefinition, Workbook } from '@/lib/assessments/types';
+import type { AssessmentDefinition, Workbook } from '@/lib/assessments';
 import { AssessmentEditor, emptyDraft, type AssessmentDraft } from './AssessmentEditor';
-import { PlusIcon, primaryButtonClass } from './fields';
+import { PlusIcon, primaryButtonClass, secondaryButtonClass } from './fields';
 
 const METHOD_LABELS: Record<AssessmentDefinition['scoring_method'], string> = {
   sum: 'Total',
@@ -22,21 +22,25 @@ export function AssessmentsTab({
   const [assessments, setAssessments] = useState<AssessmentDefinition[]>([]);
   const [workbooks, setWorkbooks] = useState<Workbook[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [editing, setEditing] = useState<AssessmentDraft | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<AssessmentDefinition | null>(null);
 
   const fetchData = useCallback(async () => {
+    setLoadError(null);
     try {
       const [aRes, wRes] = await Promise.all([
         fetch('/api/admin/assessments'),
         fetch('/api/admin/workbooks'),
       ]);
       const [aJson, wJson] = await Promise.all([aRes.json(), wRes.json()]);
-      if (!aRes.ok) throw new Error(aJson.error);
+      if (!aRes.ok) throw new Error(aJson.error || 'Failed to load assessments');
       setAssessments(aJson.assessments ?? []);
       setWorkbooks(wJson.workbooks ?? []);
-    } catch {
-      showToast('Failed to load assessments', 'error');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to load assessments';
+      setLoadError(message);
+      showToast(message, 'error');
     } finally {
       setLoading(false);
     }
@@ -109,6 +113,21 @@ export function AssessmentsTab({
         {loading ? (
           <div className="flex justify-center py-12">
             <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+          </div>
+        ) : loadError ? (
+          <div className="rounded-2xl border border-danger/20 bg-danger/5 p-6">
+            <p className="text-sm font-medium text-danger">Couldn&apos;t load assessments</p>
+            <p className="mt-2 text-sm text-muted">{loadError}</p>
+            <button
+              type="button"
+              className={`${secondaryButtonClass} mt-4`}
+              onClick={() => {
+                setLoading(true);
+                fetchData();
+              }}
+            >
+              Retry
+            </button>
           </div>
         ) : (
           <Table>

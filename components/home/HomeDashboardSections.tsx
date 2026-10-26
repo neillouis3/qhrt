@@ -13,10 +13,8 @@ import { clearSessionCache } from '@/hooks/useSession';
 import { useHomeTime } from '@/hooks/useHomeTime';
 import { toDateKey } from '@/lib/dateKey';
 import type { GentlePresence } from '@/lib/gentlePresence';
-import type { CheckInWeekDay } from '@/lib/homeCheckInHistory';
-import { weekHasCheckIns } from '@/lib/homeCheckInHistory';
-import type { HomeCheckInValue } from '@/lib/homeCheckIn';
-import type { TutorialStep } from '@/lib/homeTutorial';
+import type { CheckInWeekDay, HomeCheckInValue } from '@/lib/homeCheckIn';
+import { weekHasCheckIns } from '@/lib/homeCheckIn';
 import {
   averageMoodLabel,
   moodLabel,
@@ -24,7 +22,8 @@ import {
 } from '@/lib/diaryStats';
 import type { DiaryMood } from '@/lib/types/diary';
 import type { PinnedPractice } from '@/lib/pinnedPractices';
-import { homeTimeLabelKey } from '@/lib/timeOfDay';
+import { homeTimeLabelKey, type HomeSkyBlend } from '@/lib/timeOfDay';
+import type { TutorialStep } from '@/lib/home';
 import { firstNameFromUser, type NameSource } from '@/lib/userName';
 import { statusLabel } from '@/lib/sessionUi';
 
@@ -533,6 +532,66 @@ export function UserGreeting({
           />
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function SkyLayers({ blend }: { blend: HomeSkyBlend }) {
+  return (
+    <>
+      <div className="home-ambient__layer home-ambient__layer--night" style={{ opacity: blend.night }} />
+      <div className="home-ambient__layer home-ambient__layer--dawn" style={{ opacity: blend.dawn }} />
+      <div className="home-ambient__layer home-ambient__layer--day" style={{ opacity: blend.day }} />
+      <div
+        className="home-ambient__layer home-ambient__layer--afternoon"
+        style={{ opacity: blend.afternoon }}
+      />
+    </>
+  );
+}
+
+export function HomePageChrome({ children }: { children: React.ReactNode }) {
+  const { sky, skyOpacity } = useHomeTime();
+  const accentWarm = Math.min(1, sky.dawn + sky.day + sky.afternoon) * 0.65;
+  const accentCool = Math.min(1, sky.night * 0.85 + sky.dawn * 0.35) * 0.6;
+
+  return (
+    <div className="relative isolate flex w-full min-h-full flex-1 flex-col -mt-[var(--app-navbar-height)] pt-[var(--app-navbar-height)]">
+      <div
+        aria-hidden
+        className="home-ambient pointer-events-none absolute inset-0 z-0 min-h-full overflow-visible"
+      >
+        <div className="home-ambient__blobs" style={{ opacity: skyOpacity }}>
+          <div className="home-ambient__glob home-ambient__glob--main">
+            <SkyLayers blend={sky} />
+          </div>
+          <div
+            className="home-ambient__glob home-ambient__glob--left"
+            style={{ opacity: 0.25 + accentCool * 0.35 }}
+          >
+            <div className="home-ambient__layer home-ambient__layer--night" style={{ opacity: sky.night }} />
+            <div className="home-ambient__layer home-ambient__layer--dawn" style={{ opacity: sky.dawn * 0.9 }} />
+          </div>
+          <div
+            className="home-ambient__glob home-ambient__glob--right"
+            style={{ opacity: 0.2 + accentWarm * 0.4 }}
+          >
+            <div className="home-ambient__layer home-ambient__layer--day" style={{ opacity: sky.day }} />
+            <div
+              className="home-ambient__layer home-ambient__layer--afternoon"
+              style={{ opacity: sky.afternoon * 0.95 }}
+            />
+          </div>
+          <div
+            className="home-ambient__glob home-ambient__glob--mist"
+            style={{ opacity: 0.15 + sky.night * 0.22 + sky.dawn * 0.12 }}
+          >
+            <div className="home-ambient__layer home-ambient__layer--night" style={{ opacity: 0.75 }} />
+          </div>
+        </div>
+        <div className="home-ambient__veil" />
+      </div>
+      <div className="relative z-10 flex w-full flex-1 flex-col">{children}</div>
     </div>
   );
 }

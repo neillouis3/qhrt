@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { requireUser } from '@/lib/adminAuth';
-import { apiError } from '@/lib/apiError';
+import { apiError, missingRelation, schemaMissingResponse } from '@/lib/apiError';
 import { supabaseServer } from '@/lib/supabaseClient';
-import type { AssessmentSummary } from '@/lib/assessments/types';
+import type { AssessmentSummary } from '@/lib/assessments';
 
 /** GET — active assessments with the caller's latest completion date. */
 export async function GET(request: NextRequest) {
@@ -25,7 +25,12 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false }),
   ]);
 
-  if (assessmentsRes.error) return apiError(assessmentsRes.error, '[api/assessments] GET');
+  if (assessmentsRes.error) {
+    if (missingRelation(assessmentsRes.error)) {
+      return schemaMissingResponse('Assessment', 'supabase/009_assessment_engine.sql');
+    }
+    return apiError(assessmentsRes.error, '[api/assessments] GET');
+  }
 
   const lastByAssessment = new Map<string, string>();
   for (const s of submissionsRes.data ?? []) {

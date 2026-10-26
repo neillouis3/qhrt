@@ -8,8 +8,7 @@ import UserMenu from '@/components/nav/UserMenu';
 import { useNavbarLinks } from '@/components/nav/NavbarProvider';
 import { useLocale } from '@/context/LocaleContext';
 import { usePublicNavLinks, useUserNavLinks } from '@/hooks/useAppNavLinks';
-import { useSession } from '@/hooks/useSession';
-import { logoutOnClient } from '@/lib/logoutClient';
+import { logoutOnClient, useSession } from '@/hooks/useSession';
 import { isFocusSessionPath } from '@/lib/sessionUi';
 
 interface NavbarLayoutProps {
@@ -49,10 +48,7 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
 
   const isUserRoute =
     (pathname?.startsWith('/home') ||
-      pathname?.startsWith('/sessions') ||
       pathname?.startsWith('/assessments') ||
-      pathname?.startsWith('/conversations') ||
-      pathname?.startsWith('/journeys') ||
       pathname?.startsWith('/diary') ||
       pathname?.startsWith('/onboarding') ||
       pathname?.startsWith('/breathe') ||

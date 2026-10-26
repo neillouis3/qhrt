@@ -4,8 +4,7 @@ import { requireUser } from '@/lib/adminAuth';
 import { apiError } from '@/lib/apiError';
 import { createUserClient, supabaseServer } from '@/lib/supabaseClient';
 import { parseDiaryPayload } from '@/lib/diary';
-import { buildCheckInByDate, checkInsFromMap } from '@/lib/checkInDiaryMerge';
-import { backfillCheckInsToDiary } from '@/lib/homeCheckInDiary';
+import { backfillCheckInsToDiary, buildCheckInByDate, checkInsFromMap } from '@/lib/homeCheckIn';
 import type { DiaryCompletion, DiaryEntry } from '@/lib/types/diary';
 
 export async function GET(request: NextRequest) {
@@ -29,30 +28,13 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const [entriesRes, conversationsRes, enginesRes, domainsRes, assessmentsRes, submissionsRes] = await Promise.all([
+    const [entriesRes, submissionsRes] = await Promise.all([
       db
         .from('diary_entries')
         .select('*')
         .eq('user_id', userId)
         .order('entry_date', { ascending: false })
         .order('created_at', { ascending: false }),
-      db
-        .from('conversations')
-        .select('id, completed_at, knowledge_models(name)')
-        .eq('user_id', userId)
-        .eq('status', 'completed')
-        .not('completed_at', 'is', null),
-      db
-        .from('therapeutic_engines')
-        .select('id, status, updated_at, functional_domain_protocol_id')
-        .eq('user_id', userId)
-        .eq('status', 'completed'),
-      db.from('functional_domain_protocols').select('id, name'),
-      db
-        .from('assessment_results')
-        .select('id, condition_id, answered_at, conditions(name)')
-        .eq('user_id', userId)
-        .order('answered_at', { ascending: false }),
       db
         .from('assessment_submissions')
         .select('id, created_at, assessments(title)')
@@ -68,50 +50,7 @@ export async function GET(request: NextRequest) {
       if (!tableMissing) return apiError(entriesRes.error, '[api/diary] entries');
     }
 
-    const domainNames = new Map(
-      (domainsRes.data ?? []).map((row: { id: string; name: string }) => [row.id, row.name])
-    );
-
     const completions: DiaryCompletion[] = [];
-
-    for (const conv of conversationsRes.data ?? []) {
-      const nested = conv.knowledge_models as { name?: string } | { name?: string }[] | null;
-      const name = Array.isArray(nested) ? nested[0]?.name : nested?.name;
-      completions.push({
-        id: conv.id,
-        kind: 'conversation',
-        title: name || 'Conversation',
-        at: conv.completed_at as string,
-      });
-    }
-
-    for (const engine of enginesRes.data ?? []) {
-      const domainName = engine.functional_domain_protocol_id
-        ? domainNames.get(engine.functional_domain_protocol_id)
-        : null;
-      completions.push({
-        id: engine.id,
-        kind: 'journey',
-        title: domainName || 'Wellness journey',
-        at: engine.updated_at as string,
-      });
-    }
-
-    const seenAssessments = new Set<string>();
-    for (const row of assessmentsRes.data ?? []) {
-      const stamp = row.answered_at as string;
-      const key = `${row.condition_id}:${stamp}`;
-      if (seenAssessments.has(key)) continue;
-      seenAssessments.add(key);
-      const nested = row.conditions as { name?: string } | { name?: string }[] | null;
-      const name = Array.isArray(nested) ? nested[0]?.name : nested?.name;
-      completions.push({
-        id: row.id,
-        kind: 'assessment',
-        title: name ? `${name} assessment` : 'Assessment',
-        at: stamp,
-      });
-    }
 
     for (const row of submissionsRes.error ? [] : (submissionsRes.data ?? [])) {
       const nested = row.assessments as { title?: string } | { title?: string }[] | null;

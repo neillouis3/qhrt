@@ -117,24 +117,4 @@ export interface CompletionRule {
   is_active: boolean;
 }
 
-export type TabKey =
-  | 'assessment-builder'
-  | 'workbooks'
-  | 'categories'
-  | 'conditions'
-  | 'symptoms'
-  | 'assessments'
-  | 'metrics'
-  | 'mappings'
-  | 'sessions'
-  | 'seed'
-  | 'knowledge-models'
-  | 'evidence-dimensions'
-  | 'prompts'
-  | 'branch-rules'
-  | 'completion-rules'
-  | 'phase-templates'
-  | 'functional-domains'
-  | 'aee-catalog'
-  | 'personal-programs'
-  | 'therapeutic-engines';
+export type TabKey = 'assessment-builder' | 'workbooks';

@@ -2,18 +2,12 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { createUserClient } from '@/lib/supabaseClient';
 import { requireUser } from '@/lib/adminAuth';
-import { listUserConversations } from '@/lib/conversationEngine';
-import { getEnginesByUserId } from '@/lib/therapeuticEngine';
-import { buildHomeActivity } from '@/lib/homeActivity';
+import { buildHomeActivity, buildHomeTutorial, pickHomeNext } from '@/lib/home';
 import { buildHomeDiaryStats } from '@/lib/diaryStats';
-import { buildHomeTutorial } from '@/lib/homeTutorial';
-import { pickHomeNext } from '@/lib/homeNext';
-import { practiceTimeFromUser } from '@/lib/userSettings';
+import { practiceTimeFromUser, homeCheckInFromUser } from '@/lib/userSettings';
 import { buildGentlePresence } from '@/lib/gentlePresence';
 import { pinnedFromUserMetadata } from '@/lib/pinnedPractices';
-import { presenceDaysFromUserMetadata } from '@/lib/presenceDays';
-import { buildCheckInWeek } from '@/lib/homeCheckInHistory';
-import { homeCheckInFromUser } from '@/lib/userSettings';
+import { buildCheckInWeek, presenceDaysFromUserMetadata } from '@/lib/homeCheckIn';
 
 /**
  * GET — next step for Home, plus intake progress.
@@ -27,16 +21,18 @@ export async function GET(request: NextRequest) {
   const db = createUserClient(request);
 
   try {
-    const [progressRes, conversations, engines, assessmentsRes, submissionsRes, diaryRes] = await Promise.all([
+    const [progressRes, assessmentsRes, submissionsRes, diaryRes] = await Promise.all([
       db.from('user_progress').select('intake_completed').eq('user_id', userId).maybeSingle(),
-      listUserConversations(userId, db),
-      getEnginesByUserId(userId, db),
       db
         .from('assessments')
         .select('id, slug, title, description')
         .eq('is_active', true)
         .order('display_order', { ascending: true }),
-      db.from('assessment_submissions').select('assessment_id').eq('user_id', userId),
+      db
+        .from('assessment_submissions')
+        .select('id, created_at, assessment_id, assessments(slug, title)')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false }),
       db
         .from('diary_entries')
         .select('entry_date, mood, created_at')
@@ -44,22 +40,6 @@ export async function GET(request: NextRequest) {
         .order('entry_date', { ascending: false })
         .limit(120),
     ]);
-
-    const domainIds = [
-      ...new Set(
-        engines
-          .map((engine) => engine.functional_domain_protocol_id)
-          .filter((id): id is string => Boolean(id))
-      ),
-    ];
-    const domainsRes =
-      domainIds.length > 0
-        ? await db.from('functional_domain_protocols').select('id, name').in('id', domainIds)
-        : { data: [] as Array<{ id: string; name: string }> };
-
-    const domainName = new Map(
-      (domainsRes.data ?? []).map((row: { id: string; name: string }) => [row.id, row.name])
-    );
 
     const submissions = submissionsRes.error ? [] : (submissionsRes.data ?? []);
     const takenIds = new Set(submissions.map((s: { assessment_id: string }) => s.assessment_id));
@@ -69,28 +49,26 @@ export async function GET(request: NextRequest) {
       ) ?? null;
 
     const intakeCompleted = Boolean(progressRes.data?.intake_completed);
-    const journeyRows = engines.map((engine) => ({
-      id: engine.id,
-      status: engine.status,
-      current_phase_order: engine.current_phase_order,
-      created_at: engine.created_at,
-      updated_at: engine.updated_at,
-      domain_name: engine.functional_domain_protocol_id
-        ? domainName.get(engine.functional_domain_protocol_id) ?? null
-        : null,
-    }));
     const next = pickHomeNext({
       intakeCompleted,
-      conversations,
-      journeys: journeyRows,
       nextAssessment,
       practiceTime: practiceTimeFromUser(userResult.user) || null,
     });
 
+    const activityRows = submissions.map((row) => {
+      const nested = row.assessments as { slug?: string; title?: string } | { slug?: string; title?: string }[] | null;
+      const meta = Array.isArray(nested) ? nested[0] : nested;
+      return {
+        id: row.id as string,
+        slug: meta?.slug || '',
+        title: meta?.title || 'Assessment',
+        created_at: row.created_at as string,
+      };
+    }).filter((row) => row.slug);
+
     const activity = buildHomeActivity({
-      conversations,
-      journeys: journeyRows,
-      excludeHref: next.kind === 'resume-session' || next.kind === 'resume-journey' ? next.href : null,
+      submissions: activityRows,
+      excludeHref: next.kind === 'assessment' ? next.href : null,
     });
 
     const diaryEntries = diaryRes.error ? [] : (diaryRes.data ?? []);
@@ -99,15 +77,13 @@ export async function GET(request: NextRequest) {
     const tutorial = buildHomeTutorial({
       intakeCompleted,
       assessmentsCompleted: submissions.length,
-      journeys: journeyRows,
       diaryCount: diaryStats.totalEntries,
     });
 
     const userMeta = (userResult.user.user_metadata ?? {}) as Record<string, unknown>;
     const gentlePresence = buildGentlePresence({
       diaryEntryDates: diaryEntries.map((row: { entry_date: string }) => row.entry_date),
-      sessionTimestamps: conversations.flatMap((conv) => [conv.updated_at, conv.started_at]),
-      journeyTimestamps: journeyRows.flatMap((j) => [j.updated_at, j.created_at]),
+      activityTimestamps: activityRows.map((row) => row.created_at),
       extraDates: presenceDaysFromUserMetadata(userMeta),
     });
     const pins = pinnedFromUserMetadata(userMeta);

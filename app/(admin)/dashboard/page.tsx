@@ -14,8 +14,6 @@ import { PageHeader } from '@/components/layout/UserPageShell';
 import { DashboardBodySkeleton } from '@/components/layout/PageSkeleton';
 import UserPageShell from '@/components/layout/UserPageShell';
 import ErrorState from '@/components/layout/ErrorState';
-import { ContentWizard } from '@/components/admin/content/ContentWizard';
-import { Toast } from '@/components/admin/content/shared/Toast';
 
 const ADMIN_QUICK_LINKS = [
   { name: 'Users', href: '/users' },
@@ -475,10 +473,6 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState<'7d' | '30d'>('30d');
-  const [wizardOpen, setWizardOpen] = useState(false);
-  const [wizardToast, setWizardToast] = useState<{ message: string; type: 'success' | 'error' } | null>(
-    null
-  );
 
   useEffect(() => {
     let cancelled = false;
@@ -582,9 +576,6 @@ export default function AdminDashboard() {
           Quick links
         </Typography>
         <div className="flex flex-wrap gap-2">
-          <Button size="sm" variant="ghost" onPress={() => setWizardOpen(true)}>
-            Create content
-          </Button>
           {ADMIN_QUICK_LINKS.map((item) => (
             <Link
               key={item.href}
@@ -797,21 +788,6 @@ export default function AdminDashboard() {
         Some metrics populate as people use the platform. Mood, ratings, and engagement detail will
         fill in over time.
       </Typography>
-
-      <ContentWizard
-        isOpen={wizardOpen}
-        onClose={() => setWizardOpen(false)}
-        onSuccess={(message) => setWizardToast({ message, type: 'success' })}
-        onError={(message) => setWizardToast({ message, type: 'error' })}
-      />
-
-      {wizardToast ? (
-        <Toast
-          message={wizardToast.message}
-          type={wizardToast.type}
-          onClose={() => setWizardToast(null)}
-        />
-      ) : null}
     </UserPageShell>
   );
 }

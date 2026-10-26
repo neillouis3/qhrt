@@ -11,7 +11,7 @@ import { AssessmentGridSkeleton } from '@/components/layout/PageSkeleton';
 import UserPageShell from '@/components/layout/UserPageShell';
 import { PageHeader } from '@/components/layout/UserPageShell';
 import { useSession } from '@/hooks/useSession';
-import type { AssessmentSummary } from '@/lib/assessments/types';
+import type { AssessmentSummary } from '@/lib/assessments';
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });

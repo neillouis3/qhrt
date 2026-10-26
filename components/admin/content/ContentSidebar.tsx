@@ -2,33 +2,11 @@
 
 import { useState } from 'react';
 import { Button, Typography } from '@heroui/react';
-import { HugeiconsIcon } from '@hugeicons/react';
-import { ArrowLeft01Icon } from '@hugeicons/core-free-icons';
 import {
   CONTENT_GROUPS,
   type ContentSectionKey,
 } from '@/components/admin/content/sidebarConfig';
 import type { TabKey } from '@/components/admin/content/types';
-
-function AllLibrariesBackButton({
-  className = '',
-  onPress,
-}: {
-  className?: string;
-  onPress: () => void;
-}) {
-  return (
-    <Button
-      size="sm"
-      variant="ghost"
-      className={`inline-flex w-fit items-center gap-1.5 px-2 font-normal ${className}`}
-      onPress={onPress}
-    >
-      <HugeiconsIcon icon={ArrowLeft01Icon} size={16} strokeWidth={1.5} aria-hidden />
-      All libraries
-    </Button>
-  );
-}
 
 function SidebarLink({
   label,
@@ -53,12 +31,8 @@ function SidebarLink({
 }
 
 export default function ContentSidebar({
-  activeSection,
   activeTab,
-  onSelectSection,
   onSelectTab,
-  onBackToSections,
-  onGuidedAdd,
 }: {
   activeSection: ContentSectionKey | null;
   activeTab: TabKey | null;
@@ -68,35 +42,12 @@ export default function ContentSidebar({
   onGuidedAdd: () => void;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const group = CONTENT_GROUPS[0]!;
+  const mobileLabel = group.items.find((item) => item.key === activeTab)?.label ?? group.label;
 
-  const drilledGroup = activeSection
-    ? CONTENT_GROUPS.find((group) => group.key === activeSection)
-    : null;
-
-  const rootNav = (
-    <div className="flex flex-col gap-3">
-      <Button size="sm" variant="primary" className="font-normal" onPress={onGuidedAdd}>
-        Create content
-      </Button>
-      <nav aria-label="Content libraries" className="flex flex-col gap-1">
-        {CONTENT_GROUPS.map((group) => (
-          <SidebarLink
-            key={group.key}
-            label={group.label}
-            active={false}
-            onPress={() => {
-              onSelectSection(group.key);
-              setMobileOpen(false);
-            }}
-          />
-        ))}
-      </nav>
-    </div>
-  );
-
-  const sectionNav = drilledGroup ? (
-    <nav aria-label={drilledGroup.label} className="flex flex-col gap-1">
-      {drilledGroup.items.map((item) => (
+  const nav = (
+    <nav aria-label={group.label} className="flex flex-col gap-1">
+      {group.items.map((item) => (
         <SidebarLink
           key={item.key}
           label={item.label}
@@ -108,42 +59,19 @@ export default function ContentSidebar({
         />
       ))}
     </nav>
-  ) : null;
-
-  const desktopSidebar = (
-    <aside className="hidden w-56 shrink-0 lg:block">
-      {activeSection && drilledGroup ? (
-        <div className="flex flex-col gap-4">
-          <AllLibrariesBackButton onPress={onBackToSections} />
-          <Typography type="body-xs" color="muted">
-            {drilledGroup.label}
-          </Typography>
-          {sectionNav}
-        </div>
-      ) : (
-        rootNav
-      )}
-    </aside>
   );
-
-  const mobileLabel = drilledGroup
-    ? drilledGroup.items.find((item) => item.key === activeTab)?.label ?? drilledGroup.label
-    : 'Choose library';
 
   return (
     <>
       <div className="flex flex-col gap-3 lg:hidden">
         <div className="flex items-center justify-between gap-2">
           <Typography type="body-xs" color="muted">
-            {drilledGroup ? drilledGroup.label : 'Libraries'}
+            {group.label}
           </Typography>
           <Button size="sm" variant="ghost" onPress={() => setMobileOpen(true)}>
             {mobileLabel}
           </Button>
         </div>
-        {activeSection ? (
-          <AllLibrariesBackButton className="px-0" onPress={onBackToSections} />
-        ) : null}
       </div>
 
       {mobileOpen ? (
@@ -160,28 +88,24 @@ export default function ContentSidebar({
                 Close
               </Button>
             </div>
-            {activeSection && drilledGroup ? (
-              <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
-                <AllLibrariesBackButton
-                  className="px-0"
-                  onPress={() => {
-                    onBackToSections();
-                    setMobileOpen(false);
-                  }}
-                />
-                <Typography type="body-xs" color="muted">
-                  {drilledGroup.label}
-                </Typography>
-                {sectionNav}
-              </div>
-            ) : (
-              <div className="min-h-0 flex-1 overflow-y-auto">{rootNav}</div>
-            )}
+            <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
+              <Typography type="body-xs" color="muted">
+                {group.label}
+              </Typography>
+              {nav}
+            </div>
           </aside>
         </div>
       ) : null}
 
-      {desktopSidebar}
+      <aside className="hidden w-56 shrink-0 lg:block">
+        <div className="flex flex-col gap-4">
+          <Typography type="body-xs" color="muted">
+            {group.label}
+          </Typography>
+          {nav}
+        </div>
+      </aside>
     </>
   );
 }

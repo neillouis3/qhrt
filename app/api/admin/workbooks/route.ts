@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseClient';
 import { requireAdmin } from '@/lib/adminAuth';
-import { apiError } from '@/lib/apiError';
+import { apiError, missingRelation, schemaMissingResponse } from '@/lib/apiError';
 
 const TAG = '[api/admin/workbooks]';
 const COLUMNS = 'id, title, description, url, display_order, is_active, created_at, updated_at';
@@ -41,7 +41,12 @@ export async function GET(request: NextRequest) {
     .order('display_order', { ascending: true })
     .order('title', { ascending: true });
 
-  if (error) return apiError(error, `${TAG} GET`);
+  if (error) {
+    if (missingRelation(error)) {
+      return schemaMissingResponse('Workbook', 'supabase/009_assessment_engine.sql');
+    }
+    return apiError(error, `${TAG} GET`);
+  }
   return NextResponse.json({ workbooks: data ?? [] });
 }
 

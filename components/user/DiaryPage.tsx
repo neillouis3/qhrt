@@ -16,8 +16,12 @@ import { PageHeader } from '@/components/layout/UserPageShell';
 import { DiarySkeleton } from '@/components/layout/PageSkeleton';
 import { CheckInButtons } from '@/components/home/HomeDashboardSections';
 import { formatLongDate, toDateKey } from '@/lib/dateKey';
-import type { HomeCheckInDay, HomeCheckInValue } from '@/lib/homeCheckIn';
-import { diaryMoodFromCheckIn, isHomeCheckInDiaryEntry } from '@/lib/homeCheckInDiary';
+import {
+  diaryMoodFromCheckIn,
+  isHomeCheckInDiaryEntry,
+  type HomeCheckInDay,
+  type HomeCheckInValue,
+} from '@/lib/homeCheckIn';
 import { DIARY_MOODS, type DiaryCompletion, type DiaryEntry, type DiaryMood } from '@/lib/types/diary';
 import { clearSessionCache } from '@/hooks/useSession';
 
@@ -25,8 +29,6 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const KIND_LABEL: Record<DiaryCompletion['kind'], string> = {
   assessment: 'Workbook',
-  conversation: 'Conversation',
-  journey: 'Journey',
 };
 
 function startOfMonth(date: Date): Date {

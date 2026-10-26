@@ -258,7 +258,7 @@ export function DeleteAccountModal({
     <Modal isOpen={isOpen} onClose={handleClose} title="Delete your account permanently?" size="md">
       <div className="flex flex-col gap-4">
         <Typography type="body-sm" color="muted">
-          This is permanent and cannot be reversed. Your account, sessions, diary notes, journeys,
+          This is permanent and cannot be reversed. Your account, diary notes, assessments,
           and progress will be deleted.
         </Typography>
 

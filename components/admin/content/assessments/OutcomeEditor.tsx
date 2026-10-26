@@ -1,4 +1,4 @@
-import type { AssessmentOutcome, Workbook } from '@/lib/assessments/types';
+import type { AssessmentOutcome, Workbook } from '@/lib/assessments';
 import { Field, inputClass, smallButtonClass } from './fields';
 
 function numberOrNull(value: string): number | null {

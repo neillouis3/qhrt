@@ -49,8 +49,7 @@ export function statusLabel(status: string): string {
 export function isFocusSessionPath(pathname: string | null | undefined): boolean {
   if (!pathname) return false;
   return (
-    /^\/journeys\/[^/]+\/?$/.test(pathname) ||
-    /^\/sessions\/[^/]+\/?$/.test(pathname) ||
+    /^\/assessments\/[^/]+\/?$/.test(pathname) ||
     pathname === '/breathe' ||
     pathname.startsWith('/breathe/')
   );

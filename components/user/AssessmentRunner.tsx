@@ -6,13 +6,13 @@ import { Button, Radio, RadioGroup, TextArea, Typography, buttonVariants } from 
 import AppCard from '@/components/ui/AppCard';
 import UserPageShell, { PageHeader } from '@/components/layout/UserPageShell';
 import { FocusContentSkeleton } from '@/components/layout/PageSkeleton';
-import { visibleQuestions } from '@/lib/assessments/scoring';
-import type {
-  AssessmentAnswers,
-  AssessmentResult,
-  PublicAssessment,
-  ResultWorkbook,
-} from '@/lib/assessments/types';
+import {
+  visibleQuestions,
+  type AssessmentAnswers,
+  type AssessmentResult,
+  type PublicAssessment,
+  type ResultWorkbook,
+} from '@/lib/assessments';
 
 function WorkbookLink({ workbook }: { workbook: ResultWorkbook }) {
   const internal = workbook.url.startsWith('/');

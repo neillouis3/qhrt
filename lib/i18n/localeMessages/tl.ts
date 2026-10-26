@@ -4,10 +4,8 @@ import type { MessageTree } from '@/lib/i18n/messages';
 export const tl: MessageTree = {
   nav: {
     home: 'Home',
-    sessions: 'Mga session',
     diary: 'Talaarawan',
     assessments: 'Mga pokus',
-    journeys: 'Mga paglalakbay',
     about: 'Tungkol sa amin',
     contact: 'Makipag-ugnayan',
     login: 'Mag-log in',
@@ -78,10 +76,8 @@ export const tl: MessageTree = {
     },
     browse: {
       title: 'O mag-browse',
-      sessions: 'Mga session',
       diary: 'Talaarawan',
       assessments: 'Mga pokus',
-      journeys: 'Mga paglalakbay',
       breathe: 'Humininga',
     },
     presence: {

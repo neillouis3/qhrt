@@ -7,8 +7,8 @@ import {
   getActiveAssessmentBySlug,
   toPublicAssessment,
   withWorkbooks,
-} from '@/lib/assessments/server';
-import type { AssessmentEvaluation } from '@/lib/assessments/types';
+  type AssessmentEvaluation,
+} from '@/lib/assessments';
 
 /** GET — assessment questions (without scores) plus the caller's latest result. */
 export async function GET(

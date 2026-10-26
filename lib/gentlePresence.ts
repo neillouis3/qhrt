@@ -33,14 +33,12 @@ function weekWindow(todayKey: string): string[] {
 
 export function buildGentlePresence({
   diaryEntryDates,
-  sessionTimestamps,
-  journeyTimestamps,
+  activityTimestamps = [],
   extraDates = [],
   todayKey = toDateKey(new Date()),
 }: {
   diaryEntryDates: string[];
-  sessionTimestamps: Array<string | null | undefined>;
-  journeyTimestamps: Array<string | null | undefined>;
+  activityTimestamps?: Array<string | null | undefined>;
   extraDates?: string[];
   todayKey?: string;
 }): GentlePresence {
@@ -49,8 +47,7 @@ export function buildGentlePresence({
 
   const allDays = uniqueDateKeys([
     ...diaryEntryDates,
-    ...datesFromTimestamps(sessionTimestamps),
-    ...datesFromTimestamps(journeyTimestamps),
+    ...datesFromTimestamps(activityTimestamps),
     ...extraDates,
   ]).filter((key) => windowSet.has(key));
 
