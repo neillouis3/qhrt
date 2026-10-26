@@ -9,16 +9,10 @@ import {
   Clock01Icon,
   Globe02Icon,
   ShieldCheckIcon,
-  UserAdd01Icon,
 } from '@hugeicons/core-free-icons';
 import { surfaceClass } from '@/components/ui/AppCard';
-import {
-  HOW_IT_WORKS_SIGN_IN_PREVIEW,
-  HOW_IT_WORKS_SLEEP_PREVIEW,
-  IllustrationPlaceholder,
-  LandingIcon,
-  type LandingGrainTone,
-} from '@/components/marketing/LandingIcons';
+import { LandingIcon } from '@/components/marketing/LandingIcons';
+import HowItWorks from '@/components/marketing/HowItWorks';
 import { LandingCta } from '@/components/marketing/MarketingCtas';
 import SiteFooter from '@/components/layout/SiteFooter';
 
@@ -26,35 +20,6 @@ const facts = [
   { label: 'Privacy', value: 'PIPEDA compliant' },
   { label: 'Content', value: 'Expertly curated' },
   { label: 'Access', value: 'Free to use' },
-];
-
-const stepPreviewImages: Record<string, string> = {
-  '01': HOW_IT_WORKS_SIGN_IN_PREVIEW,
-  '02': HOW_IT_WORKS_SLEEP_PREVIEW,
-};
-
-const steps = [
-  {
-    step: '01',
-    title: 'Create your account',
-    description:
-      'Sign up in minutes and share what you want to work on — sleep, stress, boundaries, or daily habits.',
-    icon: UserAdd01Icon,
-  },
-  {
-    step: '02',
-    title: 'Explore guided resources',
-    description:
-      'Browse self-paced workbooks and guided reflections that match your goals — educational content, not clinical care.',
-    icon: BookOpen02Icon,
-  },
-  {
-    step: '03',
-    title: 'Progress at your own pace',
-    description:
-      'Work through programs on your schedule. Pause, revisit, and progress at a pace that feels right.',
-    icon: Clock01Icon,
-  },
 ];
 
 const features = [
@@ -92,8 +57,6 @@ const features = [
 ];
 
 const cardClass = surfaceClass;
-
-const stepGrainTones: LandingGrainTone[] = ['bloom', 'meadow', 'sunset'];
 
 export default function LandingPage() {
   return (
@@ -145,38 +108,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="flex flex-col gap-10 py-24">
-          <Typography type="h4" weight="normal">
-            How it works
-          </Typography>
-          <ol className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            {steps.map((item, index) => (
-              <li key={item.step}>
-                <Card variant="transparent" className={cardClass}>
-                  <IllustrationPlaceholder
-                    icon={stepPreviewImages[item.step] ? undefined : item.icon}
-                    label={`Placeholder illustration: ${item.title}`}
-                    iconSize={36}
-                    grainTone={stepGrainTones[index] ?? 'meadow'}
-                    imageSrc={stepPreviewImages[item.step] ?? null}
-                    imageFit={stepPreviewImages[item.step] ? 'contain' : 'cover'}
-                    grainOverlay={!stepPreviewImages[item.step]}
-                    className={
-                      stepPreviewImages[item.step] ? 'min-h-36 rounded-md' : 'min-h-28 rounded-md'
-                    }
-                  />
-                  <Card.Header>
-                    <Typography type="body-xs" color="muted">
-                      {item.step}
-                    </Typography>
-                    <Card.Title className="font-normal tracking-tight">{item.title}</Card.Title>
-                  </Card.Header>
-                  <Card.Description>{item.description}</Card.Description>
-                </Card>
-              </li>
-            ))}
-          </ol>
-        </section>
+        <HowItWorks />
 
         <section className="flex flex-col gap-10 py-24">
           <Typography type="h4" weight="normal">

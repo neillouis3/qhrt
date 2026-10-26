@@ -782,3 +782,29 @@ body {
 .dark .landing-grain-bg::after {
   opacity: 0.22;
 }
+
+.how-it-works-stage {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 20.5rem;
+  border-radius: var(--radius-lg, 0.5rem);
+  border: 1px solid color-mix(in oklab, var(--foreground) 6%, transparent);
+}
+
+.how-it-works-stage__blur {
+  position: absolute;
+  inset: -28%;
+  z-index: 0;
+  pointer-events: none;
+  filter: blur(36px);
+  transform: scale(1.12);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .how-it-works-stage__blur {
+    filter: none;
+    inset: 0;
+    transform: none;
+  }
+}
