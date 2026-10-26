@@ -97,7 +97,7 @@ function ChartTooltip({
 }
 
 function parseDay(date: string): Date {
-  const [year, month, day] = date.slice(0, 10).split('-').map(Number);
+  const [year = 0, month = 1, day = 1] = date.slice(0, 10).split('-').map(Number);
   return new Date(year, month - 1, day);
 }
 
@@ -222,11 +222,10 @@ function BarChart({
       height={height}
       yTicks={ticks}
       yMax={yMax}
-      xLabels={xTickIndexes(data.length).map((index) => ({
-        index,
-        date: data[index].date,
-        count: data.length,
-      }))}
+      xLabels={xTickIndexes(data.length).flatMap((index) => {
+        const point = data[index];
+        return point ? [{ index, date: point.date, count: data.length }] : [];
+      })}
     >
       <ChartTooltip position={tooltip?.pos ?? null} content={tooltip?.content ?? null} />
       <svg
@@ -352,11 +351,10 @@ function LineChart({
       yMin={yMin}
       yMax={yMax}
       yFormat={yFormat}
-      xLabels={xTickIndexes(validData.length).map((index) => ({
-        index,
-        date: validData[index].date,
-        count: validData.length,
-      }))}
+      xLabels={xTickIndexes(validData.length).flatMap((index) => {
+        const point = validData[index];
+        return point ? [{ index, date: point.date, count: validData.length }] : [];
+      })}
     >
       <svg
         viewBox={`0 0 ${chartWidth} ${height}`}
