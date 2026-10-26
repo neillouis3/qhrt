@@ -4,9 +4,7 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Typography, buttonVariants } from '@heroui/react';
-import { MessageQuestionIcon } from '@hugeicons/core-free-icons';
 import AppCard from '@/components/ui/AppCard';
-import { LandingIcon } from '@/components/marketing/LandingIcons';
 import { AssessmentGridSkeleton } from '@/components/layout/PageSkeleton';
 import UserPageShell from '@/components/layout/UserPageShell';
 import { PageHeader } from '@/components/layout/UserPageShell';
@@ -17,25 +15,50 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
+const WASH_TONES = ['meadow', 'bloom', 'dusk', 'mist'] as const;
+
+function washTone(slug: string) {
+  let hash = 0;
+  for (const char of slug) hash += char.charCodeAt(0);
+  return WASH_TONES[hash % WASH_TONES.length] ?? 'meadow';
+}
+
+function CoverWash({ slug }: { slug: string }) {
+  return (
+    <div className={`focus-card-wash focus-card-wash--${washTone(slug)}`} aria-hidden>
+      <span className="focus-card-wash__blob focus-card-wash__blob--a" />
+      <span className="focus-card-wash__blob focus-card-wash__blob--b" />
+      <span className="focus-card-wash__blob focus-card-wash__blob--c" />
+    </div>
+  );
+}
+
 export default function AssessmentsPage() {
   const { session, loading: sessionLoading } = useSession();
   const [assessments, setAssessments] = useState<AssessmentSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const userId = session?.user.id;
+
   useEffect(() => {
-    if (sessionLoading || !session) return;
+    if (sessionLoading) return;
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
 
     const controller = new AbortController();
+    setLoading(true);
+    setError(null);
 
     (async () => {
       try {
         const res = await fetch('/api/assessments', { signal: controller.signal });
+        const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-          if (res.status === 401) return;
-          throw new Error('Failed to load assessments');
+          throw new Error(typeof data.error === 'string' ? data.error : 'Failed to load assessments');
         }
-        const data = await res.json();
         setAssessments(data.assessments ?? []);
       } catch (err) {
         if (err instanceof Error && err.name === 'AbortError') return;
@@ -47,7 +70,7 @@ export default function AssessmentsPage() {
     })();
 
     return () => controller.abort();
-  }, [session, sessionLoading]);
+  }, [userId, sessionLoading]);
 
   if (sessionLoading || (session && loading)) {
     return <AssessmentGridSkeleton />;
@@ -93,20 +116,9 @@ export default function AssessmentsPage() {
                         />
                       </div>
                     ) : (
-                      <div
-                        aria-hidden
-                        className="pointer-events-none absolute inset-x-0 top-0 flex h-[42%] items-center justify-center bg-gradient-to-b from-accent-lighter/60 to-transparent dark:from-primary/10"
-                      >
-                        <LandingIcon
-                          icon={MessageQuestionIcon}
-                          size={36}
-                          className="text-primary/50 dark:text-primary-light/50"
-                        />
-                      </div>
+                      <CoverWash slug={a.slug} />
                     )}
-                    <div
-                      className={`relative z-10 flex min-h-0 flex-1 flex-col gap-2 overflow-hidden p-4 ${cover ? 'pt-[46%]' : 'pt-4'}`}
-                    >
+                    <div className="relative z-10 flex min-h-0 flex-1 flex-col gap-2 overflow-hidden p-4 pt-[46%]">
                       <AppCard.Header>
                         <AppCard.Title className="font-normal tracking-tight">{a.title}</AppCard.Title>
                       </AppCard.Header>

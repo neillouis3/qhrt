@@ -3,10 +3,6 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { createServerClient } from '@supabase/ssr';
 import type { NextRequest } from 'next/server';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
-const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY;
-
 function isOpaqueApiKey(key: string): boolean {
   return key.startsWith('sb_publishable_') || key.startsWith('sb_secret_');
 }
@@ -30,21 +26,58 @@ export function hasSupabaseAuthCookie(request: NextRequest): boolean {
   return request.cookies.getAll().some((cookie) => cookie.name.includes('-auth-token'));
 }
 
-const publishableFetch = fetchWithoutOpaqueBearer(supabasePublishableKey);
+function supabaseEnv() {
+  return {
+    url: process.env.NEXT_PUBLIC_SUPABASE_URL ?? '',
+    publishableKey: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? '',
+    secretKey: process.env.SUPABASE_SECRET_KEY ?? '',
+  };
+}
 
-export const supabase = createClient(supabaseUrl, supabasePublishableKey, {
-  global: { fetch: publishableFetch },
+function requirePublicEnv() {
+  const { url, publishableKey } = supabaseEnv();
+  if (!url || !publishableKey) {
+    throw new Error(
+      'NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY are required'
+    );
+  }
+  return { url, publishableKey };
+}
+
+function lazyClient(create: () => SupabaseClient): SupabaseClient {
+  let client: SupabaseClient | undefined;
+  return new Proxy({} as SupabaseClient, {
+    get(_target, prop, _receiver) {
+      client ??= create();
+      const value = Reflect.get(client, prop, client) as unknown;
+      return typeof value === 'function' ? value.bind(client) : value;
+    },
+  });
+}
+
+/** Browser / publishable-key client. Created on first use so `next build` can import this module without env. */
+export const supabase: SupabaseClient = lazyClient(() => {
+  const { url, publishableKey } = requirePublicEnv();
+  return createClient(url, publishableKey, {
+    global: { fetch: fetchWithoutOpaqueBearer(publishableKey) },
+  });
 });
 
-export const supabaseServer = supabaseSecretKey
-  ? createClient(supabaseUrl, supabaseSecretKey, {
-      global: { fetch: fetchWithoutOpaqueBearer(supabaseSecretKey) },
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    })
-  : (null as unknown as SupabaseClient);
+/** Service-role client. Created on first use. */
+export const supabaseServer: SupabaseClient = lazyClient(() => {
+  const { url, publishableKey, secretKey } = supabaseEnv();
+  const key = secretKey || publishableKey;
+  if (!url || !key) {
+    throw new Error('NEXT_PUBLIC_SUPABASE_URL is required');
+  }
+  return createClient(url, key, {
+    global: { fetch: fetchWithoutOpaqueBearer(key) },
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+});
 
 type CookieToSet = {
   name: string;
@@ -56,8 +89,9 @@ export function createRequestClient(
   request: NextRequest,
   setAll?: (cookies: CookieToSet[]) => void
 ): SupabaseClient {
-  return createServerClient(supabaseUrl, supabasePublishableKey, {
-    global: { fetch: publishableFetch },
+  const { url, publishableKey } = requirePublicEnv();
+  return createServerClient(url, publishableKey, {
+    global: { fetch: fetchWithoutOpaqueBearer(publishableKey) },
     cookies: {
       getAll() {
         return request.cookies.getAll();

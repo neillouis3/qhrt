@@ -3,9 +3,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Button, Radio, RadioGroup, TextArea, Typography, buttonVariants } from '@heroui/react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { PauseIcon } from '@hugeicons/core-free-icons';
 import AppCard from '@/components/ui/AppCard';
-import UserPageShell, { PageHeader } from '@/components/layout/UserPageShell';
+import FocusSessionLayout from '@/components/layout/FocusSessionLayout';
 import { FocusContentSkeleton } from '@/components/layout/PageSkeleton';
+import ProgressNav, { linearProgressStatus, type ProgressStep } from '@/components/session/ProgressNav';
 import {
   visibleQuestions,
   type AssessmentAnswers,
@@ -13,6 +16,35 @@ import {
   type PublicAssessment,
   type ResultWorkbook,
 } from '@/lib/assessments';
+
+const INTRO_ID = '__intro';
+
+function draftKey(slug: string) {
+  return `qhrt.assessment.${slug}.draft`;
+}
+
+function readDraft(slug: string): { answers: AssessmentAnswers; step: number } | null {
+  try {
+    const raw = localStorage.getItem(draftKey(slug));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { answers?: unknown; step?: unknown };
+    if (!parsed || typeof parsed.answers !== 'object' || parsed.answers === null) return null;
+    return {
+      answers: parsed.answers as AssessmentAnswers,
+      step: typeof parsed.step === 'number' && parsed.step >= 0 ? parsed.step : 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeDraft(slug: string, answers: AssessmentAnswers, step: number) {
+  localStorage.setItem(draftKey(slug), JSON.stringify({ answers, step }));
+}
+
+function clearDraft(slug: string) {
+  localStorage.removeItem(draftKey(slug));
+}
 
 function WorkbookLink({ workbook }: { workbook: ResultWorkbook }) {
   const internal = workbook.url.startsWith('/');
@@ -34,14 +66,20 @@ function WorkbookLink({ workbook }: { workbook: ResultWorkbook }) {
 function ResultView({
   assessment,
   result,
-  onRetake,
 }: {
   assessment: PublicAssessment;
   result: AssessmentResult;
-  onRetake: () => void;
 }) {
   return (
     <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-1">
+        <Typography type="h3" weight="normal">
+          {assessment.title}
+        </Typography>
+        <Typography type="body-sm" color="muted">
+          Your suggested workbooks
+        </Typography>
+      </div>
       {result.outcomes.length === 0 ? (
         <AppCard className="p-5">
           <Typography type="body-sm" color="muted">
@@ -77,15 +115,6 @@ function ResultView({
           {assessment.disclaimer}
         </Typography>
       )}
-
-      <div className="flex flex-wrap gap-2">
-        <Button size="sm" variant="outline" onPress={onRetake}>
-          Retake
-        </Button>
-        <Link href="/assessments" className={buttonVariants({ size: 'sm', variant: 'tertiary' })}>
-          Back to focus areas
-        </Link>
-      </div>
     </div>
   );
 }
@@ -95,6 +124,8 @@ export default function AssessmentRunner({ slug, showResult }: { slug: string; s
   const [result, setResult] = useState<AssessmentResult | null>(null);
   const [answers, setAnswers] = useState<AssessmentAnswers>({});
   const [step, setStep] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -109,12 +140,23 @@ export default function AssessmentRunner({ slug, showResult }: { slug: string; s
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.error ?? 'Failed to load assessment');
         setAssessment(data.assessment);
-        if (showResult && data.lastResult) setResult(data.lastResult);
+        if (showResult && data.lastResult) {
+          setResult(data.lastResult);
+        } else {
+          const draft = readDraft(slug);
+          if (draft) {
+            setAnswers(draft.answers);
+            setStep(draft.step);
+          }
+        }
       } catch (err) {
         if (err instanceof Error && err.name === 'AbortError') return;
         setError(err instanceof Error ? err.message : 'Failed to load assessment');
       } finally {
-        if (!controller.signal.aborted) setLoading(false);
+        if (!controller.signal.aborted) {
+          setReady(true);
+          setLoading(false);
+        }
       }
     })();
     return () => controller.abort();
@@ -125,44 +167,140 @@ export default function AssessmentRunner({ slug, showResult }: { slug: string; s
     [assessment, answers]
   );
 
-  if (loading) return <FocusContentSkeleton />;
+  const lastStep = visible.length;
+  const onIntro = step === 0;
+  const questionIndex = Math.min(Math.max(step - 1, 0), Math.max(lastStep - 1, 0));
+
+  useEffect(() => {
+    if (step > lastStep) setStep(lastStep);
+  }, [step, lastStep]);
+
+  useEffect(() => {
+    if (!ready || !assessment || result) return;
+    writeDraft(slug, answers, step);
+  }, [ready, assessment, answers, step, result, slug]);
+
+  const progressItems: ProgressStep[] = [
+    {
+      id: INTRO_ID,
+      label: 'Introduction',
+      status: result ? 'complete' : onIntro ? 'current' : 'complete',
+    },
+    ...visible.map((question, i) => ({
+      id: question.key,
+      index: String(i + 1),
+      label: question.text,
+      status: result
+        ? ('complete' as const)
+        : onIntro
+          ? ('upcoming' as const)
+          : linearProgressStatus(i, questionIndex, Boolean((answers[question.key] ?? '').trim())),
+    })),
+  ];
+
+  const progress = (
+    <ProgressNav
+      items={progressItems}
+      onSelect={
+        result || paused
+          ? undefined
+          : (id) => {
+              if (id === INTRO_ID) {
+                setStep(0);
+                return;
+              }
+              const next = visible.findIndex((question) => question.key === id);
+              if (next >= 0 && next + 1 <= step) setStep(next + 1);
+            }
+      }
+    />
+  );
+
+  const pause = () => {
+    writeDraft(slug, answers, step);
+    setPaused(true);
+  };
+
+  if (loading) {
+    return (
+      <FocusSessionLayout progress={progress}>
+        <FocusContentSkeleton />
+      </FocusSessionLayout>
+    );
+  }
 
   if (!assessment) {
     return (
-      <UserPageShell>
-        <PageHeader title="Focus area" />
-        <AppCard className="p-6 flex flex-col gap-3">
-          <Typography type="body-sm" className="text-danger">
-            {error ?? 'This assessment is not available.'}
-          </Typography>
-          <Link href="/assessments" className={buttonVariants({ size: 'sm', variant: 'outline' })}>
+      <FocusSessionLayout progress={progress}>
+        <Typography type="body-sm" className="text-danger">
+          {error ?? 'This assessment is not available.'}{' '}
+          <Link href="/assessments" className="underline">
             Back to focus areas
           </Link>
-        </AppCard>
-      </UserPageShell>
+        </Typography>
+      </FocusSessionLayout>
     );
   }
 
   if (result) {
     return (
-      <UserPageShell>
-        <PageHeader title={assessment.title} subtitle="Your suggested workbooks" />
-        <ResultView
-          assessment={assessment}
-          result={result}
-          onRetake={() => {
-            setResult(null);
-            setAnswers({});
-            setStep(0);
-          }}
-        />
-      </UserPageShell>
+      <FocusSessionLayout
+        progress={progress}
+        actions={
+          <>
+            <Button
+              size="sm"
+              variant="outline"
+              onPress={() => {
+                clearDraft(slug);
+                setResult(null);
+                setAnswers({});
+                setStep(0);
+                setPaused(false);
+              }}
+            >
+              Retake
+            </Button>
+            <Link href="/assessments" className={buttonVariants({ size: 'sm', variant: 'tertiary' })}>
+              Back to focus areas
+            </Link>
+          </>
+        }
+      >
+        <ResultView assessment={assessment} result={result} />
+      </FocusSessionLayout>
     );
   }
 
-  const index = Math.min(step, Math.max(visible.length - 1, 0));
-  const question = visible[index];
-  const isLast = index === visible.length - 1;
+  if (paused) {
+    return (
+      <FocusSessionLayout
+        progress={progress}
+        actions={
+          <>
+            <Link href="/assessments" className={buttonVariants({ size: 'sm', variant: 'tertiary' })}>
+              Leave
+            </Link>
+            <Button size="sm" variant="primary" onPress={() => setPaused(false)}>
+              Resume
+            </Button>
+          </>
+        }
+      >
+        <div className="flex flex-col gap-3">
+          <Typography type="h3" weight="normal">
+            Paused
+          </Typography>
+          <Typography type="body" color="muted">
+            Your place is saved on this device. Come back when you are ready.
+          </Typography>
+        </div>
+      </FocusSessionLayout>
+    );
+  }
+
+  const question = onIntro ? undefined : visible[questionIndex];
+  const isLast = !onIntro && questionIndex === visible.length - 1;
   const answer = question ? (answers[question.key] ?? '') : '';
   const canContinue = !question || !question.required || answer.trim() !== '';
 
@@ -181,6 +319,7 @@ export default function AssessmentRunner({ slug, showResult }: { slug: string; s
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? 'Failed to submit');
+      clearDraft(slug);
       setResult(data.result);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to submit');
@@ -190,28 +329,72 @@ export default function AssessmentRunner({ slug, showResult }: { slug: string; s
   };
 
   return (
-    <UserPageShell>
-      <PageHeader title={assessment.title} subtitle={assessment.instructions ?? assessment.description ?? undefined} />
-
-      <div className="flex flex-col gap-2">
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-default/40">
-          <div
-            className="h-full rounded-full bg-primary transition-all"
-            style={{ width: `${visible.length ? ((index + 1) / visible.length) * 100 : 0}%` }}
-          />
+    <FocusSessionLayout
+      progress={progress}
+      onPause={pause}
+      leadingActions={
+        onIntro ? (
+          <Button size="sm" variant="ghost" onPress={pause}>
+            <HugeiconsIcon icon={PauseIcon} size={16} strokeWidth={1.5} />
+            Pause
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            variant="tertiary"
+            isDisabled={submitting}
+            onPress={() => setStep(step - 1)}
+          >
+            Back
+          </Button>
+        )
+      }
+      actions={
+        onIntro ? (
+          <Button size="sm" variant="primary" onPress={() => setStep(1)}>
+            Begin
+          </Button>
+        ) : isLast ? (
+          <Button
+            size="sm"
+            variant="primary"
+            isPending={submitting}
+            isDisabled={!canContinue || submitting}
+            onPress={handleSubmit}
+          >
+            See my workbooks
+          </Button>
+        ) : (
+          <Button size="sm" variant="primary" isDisabled={!canContinue} onPress={() => setStep(step + 1)}>
+            Next
+          </Button>
+        )
+      }
+    >
+      {onIntro ? (
+        <div className="flex flex-col gap-4">
+          <Typography type="h3" weight="normal">
+            {assessment.title}
+          </Typography>
+          {assessment.description ? (
+            <Typography type="body">{assessment.description}</Typography>
+          ) : null}
+          {assessment.instructions ? (
+            <Typography type="body" color="muted">
+              {assessment.instructions}
+            </Typography>
+          ) : null}
+          {assessment.disclaimer ? (
+            <Typography type="body-xs" color="muted">
+              {assessment.disclaimer}
+            </Typography>
+          ) : null}
         </div>
-        <Typography type="body-xs" color="muted">
-          Question {index + 1} of {visible.length}
-        </Typography>
-      </div>
-
-      {question && (
+      ) : question ? (
         <AppCard className="flex flex-col gap-4 p-5">
           <Typography type="body">
             {question.text}
-            {!question.required && (
-              <span className="ml-2 text-xs text-muted">(optional)</span>
-            )}
+            {!question.required && <span className="ml-2 text-xs text-muted">(optional)</span>}
           </Typography>
 
           {question.type === 'text' ? (
@@ -243,45 +426,13 @@ export default function AssessmentRunner({ slug, showResult }: { slug: string; s
             </RadioGroup>
           )}
         </AppCard>
-      )}
+      ) : null}
 
-      {error && (
+      {error ? (
         <Typography type="body-sm" className="text-danger">
           {error}
         </Typography>
-      )}
-
-      <div className="flex items-center justify-between gap-2">
-        <Button
-          size="sm"
-          variant="tertiary"
-          isDisabled={index === 0 || submitting}
-          onPress={() => setStep(index - 1)}
-        >
-          Back
-        </Button>
-        {isLast ? (
-          <Button
-            size="sm"
-            variant="primary"
-            isPending={submitting}
-            isDisabled={!canContinue || submitting}
-            onPress={handleSubmit}
-          >
-            See my workbooks
-          </Button>
-        ) : (
-          <Button size="sm" variant="primary" isDisabled={!canContinue} onPress={() => setStep(index + 1)}>
-            Next
-          </Button>
-        )}
-      </div>
-
-      {assessment.disclaimer && (
-        <Typography type="body-xs" color="muted">
-          {assessment.disclaimer}
-        </Typography>
-      )}
-    </UserPageShell>
+      ) : null}
+    </FocusSessionLayout>
   );
 }

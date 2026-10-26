@@ -404,7 +404,7 @@ function SettingsFormBody() {
                 <FieldSelect
                   label={t('settings.appearance.theme')}
                   placeholder={t('settings.appearance.themePlaceholder')}
-                  selectedKey={theme ?? 'system'}
+                  selectedKey={theme ?? 'light'}
                   onChange={setTheme}
                   items={themeOptions}
                 />

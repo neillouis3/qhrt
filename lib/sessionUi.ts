@@ -45,7 +45,7 @@ export function statusLabel(status: string): string {
   return status;
 }
 
-/** Live journey, assessment, or breathing session — full-screen, no top navbar. */
+/** Full-screen check-in or breathing — no top navbar. */
 export function isFocusSessionPath(pathname: string | null | undefined): boolean {
   if (!pathname) return false;
   return (

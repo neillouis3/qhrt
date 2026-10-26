@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { Card, Typography } from '@heroui/react';
+import { Typography } from '@heroui/react';
 import { buttonVariants } from '@heroui/styles';
 import {
   BookOpen02Icon,
@@ -10,9 +10,9 @@ import {
   Globe02Icon,
   ShieldCheckIcon,
 } from '@hugeicons/core-free-icons';
-import { surfaceClass } from '@/components/ui/AppCard';
 import { LandingIcon } from '@/components/marketing/LandingIcons';
 import HowItWorks from '@/components/marketing/HowItWorks';
+import LandingFaq from '@/components/marketing/LandingFaq';
 import { LandingCta } from '@/components/marketing/MarketingCtas';
 import SiteFooter from '@/components/layout/SiteFooter';
 
@@ -54,8 +54,6 @@ const features = [
     icon: CheckmarkCircle02Icon,
   },
 ];
-
-const cardClass = surfaceClass;
 
 export default function LandingPage() {
   return (
@@ -132,37 +130,36 @@ export default function LandingPage() {
           </ul>
         </section>
 
+        <LandingFaq />
+
         <section className="py-24">
-          <Card variant="transparent" className={`${cardClass} overflow-hidden p-0`}>
-            <div className="grid items-center gap-8 p-6 sm:p-8 lg:grid-cols-[1.2fr_0.8fr] lg:gap-12 lg:p-10">
-              <div className="flex flex-col gap-4">
-                <Typography type="h4" weight="normal">
-                  Begin when you are ready
-                </Typography>
-                <Typography type="body-sm" color="muted">
-                  Create an account to choose your focus areas. Pause or return whenever you like.
-                </Typography>
-                <div>
-                  <Link
-                    href="/signup"
-                    className={buttonVariants({ size: 'sm', variant: 'primary' })}
-                  >
-                    Start your journey
-                  </Link>
-                </div>
-              </div>
-              <div className="cta-canopy">
-                <Image
-                  src="/begin-bokeh.jpg"
-                  alt="Soft green light through leaves"
-                  fill
-                  sizes="(min-width: 1024px) 24vw, 80vw"
-                  className="rounded-lg object-cover object-center"
-                />
-                <div className="cta-canopy__texture" aria-hidden />
+          <div className="relative min-h-72 overflow-hidden rounded-lg lg:min-h-80">
+            <Image
+              src="/auth-illustration.jpg"
+              alt=""
+              fill
+              sizes="(min-width: 1024px) 60vw, 90vw"
+              className="object-cover object-[20%_center]"
+            />
+            <div
+              className="absolute inset-0 bg-gradient-to-r from-background via-background/85 to-background/20"
+              aria-hidden
+            />
+            <div className="relative z-10 flex max-w-lg flex-col gap-4 p-8 sm:p-10 lg:p-12">
+              <Typography type="h4" weight="normal">
+                Begin when you are ready
+              </Typography>
+              <Typography type="body-sm" color="muted">
+                Create an account, pick a focus area, and open a matching workbook. Pause or return
+                whenever you like.
+              </Typography>
+              <div>
+                <Link href="/signup" className={buttonVariants({ size: 'sm', variant: 'primary' })}>
+                  Create an account
+                </Link>
               </div>
             </div>
-          </Card>
+          </div>
         </section>
 
         <SiteFooter />
