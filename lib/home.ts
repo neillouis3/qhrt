@@ -152,7 +152,7 @@ const TUTORIAL_STEPS: Array<{
   {
     id: 'onboarding',
     title: 'Set your focus',
-    description: 'Share what you want to learn — we suggest standard workbooks, not treatment.',
+    description: 'Choose what you want to work on.',
     defaultHref: '/onboarding',
   },
   {

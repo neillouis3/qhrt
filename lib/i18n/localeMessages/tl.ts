@@ -70,7 +70,7 @@ export const tl: MessageTree = {
       evening: 'Magandang gabi',
     },
     checkIn: {
-      prompt: 'Mabilis na wellness check — paano ang araw mo?',
+      prompt: 'Paano ang araw mo?',
       up: 'Magandang balita. Malaki ang maitutulong ng maliliit na gawi.',
       down: 'May mahirap na araw. Isang maliit na hakbang kapag handa ka na.',
     },
@@ -86,7 +86,6 @@ export const tl: MessageTree = {
     },
     checkInWeek: 'Iyong wellness check-in ngayong linggo',
     pinned: 'Naka-pin',
-    tagline: 'Wellness at resilience coaching',
     nextStep: {
       label: 'Iminumungkahing susunod na hakbang',
       loading: 'Nilo-load ang iyong dashboard…',
@@ -101,7 +100,7 @@ export const tl: MessageTree = {
     shortcuts: {
       focusTitle: 'Mga pokus',
       focusDescription:
-        'Mga gabay na workbook ayon sa mga layuning pinili mo — hindi clinical na assessment.',
+        'Mga gabay na workbook ayon sa mga layuning pinili mo, hindi clinical na assessment.',
       focusCta: 'Tingnan ang mga workbook',
       diaryTitle: 'Talaarawan ng pagmumuni-muni',
       diaryDescription: 'Maikling tala tungkol sa stress, gawi, o kung paano ang araw.',
@@ -110,8 +109,7 @@ export const tl: MessageTree = {
     diary: {
       section: 'Talaarawan ng pagmumuni-muni',
       emptyTitle: 'Wala pang entry',
-      emptyDescription:
-        'Isang linya tungkol sa stress, boundaries, o tagumpay — opsyonal at pribado.',
+      emptyDescription: 'Sumulat ng maikling tala tungkol sa araw mo.',
       emptyCta: 'Unang entry',
       open: 'Buksan ang talaarawan',
       entriesWeek: 'Mga entry ngayong linggo',

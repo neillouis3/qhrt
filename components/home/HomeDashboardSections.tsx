@@ -89,7 +89,7 @@ export function HomeTimeIndicator() {
 
   return (
     <div
-      className="flex flex-wrap items-center gap-2"
+      className="pointer-events-none fixed bottom-6 right-6 z-30 flex items-center gap-2 rounded-full bg-background/75 px-3 py-2 backdrop-blur-md"
       aria-live="polite"
       aria-label={`${periodLabel}, ${clock}`}
     >
@@ -232,7 +232,6 @@ export function HomeTutorial({ steps }: { steps: TutorialStep[] }) {
 
   const completedCount = steps.filter((step) => step.status === 'complete').length;
   const current = steps.find((step) => step.status === 'current');
-  const upcoming = steps.filter((step) => step.status === 'upcoming');
 
   return (
     <div className="flex w-full flex-col gap-4">
@@ -262,23 +261,6 @@ export function HomeTutorial({ steps }: { steps: TutorialStep[] }) {
             </Link>
           </div>
         </AppCard>
-      ) : null}
-
-      {upcoming.length > 0 ? (
-        <div className="flex w-full flex-col gap-2">
-          <Typography type="body-xs" color="muted">
-            {t('home.tutorial.then')}
-          </Typography>
-          <ul className="flex w-full list-none flex-col gap-1.5 pl-0">
-            {upcoming.map((step) => (
-              <li key={step.id}>
-                <Typography type="body-sm" color="muted" className="break-words">
-                  {step.title}
-                </Typography>
-              </li>
-            ))}
-          </ul>
-        </div>
       ) : null}
     </div>
   );
@@ -512,14 +494,9 @@ export function UserGreeting({
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex flex-col gap-1">
-        <Typography type="h1" weight="normal">
-          {greeting}, {name}
-        </Typography>
-        <Typography type="body-sm" color="muted">
-          {t('home.tagline')}
-        </Typography>
-      </div>
+      <Typography type="h1" weight="normal">
+        {greeting}, {name}
+      </Typography>
       {showCheckIn ? (
         <div className="flex flex-wrap items-center gap-4">
           <Typography type="body" color="muted">

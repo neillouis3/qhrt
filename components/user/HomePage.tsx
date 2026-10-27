@@ -35,10 +35,20 @@ interface HomePageProps {
 }
 
 const BROWSE_HREFS = [
-  { key: 'diary', href: '/diary' },
-  { key: 'assessments', href: '/assessments' },
-  { key: 'breathe', href: '/breathe' },
+  { key: 'diary', href: '/diary', tone: 'bloom' },
+  { key: 'assessments', href: '/assessments', tone: 'meadow' },
+  { key: 'breathe', href: '/breathe', tone: 'mist' },
 ] as const;
+
+function BrowseWash({ tone }: { tone: (typeof BROWSE_HREFS)[number]['tone'] }) {
+  return (
+    <div className={`browse-card-wash browse-card-wash--${tone}`} aria-hidden>
+      <span className="browse-card-wash__blob browse-card-wash__blob--a" />
+      <span className="browse-card-wash__blob browse-card-wash__blob--b" />
+      <span className="browse-card-wash__blob browse-card-wash__blob--c" />
+    </div>
+  );
+}
 
 function fallbackNext(intakeCompleted: boolean, practiceTime?: string | null): HomeNext {
   if (!intakeCompleted) {
@@ -254,14 +264,21 @@ export default function HomePage({
         <Typography type="body-xs" color="muted">
           {t('home.browse.title')}
         </Typography>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           {BROWSE_HREFS.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className={buttonVariants({ size: 'sm', variant: 'ghost' })}
+              className="block rounded-lg transition-transform duration-300 hover:-translate-y-0.5 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
             >
-              {t(`home.browse.${item.key}`)}
+              <AppCard className="relative h-full min-h-32 overflow-hidden p-0">
+                <BrowseWash tone={item.tone} />
+                <div className="relative z-10 flex h-full min-h-32 items-end p-5">
+                  <AppCard.Title className="font-normal tracking-tight">
+                    {t(`home.browse.${item.key}`)}
+                  </AppCard.Title>
+                </div>
+              </AppCard>
             </Link>
           ))}
         </div>

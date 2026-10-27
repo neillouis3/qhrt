@@ -72,7 +72,7 @@ const en: MessageTree = {
       evening: 'Good evening',
     },
     checkIn: {
-      prompt: 'Quick wellness check — how is today feeling?',
+      prompt: 'How is today feeling?',
       up: 'Good to hear. Small habits add up.',
       down: 'Rough days happen. Pick one small step when you are ready.',
     },
@@ -88,7 +88,6 @@ const en: MessageTree = {
     },
     checkInWeek: 'Your wellness check-ins this week',
     pinned: 'Pinned',
-    tagline: 'Wellness & resilience coaching',
     nextStep: {
       label: 'Suggested next step',
       loading: 'Loading your dashboard…',
@@ -102,7 +101,7 @@ const en: MessageTree = {
     },
     shortcuts: {
       focusTitle: 'Focus areas',
-      focusDescription: 'Guided workbooks matched to goals you choose — not a clinical assessment.',
+      focusDescription: 'Guided workbooks matched to goals you choose, not a clinical assessment.',
       focusCta: 'Browse workbooks',
       diaryTitle: 'Reflection diary',
       diaryDescription: 'A short note on stress, habits, or how the day felt.',
@@ -111,7 +110,7 @@ const en: MessageTree = {
     diary: {
       section: 'Reflection diary',
       emptyTitle: 'No entries yet',
-      emptyDescription: 'Jot a line about stress, boundaries, or wins — optional and private.',
+      emptyDescription: 'Write a short note about your day.',
       emptyCta: 'Write first entry',
       open: 'Open diary',
       entriesWeek: 'Entries this week',
@@ -222,7 +221,7 @@ const fr: MessageTree = {
       evening: 'Bonsoir',
     },
     checkIn: {
-      prompt: 'Bilan rapide — comment se passe la journée?',
+      prompt: 'Comment se passe la journée?',
       up: 'Merci. Les petites habitudes comptent.',
       down: 'Les journées difficiles arrivent. Un petit pas quand vous voulez.',
     },
@@ -238,7 +237,6 @@ const fr: MessageTree = {
     },
     checkInWeek: 'Vos bilans cette semaine',
     pinned: 'Épinglé',
-    tagline: 'Coaching bien-être et résilience',
     nextStep: {
       label: 'Prochaine étape suggérée',
       loading: 'Chargement de votre accueil…',
@@ -252,7 +250,7 @@ const fr: MessageTree = {
     },
     shortcuts: {
       focusTitle: 'Thèmes',
-      focusDescription: 'Cahiers guidés selon vos objectifs — pas une évaluation clinique.',
+      focusDescription: 'Cahiers guidés selon vos objectifs, pas une évaluation clinique.',
       focusCta: 'Parcourir les cahiers',
       diaryTitle: 'Journal de réflexion',
       diaryDescription: 'Une note sur le stress, les habitudes ou votre journée.',
@@ -261,7 +259,7 @@ const fr: MessageTree = {
     diary: {
       section: 'Journal de réflexion',
       emptyTitle: 'Aucune entrée',
-      emptyDescription: 'Quelques mots sur le stress, les limites ou vos progrès — optionnel et privé.',
+      emptyDescription: 'Écrivez une courte note sur votre journée.',
       emptyCta: 'Première entrée',
       open: 'Ouvrir le journal',
       entriesWeek: 'Entrées cette semaine',

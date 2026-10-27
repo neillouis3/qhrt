@@ -70,7 +70,7 @@ export const hi: MessageTree = {
       evening: 'शुभ संध्या',
     },
     checkIn: {
-      prompt: 'त्वरित wellness चेक — आज कैसा लग रहा है?',
+      prompt: 'आज कैसा लग रहा है?',
       up: 'अच्छी बात। छोटी आदतें मिलकर बड़ा बदलाव लाती हैं।',
       down: 'कठिन दिन होते हैं। तैयार हों तो एक छोटा कदम चुनें।',
     },
@@ -86,7 +86,6 @@ export const hi: MessageTree = {
     },
     checkInWeek: 'इस सप्ताह आपके wellness चेक-इन',
     pinned: 'पिन किया',
-    tagline: 'Wellness और resilience coaching',
     nextStep: {
       label: 'सुझाया गया अगला कदम',
       loading: 'आपका डैशबोर्ड लोड हो रहा है…',
@@ -101,7 +100,7 @@ export const hi: MessageTree = {
     shortcuts: {
       focusTitle: 'फ़ोकस क्षेत्र',
       focusDescription:
-        'आपके चुने लक्ष्यों से मेल खाने वाली guided workbook — clinical assessment नहीं।',
+        'आपके चुने लक्ष्यों से मेल खाने वाली guided workbook, clinical assessment नहीं।',
       focusCta: 'Workbook देखें',
       diaryTitle: 'प्रतिबिंब डायरी',
       diaryDescription: 'तनाव, आदतों या दिन के बारे में छोटा नोट।',
@@ -110,8 +109,7 @@ export const hi: MessageTree = {
     diary: {
       section: 'प्रतिबिंब डायरी',
       emptyTitle: 'अभी कोई entry नहीं',
-      emptyDescription:
-        'तनाव, सीमाओं या छोटी जीत के बारे में कुछ पंक्तियाँ — वैकल्पिक और निजी।',
+      emptyDescription: 'आज के बारे में एक छोटा नोट लिखें।',
       emptyCta: 'पहली entry',
       open: 'डायरी खोलें',
       entriesWeek: 'इस सप्ताह entries',
