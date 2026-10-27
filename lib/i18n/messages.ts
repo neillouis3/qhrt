@@ -8,7 +8,7 @@ const en: MessageTree = {
   nav: {
     home: 'Home',
     diary: 'Diary',
-    assessments: 'Focus areas',
+    assessments: 'Modules',
     about: 'About',
     contact: 'Contact',
     login: 'Log in',
@@ -79,7 +79,7 @@ const en: MessageTree = {
     browse: {
       title: 'Or browse',
       diary: 'Diary',
-      assessments: 'Focus areas',
+      assessments: 'Modules',
       breathe: 'Breathe',
     },
     presence: {
@@ -103,8 +103,9 @@ const en: MessageTree = {
       go: 'Go',
       again: 'Try again',
     },
+    modules: 'Modules',
     shortcuts: {
-      focusTitle: 'Focus areas',
+      focusTitle: 'Modules',
       focusDescription: 'Guided workbooks matched to goals you choose, not a clinical assessment.',
       focusCta: 'Browse workbooks',
       diaryTitle: 'Reflection diary',
@@ -160,7 +161,7 @@ const fr: MessageTree = {
   nav: {
     home: 'Accueil',
     diary: 'Journal',
-    assessments: 'Thèmes',
+    assessments: 'Modules',
     about: 'À propos',
     contact: 'Contact',
     login: 'Connexion',
@@ -232,7 +233,7 @@ const fr: MessageTree = {
     browse: {
       title: 'Ou parcourir',
       diary: 'Journal',
-      assessments: 'Thèmes',
+      assessments: 'Modules',
       breathe: 'Respiration',
     },
     presence: {
@@ -256,8 +257,9 @@ const fr: MessageTree = {
       go: 'Aller',
       again: 'Réessayer',
     },
+    modules: 'Modules',
     shortcuts: {
-      focusTitle: 'Thèmes',
+      focusTitle: 'Modules',
       focusDescription: 'Cahiers guidés selon vos objectifs, pas une évaluation clinique.',
       focusCta: 'Parcourir les cahiers',
       diaryTitle: 'Journal de réflexion',

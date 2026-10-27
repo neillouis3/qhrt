@@ -1,10 +1,5 @@
-import type { Metadata } from 'next';
-import StartingOutPage from '@/components/user/StartingOutPage';
-
-export const metadata = {
-  title: 'Starting out with QHRT',
-} satisfies Metadata;
+import { redirect } from 'next/navigation';
 
 export default function Page() {
-  return <StartingOutPage />;
+  redirect('/modules/qhrt-foundation/1');
 }

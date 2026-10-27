@@ -21,6 +21,7 @@ export const CONTENT_GROUPS: ContentNavGroup[] = [
     items: [
       { key: 'assessment-builder', label: 'Assessments' },
       { key: 'workbooks', label: 'Workbooks' },
+      { key: 'modules', label: 'Modules' },
     ],
   },
 ];

@@ -22,6 +22,7 @@ import type { HomeDiaryStats as HomeDiaryStatsData } from '@/lib/diaryStats';
 import type { GentlePresence } from '@/lib/gentlePresence';
 import type { CheckInWeekDay, HomeCheckInValue } from '@/lib/homeCheckIn';
 import { readStartingOutDone, withStartingOutStatus } from '@/lib/startingOut';
+import type { LearningModule } from '@/lib/modules';
 import type { PinnedPractice } from '@/lib/pinnedPractices';
 import { usePinnedPractices } from '@/hooks/usePinnedPractices';
 import type { NameSource } from '@/lib/userName';
@@ -37,6 +38,23 @@ export interface HomeDashboardData {
   pins?: PinnedPractice[];
   checkInWeek?: CheckInWeekDay[];
   checkIn?: HomeCheckInValue | null;
+  modules?: LearningModule[];
+}
+
+function withFoundationLesson(steps: TutorialStep[], modules: LearningModule[]): TutorialStep[] {
+  const foundation = modules.find((module) => module.slug === 'qhrt-foundation');
+  const lesson = foundation?.lessons.slice().sort((a, b) => a.position - b.position)[0];
+  if (!lesson) return steps;
+  return steps.map((step) =>
+    step.id === 'starting-out'
+      ? {
+          ...step,
+          title: `Module ${lesson.position}`,
+          description: lesson.title,
+          href: lesson.href,
+        }
+      : step
+  );
 }
 
 interface HomePageProps {
@@ -138,6 +156,7 @@ export default function HomePage({
   const [unpinningKey, setUnpinningKey] = useState<string | null>(null);
   const { pins, syncPins, togglePin } = usePinnedPractices(initialDashboard?.pins ?? []);
   const [checkInWeek, setCheckInWeek] = useState<CheckInWeekDay[]>(() => initialDashboard?.checkInWeek ?? []);
+  const [modules, setModules] = useState<LearningModule[]>(() => initialDashboard?.modules ?? []);
   const [checkInValue, setCheckInValue] = useState<HomeCheckInValue | null>(() =>
     checkInFromDashboard(initialDashboard)
   );
@@ -160,6 +179,7 @@ export default function HomePage({
         gentlePresence?: GentlePresence;
         pins?: PinnedPractice[];
         checkInWeek?: CheckInWeekDay[];
+        modules?: LearningModule[];
       };
       if (data.next) setNext(data.next);
       if (data.activity) setActivity(data.activity);
@@ -168,6 +188,7 @@ export default function HomePage({
       if (data.gentlePresence) setGentlePresence(data.gentlePresence);
       if (data.pins) syncPins(data.pins);
       if (Array.isArray(data.checkInWeek)) setCheckInWeek(data.checkInWeek);
+      if (Array.isArray(data.modules)) setModules(data.modules);
       setCheckInValue(checkInFromDashboard(data));
     } catch (err) {
       console.error('[HomePage] Failed to fetch next step:', err);
@@ -244,7 +265,7 @@ export default function HomePage({
         </div>
       )}
 
-      {tutorial.length > 0 ? <HomeTutorial steps={tutorial} /> : null}
+      {tutorial.length > 0 ? <HomeTutorial steps={withFoundationLesson(tutorial, modules)} /> : null}
 
       {pins.length > 0 ? (
         <HomePinned pins={pins} onUnpin={(pin) => void handleUnpin(pin)} unpinningKey={unpinningKey} />

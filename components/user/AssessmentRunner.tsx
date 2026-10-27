@@ -235,7 +235,7 @@ export default function AssessmentRunner({ slug, showResult }: { slug: string; s
         <Typography type="body-sm" className="text-danger">
           {error ?? 'This assessment is not available.'}{' '}
           <Link href="/assessments" className="underline">
-            Back to focus areas
+            Back to modules
           </Link>
         </Typography>
       </FocusSessionLayout>
@@ -262,7 +262,7 @@ export default function AssessmentRunner({ slug, showResult }: { slug: string; s
               Retake
             </Button>
             <Link href="/assessments" className={buttonVariants({ size: 'sm', variant: 'tertiary' })}>
-              Back to focus areas
+              Back to modules
             </Link>
           </>
         }

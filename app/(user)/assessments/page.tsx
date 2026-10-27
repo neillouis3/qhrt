@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import AssessmentsPage from '@/components/user/AssessmentsPage';
 
 export const metadata: Metadata = {
-  title: 'Assessments',
+  title: 'Modules',
 };
 
 export default function Page() {

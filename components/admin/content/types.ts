@@ -117,4 +117,4 @@ export interface CompletionRule {
   is_active: boolean;
 }
 
-export type TabKey = 'assessment-builder' | 'workbooks';
+export type TabKey = 'assessment-builder' | 'workbooks' | 'modules';

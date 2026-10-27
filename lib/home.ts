@@ -96,7 +96,7 @@ export function idlePracticeNext(practiceTime?: string | null): HomeNext {
       kind: 'practice',
       title: 'Explore a focus area',
       description: 'Choose a topic and work through a standard coaching workbook at your pace.',
-      cta: 'Focus areas',
+      cta: 'Modules',
       href: '/assessments',
     };
   }
@@ -151,9 +151,9 @@ const TUTORIAL_STEPS: Array<{
 }> = [
   {
     id: 'starting-out',
-    title: 'Starting out with QHRT',
-    description: 'A step-by-step look at how a session works.',
-    defaultHref: '/starting-out',
+    title: 'Module 1',
+    description: 'Starting out with QHRT',
+    defaultHref: '/modules/qhrt-foundation/1',
   },
   {
     id: 'onboarding',

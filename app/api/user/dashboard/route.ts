@@ -8,6 +8,7 @@ import { practiceTimeFromUser, homeCheckInFromUser } from '@/lib/userSettings';
 import { buildGentlePresence } from '@/lib/gentlePresence';
 import { pinnedFromUserMetadata } from '@/lib/pinnedPractices';
 import { buildCheckInWeek, homeCheckInDayFromUser, presenceDaysFromUserMetadata } from '@/lib/homeCheckIn';
+import { loadModules } from '@/lib/modules';
 
 /**
  * GET — next step for Home, plus intake progress.
@@ -91,6 +92,28 @@ export async function GET(request: NextRequest) {
       ? buildCheckInWeek(userMeta)
       : [];
     const checkIn = homeCheckInDayFromUser(userResult.user);
+    let modules: Array<{ id: string; slug: string; title: string; description: string | null; lessons: Array<{ id: string; position: number; title: string; description: string | null; kind: string; href: string }> }> = [];
+    try {
+      const loaded = await loadModules();
+      if ('modules' in loaded) {
+        modules = loaded.modules.map((module) => ({
+          id: module.id,
+          slug: module.slug,
+          title: module.title,
+          description: module.description,
+          lessons: module.lessons.map((lesson) => ({
+            id: lesson.id,
+            position: lesson.position,
+            title: lesson.title,
+            description: lesson.description,
+            kind: lesson.kind,
+            href: lesson.href,
+          })),
+        }));
+      }
+    } catch (moduleErr) {
+      console.error('[api/user/dashboard] modules:', moduleErr);
+    }
 
     return NextResponse.json(
       {
@@ -103,6 +126,7 @@ export async function GET(request: NextRequest) {
         pins,
         checkInWeek,
         checkIn,
+        modules,
       },
       { status: 200 }
     );

@@ -11,6 +11,16 @@ import Logo from '@/components/ui/Logo';
 import { usePinnedPractices } from '@/hooks/usePinnedPractices';
 import SiriOrb from '@/components/user/SiriOrb';
 import ThemeSwitcher from '@/components/nav/ThemeSwitcher';
+import {
+  BREATHE_SCENES,
+  BreatheBalloon,
+  BreatheBirds,
+  BreatheClouds,
+  BreatheFlower,
+  type BreatheSceneId,
+} from '@/components/user/BreatheScenes';
+
+const SCENE_STORAGE_KEY = 'qhrt-breathe-scene';
 
 const INHALE_MS = 4000;
 const EXHALE_MS = 6000;
@@ -52,8 +62,14 @@ export default function BreathingPage() {
   const reduceMotion = usePrefersReducedMotion();
   const [phase, setPhase] = useState<Phase>('idle');
   const [scale, setScale] = useState(REST_SCALE);
+  const [scene, setScene] = useState<BreatheSceneId>('orb');
   const [pinPending, setPinPending] = useState(false);
   const { syncPins, isPinned, togglePin } = usePinnedPractices();
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem(SCENE_STORAGE_KEY);
+    if (saved === 'orb' || saved === 'flower' || saved === 'balloon') setScene(saved);
+  }, []);
 
   useEffect(() => {
     fetch('/api/user/pins')
@@ -90,6 +106,17 @@ export default function BreathingPage() {
   };
 
   const durationMs = phase === 'exhale' ? EXHALE_MS : INHALE_MS;
+  const lift =
+    scene !== 'balloon' || phase === 'idle'
+      ? ''
+      : phase === 'inhale'
+        ? ' translateY(-18%)'
+        : ' translateY(8%)';
+
+  const chooseScene = (next: BreatheSceneId) => {
+    setScene(next);
+    window.localStorage.setItem(SCENE_STORAGE_KEY, next);
+  };
 
   return (
     <div className="relative flex h-svh overflow-hidden bg-background">
@@ -127,12 +154,18 @@ export default function BreathingPage() {
         </div>
       </header>
 
-      <main className="flex min-h-0 flex-1 items-center justify-center px-4">
+      <main className="relative flex min-h-0 flex-1 flex-col items-center justify-center gap-8 px-4 pb-8">
+        {scene === 'balloon' ? (
+          <>
+            <BreatheClouds />
+            <BreatheBirds />
+          </>
+        ) : null}
         <button
           type="button"
           onClick={start}
           aria-label={phase === 'idle' ? 'Start breathing exercise' : cueFor(phase)}
-          className="flex flex-col items-center gap-10 outline-none"
+          className="relative z-10 flex flex-col items-center gap-10 outline-none"
         >
           <span className="relative flex size-[min(72vmin,30rem)] items-center justify-center">
             <span
@@ -143,18 +176,24 @@ export default function BreathingPage() {
                 phase === 'idle'
                   ? undefined
                   : {
-                      transform: `scale(${scale})`,
+                      transform: `scale(${scale})${lift}`,
                       transition: reduceMotion
                         ? 'none'
                         : `transform ${durationMs}ms ease-in-out`,
                     }
               }
             >
-              <SiriOrb
-                key={resolvedTheme ?? 'light'}
-                size="min(70vmin, 28rem)"
-                className="drop-shadow-2xl"
-              />
+              {scene === 'flower' ? (
+                <BreatheFlower />
+              ) : scene === 'balloon' ? (
+                <BreatheBalloon />
+              ) : (
+                <SiriOrb
+                  key={resolvedTheme ?? 'light'}
+                  size="min(70vmin, 28rem)"
+                  className="drop-shadow-2xl"
+                />
+              )}
             </span>
           </span>
           <Typography
@@ -166,6 +205,25 @@ export default function BreathingPage() {
             {cueFor(phase)}
           </Typography>
         </button>
+        <div role="radiogroup" aria-label="Breathing visual" className="relative z-10 flex gap-1">
+          {BREATHE_SCENES.map((option) => {
+            const selected = scene === option.id;
+            return (
+              <button
+                key={option.id}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                onClick={() => chooseScene(option.id)}
+                className={`rounded-full px-3 py-1.5 text-sm transition-opacity hover:opacity-70 ${
+                  selected ? 'bg-foreground/8 text-foreground' : 'text-muted'
+                }`}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
       </main>
     </div>
   );

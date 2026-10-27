@@ -428,6 +428,129 @@ body {
   }
 }
 
+.breathe-flower {
+  animation: breathe-flower-spin 14s linear infinite;
+  transform-origin: center;
+}
+
+@keyframes breathe-flower-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.breathe-balloon {
+  transform: translateY(-18%);
+}
+
+.breathe-cloud {
+  position: absolute;
+  display: block;
+  height: 1.7rem;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--foreground) 10%, var(--background));
+  box-shadow:
+    1.5rem -0.85rem 0 0.4rem color-mix(in oklab, var(--foreground) 10%, var(--background)),
+    3rem 0.15rem 0 -0.2rem color-mix(in oklab, var(--foreground) 8%, var(--background));
+}
+
+.breathe-cloud--a {
+  width: 5.5rem;
+  left: 8%;
+  top: 18%;
+  animation: breathe-cloud-drift 16s ease-in-out infinite;
+}
+
+.breathe-cloud--b {
+  width: 4.2rem;
+  right: 10%;
+  top: 28%;
+  animation: breathe-cloud-drift 19s ease-in-out infinite reverse;
+}
+
+.breathe-cloud--c {
+  width: 6rem;
+  left: 28%;
+  top: 62%;
+  animation: breathe-cloud-drift 22s ease-in-out infinite;
+}
+
+@keyframes breathe-cloud-drift {
+  0%,
+  100% {
+    transform: translateX(-3.5rem);
+  }
+  50% {
+    transform: translateX(3.5rem);
+  }
+}
+
+.breathe-bird {
+  position: absolute;
+  left: 0;
+  color: color-mix(in oklab, var(--foreground) 58%, transparent);
+  animation-name: breathe-bird-across;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+.breathe-bird--reverse {
+  animation-name: breathe-bird-across-reverse;
+}
+
+.breathe-bird-shape {
+  display: block;
+  overflow: visible;
+  fill: currentColor;
+}
+
+.breathe-bird-shape path {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: breathe-bird-flap 0.55s ease-in-out infinite alternate;
+}
+
+@keyframes breathe-bird-across {
+  from {
+    transform: translateX(-14vw) scale(var(--breathe-bird-scale, 1));
+  }
+  to {
+    transform: translateX(108vw) scale(var(--breathe-bird-scale, 1));
+  }
+}
+
+@keyframes breathe-bird-across-reverse {
+  from {
+    transform: translateX(108vw) scale(calc(var(--breathe-bird-scale, 1) * -1), var(--breathe-bird-scale, 1));
+  }
+  to {
+    transform: translateX(-14vw) scale(calc(var(--breathe-bird-scale, 1) * -1), var(--breathe-bird-scale, 1));
+  }
+}
+
+@keyframes breathe-bird-flap {
+  from {
+    transform: translateY(1px);
+  }
+  to {
+    transform: translateY(-3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .breathe-flower,
+  .breathe-cloud--a,
+  .breathe-cloud--b,
+  .breathe-cloud--c,
+  .breathe-bird,
+  .breathe-bird-shape path {
+    animation: none;
+  }
+}
+
 @keyframes signup-welcome-breathe {
   0%,
   100% {

@@ -51,6 +51,7 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
       pathname?.startsWith('/assessments') ||
       pathname?.startsWith('/diary') ||
       pathname?.startsWith('/onboarding') ||
+      pathname?.startsWith('/modules') ||
       pathname?.startsWith('/breathe') ||
       pathname?.startsWith('/settings')) ??
     false;

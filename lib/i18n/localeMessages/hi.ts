@@ -5,7 +5,7 @@ export const hi: MessageTree = {
   nav: {
     home: 'होम',
     diary: 'डायरी',
-    assessments: 'फ़ोकस क्षेत्र',
+    assessments: 'मॉड्यूल',
     about: 'हमारे बारे में',
     contact: 'संपर्क',
     login: 'लॉग इन',
@@ -77,7 +77,7 @@ export const hi: MessageTree = {
     browse: {
       title: 'या ब्राउज़ करें',
       diary: 'डायरी',
-      assessments: 'फ़ोकस क्षेत्र',
+      assessments: 'मॉड्यूल',
       breathe: 'साँस',
     },
     presence: {
@@ -101,8 +101,9 @@ export const hi: MessageTree = {
       go: 'जाएँ',
       again: 'फिर कोशिश करें',
     },
+    modules: 'मॉड्यूल',
     shortcuts: {
-      focusTitle: 'फ़ोकस क्षेत्र',
+      focusTitle: 'मॉड्यूल',
       focusDescription:
         'आपके चुने लक्ष्यों से मेल खाने वाली guided workbook, clinical assessment नहीं।',
       focusCta: 'Workbook देखें',

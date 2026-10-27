@@ -17,6 +17,7 @@ import {
 import type { TabKey } from '@/components/admin/content/types';
 import { AssessmentsTab } from '@/components/admin/content/assessments/AssessmentsTab';
 import { WorkbooksTab } from '@/components/admin/content/assessments/WorkbooksTab';
+import { ModulesTab } from '@/components/admin/content/modules/ModulesTab';
 
 function CatalogPanel({
   tab,
@@ -26,6 +27,7 @@ function CatalogPanel({
   showToast: (msg: string, type: 'success' | 'error') => void;
 }) {
   if (tab === 'workbooks') return <WorkbooksTab showToast={showToast} />;
+  if (tab === 'modules') return <ModulesTab showToast={showToast} />;
   return <AssessmentsTab showToast={showToast} />;
 }
 
