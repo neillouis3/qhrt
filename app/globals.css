@@ -470,6 +470,14 @@ body {
   animation: home-enter 0.45s ease;
 }
 
+.getting-started-rail {
+  scrollbar-width: none;
+}
+
+.getting-started-rail::-webkit-scrollbar {
+  display: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .home-enter {
     animation: none;
@@ -603,15 +611,6 @@ body {
     color-mix(in oklab, var(--background) 88%, transparent) 42%,
     var(--background) 100%
   );
-}
-
-.home-time-period-dot {
-  display: inline-block;
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 9999px;
-  box-shadow: 0 0 12px color-mix(in oklab, currentColor 40%, transparent);
-  transition: background 1.2s ease, color 1.2s ease;
 }
 
 /* Shared film-grain overlay (auth illustration, landing cards, CTA) */

@@ -23,7 +23,7 @@ import {
 } from '@/lib/diaryStats';
 import type { DiaryMood } from '@/lib/types/diary';
 import type { PinnedPractice } from '@/lib/pinnedPractices';
-import { homeTimeLabelKey, type HomeSkyBlend } from '@/lib/timeOfDay';
+import type { HomeSkyBlend } from '@/lib/timeOfDay';
 import type { HomeActivityItem, TutorialStep } from '@/lib/home';
 import { firstNameFromUser, type NameSource } from '@/lib/userName';
 import { statusLabel } from '@/lib/sessionUi';
@@ -85,31 +85,6 @@ export function CheckInButtons({
           className={value === 'down' ? 'text-blue-950' : 'text-muted'}
         />
       </Button>
-    </div>
-  );
-}
-
-export function HomeTimeIndicator() {
-  const { now, clock, dotColor } = useHomeTime();
-  const { t } = useLocale();
-  const periodLabel = t(`time.${homeTimeLabelKey(now)}`);
-
-  return (
-    <div
-      className="pointer-events-none fixed bottom-6 right-6 z-30 flex items-center gap-2 rounded-full bg-background/75 px-3 py-2 backdrop-blur-md"
-      aria-live="polite"
-      aria-label={`${periodLabel}, ${clock}`}
-    >
-      <span
-        className="home-time-period-dot"
-        style={{ background: dotColor, color: dotColor }}
-        aria-hidden
-      />
-      <Typography type="body-xs" color="muted" className="tabular-nums">
-        {periodLabel}
-        <span aria-hidden> · </span>
-        <time dateTime={now.toISOString()}>{clock}</time>
-      </Typography>
     </div>
   );
 }
@@ -268,11 +243,14 @@ export function HomeTutorial({ steps }: { steps: TutorialStep[] }) {
         </Typography>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="getting-started-rail flex snap-x snap-proximity gap-3 overflow-x-auto">
         {steps.map((step) => {
           const done = step.status === 'complete';
           return (
-            <AppCard key={step.id} className={`h-full p-5 ${done ? 'opacity-45' : ''}`}>
+            <AppCard
+              key={step.id}
+              className={`h-full w-[calc((100%-2.25rem)*0.3)] shrink-0 snap-start p-5 ${done ? 'opacity-45' : ''}`}
+            >
               <div className="flex h-full flex-col justify-between gap-4">
                 <div className="flex min-w-0 flex-col gap-1">
                   <AppCard.Title className="font-normal tracking-tight">{step.title}</AppCard.Title>

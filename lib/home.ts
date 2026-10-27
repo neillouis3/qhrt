@@ -32,7 +32,7 @@ export interface HomeActivityItem {
   href: string;
 }
 
-export type TutorialStepId = 'onboarding' | 'assessment' | 'diary';
+export type TutorialStepId = 'starting-out' | 'onboarding' | 'assessment' | 'diary';
 export type TutorialStepStatus = 'complete' | 'current' | 'upcoming';
 
 export interface TutorialStep {
@@ -150,6 +150,12 @@ const TUTORIAL_STEPS: Array<{
   defaultHref: string;
 }> = [
   {
+    id: 'starting-out',
+    title: 'Starting out with QHRT',
+    description: 'A step-by-step look at how a session works.',
+    defaultHref: '/starting-out',
+  },
+  {
     id: 'onboarding',
     title: 'Onboarding',
     description: 'Help us get to know you.',
@@ -173,12 +179,15 @@ export function buildHomeTutorial({
   intakeCompleted,
   assessmentsCompleted,
   diaryCount,
+  startingOutCompleted = false,
 }: {
   intakeCompleted: boolean;
   assessmentsCompleted: number;
   diaryCount: number;
+  startingOutCompleted?: boolean;
 }): TutorialStep[] {
   const done = {
+    'starting-out': startingOutCompleted,
     onboarding: intakeCompleted,
     assessment: assessmentsCompleted > 0,
     diary: diaryCount > 0,

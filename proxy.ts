@@ -28,6 +28,7 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith('/assessments') ||
     pathname.startsWith('/diary') ||
     pathname.startsWith('/onboarding') ||
+    pathname.startsWith('/starting-out') ||
     pathname.startsWith('/breathe');
   const isSettingsRoute = pathname.startsWith('/settings');
   const isAuthRoute =
@@ -132,6 +133,8 @@ export const config = {
     '/breathe',
     '/breathe/:path*',
     '/onboarding',
+    '/starting-out',
+    '/starting-out/:path*',
     '/settings/:path*',
     '/login',
     '/signup',

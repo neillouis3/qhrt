@@ -10,7 +10,6 @@ import {
   HomeDiaryStats,
   HomeMoodWeek,
   HomePinned,
-  HomeTimeIndicator,
   HomeTutorial,
   readSeenNotificationIds,
   UserGreeting,
@@ -22,6 +21,7 @@ import { idlePracticeNext, type HomeActivityItem, type HomeNext, type TutorialSt
 import type { HomeDiaryStats as HomeDiaryStatsData } from '@/lib/diaryStats';
 import type { GentlePresence } from '@/lib/gentlePresence';
 import type { CheckInWeekDay, HomeCheckInValue } from '@/lib/homeCheckIn';
+import { readStartingOutDone, withStartingOutStatus } from '@/lib/startingOut';
 import type { PinnedPractice } from '@/lib/pinnedPractices';
 import { usePinnedPractices } from '@/hooks/usePinnedPractices';
 import type { NameSource } from '@/lib/userName';
@@ -127,7 +127,9 @@ export default function HomePage({
     () => initialDashboard?.next ?? fallbackNext(intakeCompleted, practiceTimeFromUser(user) || null)
   );
   const [activity, setActivity] = useState<HomeActivityItem[]>(() => initialDashboard?.activity ?? []);
-  const [tutorial, setTutorial] = useState<TutorialStep[]>(() => initialDashboard?.tutorial ?? []);
+  const [tutorial, setTutorial] = useState<TutorialStep[]>(() =>
+    withStartingOutStatus(initialDashboard?.tutorial ?? [], readStartingOutDone(userId))
+  );
   const [diaryStats, setDiaryStats] = useState<HomeDiaryStatsData | null>(() => initialDashboard?.diaryStats ?? null);
   const [loading, setLoading] = useState(() => initialDashboard == null && Boolean(userId));
   const [gentlePresence, setGentlePresence] = useState<GentlePresence | null>(
@@ -161,7 +163,7 @@ export default function HomePage({
       };
       if (data.next) setNext(data.next);
       if (data.activity) setActivity(data.activity);
-      if (data.tutorial) setTutorial(data.tutorial);
+      if (data.tutorial) setTutorial(withStartingOutStatus(data.tutorial, readStartingOutDone(userId)));
       if (data.diaryStats) setDiaryStats(data.diaryStats);
       if (data.gentlePresence) setGentlePresence(data.gentlePresence);
       if (data.pins) syncPins(data.pins);
@@ -172,7 +174,7 @@ export default function HomePage({
     } finally {
       setLoading(false);
     }
-  }, [syncPins]);
+  }, [syncPins, userId]);
 
   const handleUnpin = async (pin: PinnedPractice) => {
     setUnpinningKey(pin.key);
@@ -207,8 +209,6 @@ export default function HomePage({
         </div>
       ) : (
       <div className="home-enter flex flex-col gap-10">
-      <HomeTimeIndicator />
-
       <UserGreeting
         user={user}
         userId={userId}
