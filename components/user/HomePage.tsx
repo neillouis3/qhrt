@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { buttonVariants, Typography } from '@heroui/react';
 import AppCard from '@/components/ui/AppCard';
 import CrisisResources from '@/components/ui/CrisisResources';
-import WellnessDisclaimer from '@/components/layout/WellnessDisclaimer';
 import {
   HomeDiaryStats,
   HomeGentleStreak,
@@ -109,6 +108,9 @@ export default function HomePage({
   const { pins, syncPins, togglePin } = usePinnedPractices();
   const [checkInWeek, setCheckInWeek] = useState<CheckInWeekDay[]>([]);
   const showCheckIn = homeCheckInFromUser(user);
+  const currentTutorial = tutorial.find((step) => step.status === 'current');
+  const nextStepRepeatsTutorial =
+    !intakeCompleted || (currentTutorial != null && currentTutorial.href === next.href);
 
   const fetchNext = useCallback(async () => {
     try {
@@ -175,30 +177,32 @@ export default function HomePage({
         <HomeMoodWeek week={checkInWeek} />
       ) : null}
 
-      <div className="flex flex-col gap-2">
-        <Typography type="body-xs" color="muted">
-          {t('home.nextStep.label')}
-        </Typography>
-        {loading ? (
-          <AppCard className="p-5">
-            <Typography type="body-sm" color="muted">
-              {t('home.nextStep.loading')}
-            </Typography>
-          </AppCard>
-        ) : (
-          <AppCard className="p-5">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex min-w-0 flex-col gap-1">
-                <AppCard.Title className="font-normal tracking-tight">{next.title}</AppCard.Title>
-                <AppCard.Description>{next.description}</AppCard.Description>
-            </div>
-            <Link href={next.href} className={`${buttonVariants({ size: 'sm', variant: 'outline' })} shrink-0`}>
-              {next.cta}
-            </Link>
-            </div>
-          </AppCard>
-        )}
-      </div>
+      {nextStepRepeatsTutorial ? null : (
+        <div className="flex flex-col gap-2">
+          <Typography type="body-xs" color="muted">
+            {t('home.nextStep.label')}
+          </Typography>
+          {loading ? (
+            <AppCard className="p-5">
+              <Typography type="body-sm" color="muted">
+                {t('home.nextStep.loading')}
+              </Typography>
+            </AppCard>
+          ) : (
+            <AppCard className="p-5">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex min-w-0 flex-col gap-1">
+                  <AppCard.Title className="font-normal tracking-tight">{next.title}</AppCard.Title>
+                  <AppCard.Description>{next.description}</AppCard.Description>
+                </div>
+                <Link href={next.href} className={`${buttonVariants({ size: 'sm', variant: 'outline' })} shrink-0`}>
+                  {next.cta}
+                </Link>
+              </div>
+            </AppCard>
+          )}
+        </div>
+      )}
 
       {!loading && tutorial.length > 0 ? <HomeTutorial steps={tutorial} /> : null}
 
@@ -263,7 +267,6 @@ export default function HomePage({
         </div>
       </div>
 
-      <WellnessDisclaimer />
       <CrisisResources variant="compact" />
     </UserPageShell>
   );

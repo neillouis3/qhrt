@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Link as HeroLink, Typography } from '@heroui/react';
 import Logo from '@/components/ui/Logo';
-import WellnessDisclaimer from '@/components/layout/WellnessDisclaimer';
 
 const footerLinks = [
   { name: 'About', path: '/about' },
@@ -19,7 +18,6 @@ export default function SiteFooter({ homeHref = '/' }: { homeHref?: string }) {
 
   return (
     <footer className="border-t border-border py-12 pb-24">
-      <WellnessDisclaimer className="mb-6 max-w-xl" />
       <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
           <span className="flex items-center gap-2">

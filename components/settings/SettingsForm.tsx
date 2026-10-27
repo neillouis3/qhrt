@@ -19,7 +19,6 @@ import { homeCheckInFromUser, practiceTimeFromUser, pronounsFromUser } from '@/l
 import { ONBOARDING_PRACTICE_TIMES, ONBOARDING_PRONOUNS } from '@/lib/onboarding';
 import AppCard from '@/components/ui/AppCard';
 import CrisisResources from '@/components/ui/CrisisResources';
-import WellnessDisclaimer from '@/components/layout/WellnessDisclaimer';
 import FieldSelect from '@/components/ui/FieldSelect';
 import SettingsNav, { isSettingsTab, useSettingsNavKey, type SettingsTab } from '@/components/settings/SettingsNav';
 import { ChangePasswordModal, DeleteAccountModal } from '@/components/settings/SettingsAccountModals';
@@ -474,7 +473,6 @@ function SettingsFormBody() {
         <AppCard className="p-5">
           <div className="flex flex-col gap-4">
             <AppCard.Title className="font-normal tracking-tight">{t('settings.help.title')}</AppCard.Title>
-            <WellnessDisclaimer />
             <CrisisResources variant="full" />
             <div className="flex flex-wrap gap-2">
               {helpLinks.map((item) => (
