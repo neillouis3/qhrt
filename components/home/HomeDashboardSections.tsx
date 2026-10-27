@@ -122,7 +122,7 @@ export function HomeGentleStreak({ presence }: { presence: GentlePresence }) {
 
   return (
     <div className="flex items-center gap-0.5" aria-label={message}>
-      <HugeiconsIcon icon={FlashIcon} size={28} strokeWidth={1.75} className="text-amber-500" aria-hidden />
+      <HugeiconsIcon icon={FlashIcon} size={28} strokeWidth={1.75} className="text-foreground" aria-hidden />
       <Typography type="h4" weight="normal" className="tabular-nums">
         {days}
       </Typography>
