@@ -53,12 +53,12 @@ export default function ModuleDetailPage({ slug }: { slug: string }) {
           {module.lessons.map((lesson) => (
             <AppCard
               key={lesson.id}
-              className="h-full w-[calc((100%-2.25rem)*0.3)] shrink-0 snap-start p-5"
+              className="h-full w-[calc(100%-3.25rem)] shrink-0 snap-start p-4 sm:w-[calc((100%-2.25rem)*0.3)] sm:p-5"
             >
               <div className="flex h-full flex-col justify-between gap-4">
                 <div className="flex min-w-0 flex-col gap-1">
                   <AppCard.Title className="font-normal tracking-tight">Module {lesson.position}</AppCard.Title>
-                  <Typography type="body-sm" color="muted" className="break-words">
+                  <Typography type="body-sm" color="muted">
                     {lesson.title}
                   </Typography>
                 </div>

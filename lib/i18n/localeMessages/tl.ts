@@ -15,12 +15,13 @@ export const tl: MessageTree = {
   settings: {
     title: 'Mga setting',
     group: {
-      account: 'Account',
+      account: 'Profile',
       preferences: 'Mga kagustuhan',
       support: 'Suporta',
     },
     tab: {
-      profile: 'Profile',
+      profile: 'Account',
+      notifications: 'Mga abiso',
       data: 'Iyong data',
       home: 'Home',
       appearance: 'Itsura',

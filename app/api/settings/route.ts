@@ -59,6 +59,10 @@ export async function PATCH(request: NextRequest) {
       nextMeta.home_check_in = body.homeCheckIn === true;
     }
 
+    if ('notifyInApp' in body) nextMeta.notify_in_app = body.notifyInApp === true;
+    if ('notifyWelcome' in body) nextMeta.notify_welcome = body.notifyWelcome === true;
+    if ('notifyActivity' in body) nextMeta.notify_activity = body.notifyActivity === true;
+
     if ('locale' in body) {
       nextMeta.locale = isAppLocale(body.locale) ? body.locale : null;
     }

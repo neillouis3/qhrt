@@ -169,28 +169,28 @@ export function HomeSkeleton() {
 
 export function SettingsBodySkeleton() {
   return (
-    <div role="status" aria-label="Loading settings" className="flex flex-col gap-10">
-      <Skeleton className="h-8 w-32 rounded-lg" />
-      <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
-        <div className="hidden w-44 shrink-0 flex-col gap-6 lg:flex">
-          {Array.from({ length: 3 }, (_, groupIndex) => (
-            <div key={groupIndex} className="flex flex-col gap-2 px-3">
-              <Skeleton className="h-3 w-16 rounded-lg" />
-              {Array.from({ length: groupIndex === 1 ? 2 : groupIndex === 0 ? 3 : 1 }, (_, i) => (
-                <Skeleton key={i} className="h-9 w-full rounded-lg" />
-              ))}
-            </div>
-          ))}
-        </div>
-        <AppCard className="min-w-0 flex-1 p-5 lg:max-w-xl">
-          <div className="flex flex-col gap-4">
-            <Skeleton className="h-5 w-24 rounded-lg" />
-            <Skeleton className="h-3 w-full rounded-lg" />
-            <Skeleton className="h-10 w-full rounded-lg" />
-            <Skeleton className="h-10 w-full rounded-lg" />
-            <Skeleton className="h-8 w-20 rounded-lg self-end" />
+    <div
+      role="status"
+      aria-label="Loading settings"
+      className="flex w-full flex-1 flex-col gap-8 bg-background px-6 py-8 lg:flex-row lg:items-start lg:gap-10 lg:px-8 lg:py-10"
+    >
+      <div className="flex w-full shrink-0 flex-col gap-4 lg:w-60">
+        <Skeleton className="h-10 w-full rounded-lg" />
+        {Array.from({ length: 3 }, (_, groupIndex) => (
+          <div key={groupIndex} className="flex flex-col gap-2">
+            <Skeleton className="h-3 w-16 rounded-lg" />
+            {Array.from({ length: groupIndex === 1 ? 2 : groupIndex === 0 ? 2 : 1 }, (_, i) => (
+              <Skeleton key={i} className="h-8 w-full rounded-lg" />
+            ))}
           </div>
-        </AppCard>
+        ))}
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col gap-4">
+        <Skeleton className="h-8 w-40 rounded-lg" />
+        <Skeleton className="h-4 w-72 max-w-full rounded-lg" />
+        <Skeleton className="h-12 w-full rounded-lg" />
+        <Skeleton className="h-12 w-full rounded-lg" />
+        <Skeleton className="h-12 w-full rounded-lg" />
       </div>
       <span className="sr-only">Loading settings</span>
     </div>

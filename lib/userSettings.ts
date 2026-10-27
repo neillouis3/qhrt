@@ -29,3 +29,22 @@ export function homeCheckInFromUser(user: NameSource): boolean {
   if (value === false || value === 'false') return false;
   return true;
 }
+
+function storedFlag(user: NameSource, key: string): boolean {
+  const value = metaValue(user, key);
+  if (value === false || value === 'false') return false;
+  return true;
+}
+
+/** What the Home bell is allowed to show. Missing values stay on. */
+export function notificationPrefsFromUser(user: NameSource): {
+  inApp: boolean;
+  welcome: boolean;
+  activity: boolean;
+} {
+  return {
+    inApp: storedFlag(user, 'notify_in_app'),
+    welcome: storedFlag(user, 'notify_welcome'),
+    activity: storedFlag(user, 'notify_activity'),
+  };
+}

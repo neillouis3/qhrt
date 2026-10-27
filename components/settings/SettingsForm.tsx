@@ -4,38 +4,35 @@ import { Suspense, useEffect, useState, type ReactNode } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
+  Avatar,
   Button,
   Input,
   Label,
   Switch,
   TextField,
   Typography,
-  buttonVariants,
 } from '@heroui/react';
 import { useTheme } from 'next-themes';
 import { useSession, clearSessionCache, logoutOnClient } from '@/hooks/useSession';
-import { namePartsFromUser } from '@/lib/userName';
-import { homeCheckInFromUser, practiceTimeFromUser, pronounsFromUser } from '@/lib/userSettings';
+import { initialsFromUser, namePartsFromUser } from '@/lib/userName';
+import {
+  homeCheckInFromUser,
+  notificationPrefsFromUser,
+  practiceTimeFromUser,
+  pronounsFromUser,
+} from '@/lib/userSettings';
 import { ONBOARDING_PRACTICE_TIMES, ONBOARDING_PRONOUNS } from '@/lib/onboarding';
-import AppCard from '@/components/ui/AppCard';
 import CrisisResources from '@/components/ui/CrisisResources';
 import FieldSelect from '@/components/ui/FieldSelect';
 import SettingsNav, { isSettingsTab, useSettingsNavKey, type SettingsTab } from '@/components/settings/SettingsNav';
 import { ChangePasswordModal, DeleteAccountModal } from '@/components/settings/SettingsAccountModals';
 import { SettingsBodySkeleton } from '@/components/layout/PageSkeleton';
-import UserPageShell from '@/components/layout/UserPageShell';
 import { useLocale } from '@/context/LocaleContext';
 import { LOCALE_OPTIONS, type AppLocale } from '@/lib/locale';
 
 function SettingsPageShell({ children }: { children: ReactNode }) {
   return (
-    <Suspense
-      fallback={
-        <UserPageShell>
-          <SettingsBodySkeleton />
-        </UserPageShell>
-      }
-    >
+    <Suspense fallback={<SettingsBodySkeleton />}>
       <SettingsPageShellBody>{children}</SettingsPageShellBody>
     </Suspense>
   );
@@ -43,18 +40,40 @@ function SettingsPageShell({ children }: { children: ReactNode }) {
 
 function SettingsPageShellBody({ children }: { children: ReactNode }) {
   const active = useSettingsNavKey();
-  const { t } = useLocale();
 
   return (
-    <UserPageShell>
-      <Typography type="h3" weight="normal">
-        {t('settings.title')}
-      </Typography>
-      <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
-        <SettingsNav active={active} />
-        <div className="min-w-0 flex-1 lg:max-w-xl">{children}</div>
+    <div className="flex min-h-full flex-1 flex-col bg-background">
+      <div className="flex w-full flex-1 flex-col gap-8 px-6 py-8 lg:flex-row lg:items-start lg:gap-10 lg:px-8 lg:py-10">
+        <div className="shrink-0 lg:sticky lg:top-[calc(var(--app-navbar-height)+1.5rem)] lg:self-start">
+          <SettingsNav active={active} />
+        </div>
+        <main className="min-w-0 flex-1">{children}</main>
       </div>
-    </UserPageShell>
+    </div>
+  );
+}
+
+function SettingsPageHeader({ title, subtitle }: { title: string; subtitle: string }) {
+  return (
+    <header className="flex flex-col gap-1 pb-2">
+      <Typography type="h3" weight="normal">
+        {title}
+      </Typography>
+      <Typography type="body-sm" color="muted">
+        {subtitle}
+      </Typography>
+    </header>
+  );
+}
+
+function SettingsSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="flex flex-col">
+      <Typography type="body-sm" className="py-3">
+        {title}
+      </Typography>
+      <div className="flex flex-col">{children}</div>
+    </section>
   );
 }
 
@@ -68,7 +87,7 @@ function SettingRow({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between gap-6">
+    <div className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-10">
       <div className="min-w-0 flex-1">
         <Typography type="body-sm">{label}</Typography>
         {description ? (
@@ -77,7 +96,7 @@ function SettingRow({
           </Typography>
         ) : null}
       </div>
-      <div className="shrink-0">{children}</div>
+      <div className="shrink-0 sm:flex sm:w-56 sm:justify-end">{children}</div>
     </div>
   );
 }
@@ -110,6 +129,11 @@ function SettingsFormBody() {
   const [pronouns, setPronouns] = useState('');
   const [practiceTime, setPracticeTime] = useState('');
   const [homeCheckIn, setHomeCheckIn] = useState(true);
+  const [notifyInApp, setNotifyInApp] = useState(true);
+  const [notifyWelcome, setNotifyWelcome] = useState(true);
+  const [notifyActivity, setNotifyActivity] = useState(true);
+  const [notifySaving, setNotifySaving] = useState(false);
+  const [notifyError, setNotifyError] = useState('');
   const [saving, setSaving] = useState(false);
   const [homeSaving, setHomeSaving] = useState(false);
   const [error, setError] = useState('');
@@ -156,9 +180,14 @@ function SettingsFormBody() {
     setPronouns(pronounsFromUser(session.user));
     setPracticeTime(practiceTimeFromUser(session.user));
     setHomeCheckIn(homeCheckInFromUser(session.user));
+    const notifications = notificationPrefsFromUser(session.user);
+    setNotifyInApp(notifications.inApp);
+    setNotifyWelcome(notifications.welcome);
+    setNotifyActivity(notifications.activity);
   }, [session]);
 
   const email = session?.user.email ?? '';
+  const initial = initialsFromUser(session?.user);
 
   const handleSave = async () => {
     setSaving(true);
@@ -186,6 +215,23 @@ function SettingsFormBody() {
       setHomeError(err instanceof Error ? err.message : 'Could not save settings.');
     } finally {
       setHomeSaving(false);
+    }
+  };
+
+  const saveNotification = async (
+    key: 'notifyInApp' | 'notifyWelcome' | 'notifyActivity',
+    selected: boolean,
+    revert: () => void,
+  ) => {
+    setNotifySaving(true);
+    setNotifyError('');
+    try {
+      await patchSettings({ [key]: selected });
+    } catch (err) {
+      revert();
+      setNotifyError(err instanceof Error ? err.message : 'Could not save settings.');
+    } finally {
+      setNotifySaving(false);
     }
   };
 
@@ -247,30 +293,29 @@ function SettingsFormBody() {
   };
 
   if (sessionLoading) {
-    return (
-      <UserPageShell>
-        <SettingsBodySkeleton />
-      </UserPageShell>
-    );
+    return <SettingsBodySkeleton />;
   }
 
   return (
     <SettingsPageShell>
       {activeTab === 'profile' ? (
-        <div className="flex flex-col gap-4">
-          <AppCard className="p-5">
-            <div className="flex flex-col gap-4">
-              <AppCard.Title className="font-normal tracking-tight">Profile</AppCard.Title>
-              <TextField name="email" type="email" fullWidth>
-                <Label htmlFor="settings-email">Email</Label>
-                <Input id="settings-email" type="email" fullWidth value={email} disabled />
-              </TextField>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="flex flex-col gap-8">
+          <SettingsPageHeader
+            title="Account"
+            subtitle="Manage your profile, login information, and devices."
+          />
+          <SettingsSection title="Profile">
+            <div className="flex flex-col gap-4 py-4 sm:flex-row sm:items-center">
+              <Avatar size="md" color="accent">
+                <Avatar.Fallback>{initial}</Avatar.Fallback>
+              </Avatar>
+              <div className="grid min-w-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-2">
                 <TextField name="firstName" fullWidth>
                   <Label htmlFor="settings-first-name">First name</Label>
                   <Input
                     id="settings-first-name"
                     fullWidth
+                    placeholder="First name"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                   />
@@ -280,81 +325,149 @@ function SettingsFormBody() {
                   <Input
                     id="settings-last-name"
                     fullWidth
+                    placeholder="Last name"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
                   />
                 </TextField>
               </div>
+            </div>
+            <SettingRow label="Pronouns" description="Only you see this.">
               <FieldSelect
-                label="Pronouns"
                 placeholder="Select pronouns"
                 selectedKey={pronouns}
                 onChange={setPronouns}
                 items={ONBOARDING_PRONOUNS.map((item) => ({ id: item.id, name: item.label }))}
               />
-              {error ? (
-                <Typography type="body-sm" className="text-danger">
-                  {error}
-                </Typography>
-              ) : null}
-              {saved && !error ? (
-                <Typography type="body-sm" color="muted">
-                  Profile saved.
-                </Typography>
-              ) : null}
-              <div className="flex justify-end">
-                <Button
-                  size="sm"
-                  variant="primary"
-                  isPending={saving}
-                  isDisabled={saving}
-                  onPress={() => void handleSave()}
-                >
-                  Save
-                </Button>
-              </div>
+            </SettingRow>
+            {error ? (
+              <Typography type="body-sm" className="py-2 text-danger">
+                {error}
+              </Typography>
+            ) : null}
+            {saved && !error ? (
+              <Typography type="body-sm" color="muted" className="py-2">
+                Profile saved.
+              </Typography>
+            ) : null}
+            <div className="flex justify-end py-3">
+              <Button
+                size="sm"
+                variant="primary"
+                isPending={saving}
+                isDisabled={saving}
+                onPress={() => void handleSave()}
+              >
+                Save
+              </Button>
             </div>
-          </AppCard>
+          </SettingsSection>
+          <SettingsSection title="Sign-in">
+            <SettingRow label="Email" description="The address you use to sign in.">
+              <Typography type="body-sm" className="truncate">
+                {email || 'No email on this account'}
+              </Typography>
+            </SettingRow>
+            <SettingRow label="Password" description="Change the password you sign in with.">
+              <Button size="sm" variant="outline" onPress={() => setPasswordOpen(true)}>
+                Change password
+              </Button>
+            </SettingRow>
+          </SettingsSection>
+          <SettingsSection title="Account">
+            <SettingRow
+              label="Delete my account"
+              description="Removes your account and the data stored with it."
+            >
+              <Button size="sm" variant="danger" onPress={() => setDeleteOpen(true)}>
+                Delete my account
+              </Button>
+            </SettingRow>
+          </SettingsSection>
 
-          <AppCard className="p-5">
-            <div className="flex flex-col gap-4">
-              <AppCard.Title className="font-normal tracking-tight">Account</AppCard.Title>
-              <SettingRow label="Password" description="Change the password you sign in with.">
-                <Button size="sm" variant="outline" onPress={() => setPasswordOpen(true)}>
-                  Change password
-                </Button>
-              </SettingRow>
-            </div>
-          </AppCard>
+          <ChangePasswordModal isOpen={passwordOpen} onClose={() => setPasswordOpen(false)} />
 
-          <AppCard className="p-5">
-            <div className="flex flex-col gap-4">
-              <AppCard.Title className="font-normal tracking-tight">Delete my account</AppCard.Title>
-              <div>
-                <Button size="sm" variant="danger" onPress={() => setDeleteOpen(true)}>
-                  Delete my account
-                </Button>
-              </div>
-            </div>
-          </AppCard>
+          <DeleteAccountModal isOpen={deleteOpen} onClose={() => setDeleteOpen(false)} email={email} />
+        </div>
+      ) : null}
 
-          <ChangePasswordModal
-            isOpen={passwordOpen}
-            onClose={() => setPasswordOpen(false)}
+      {activeTab === 'notifications' ? (
+        <div className="flex flex-col gap-8">
+          <SettingsPageHeader
+            title="Notifications"
+            subtitle="Choose what the bell on Home shows."
           />
-
-          <DeleteAccountModal
-            isOpen={deleteOpen}
-            onClose={() => setDeleteOpen(false)}
-            email={email}
-          />
+          <SettingsSection title="In the app">
+            <SettingRow label="Bell on Home" description="Show the notifications button next to your greeting.">
+              <Switch
+                aria-label="Bell on Home"
+                isSelected={notifyInApp}
+                isDisabled={notifySaving}
+                onChange={(selected) => {
+                  const previous = notifyInApp;
+                  setNotifyInApp(selected);
+                  void saveNotification('notifyInApp', selected, () => setNotifyInApp(previous));
+                }}
+              >
+                <Switch.Content>
+                  <Switch.Control>
+                    <Switch.Thumb />
+                  </Switch.Control>
+                </Switch.Content>
+              </Switch>
+            </SettingRow>
+            <SettingRow label="Welcome note" description="Include the welcome line in the bell.">
+              <Switch
+                aria-label="Welcome note"
+                isSelected={notifyWelcome}
+                isDisabled={notifySaving || !notifyInApp}
+                onChange={(selected) => {
+                  const previous = notifyWelcome;
+                  setNotifyWelcome(selected);
+                  void saveNotification('notifyWelcome', selected, () => setNotifyWelcome(previous));
+                }}
+              >
+                <Switch.Content>
+                  <Switch.Control>
+                    <Switch.Thumb />
+                  </Switch.Control>
+                </Switch.Content>
+              </Switch>
+            </SettingRow>
+            <SettingRow label="Finished work" description="Include completed self-checks in the bell.">
+              <Switch
+                aria-label="Finished work"
+                isSelected={notifyActivity}
+                isDisabled={notifySaving || !notifyInApp}
+                onChange={(selected) => {
+                  const previous = notifyActivity;
+                  setNotifyActivity(selected);
+                  void saveNotification('notifyActivity', selected, () => setNotifyActivity(previous));
+                }}
+              >
+                <Switch.Content>
+                  <Switch.Control>
+                    <Switch.Thumb />
+                  </Switch.Control>
+                </Switch.Content>
+              </Switch>
+            </SettingRow>
+            {notifyError ? (
+              <Typography type="body-sm" className="py-2 text-danger">
+                {notifyError}
+              </Typography>
+            ) : null}
+          </SettingsSection>
         </div>
       ) : null}
 
       {activeTab === 'home' ? (
-        <AppCard className="p-5">
-          <div className="flex flex-col gap-4">
-            <AppCard.Title className="font-normal tracking-tight">{t('settings.home.title')}</AppCard.Title>
+        <div className="flex flex-col gap-8">
+          <SettingsPageHeader
+            title={t('settings.home.title')}
+            subtitle="The check-in on Home, and when you usually practice."
+          />
+          <SettingsSection title={t('settings.home.title')}>
             <SettingRow
               label={t('settings.home.checkIn')}
               description={t('settings.home.checkInDescription')}
@@ -372,89 +485,99 @@ function SettingsFormBody() {
                 </Switch.Content>
               </Switch>
             </SettingRow>
-            <FieldSelect
+            <SettingRow
               label={t('settings.home.practiceTime')}
-              placeholder={t('settings.home.practicePlaceholder')}
-              selectedKey={practiceTime}
-              onChange={(value) => void handlePracticeTime(value)}
-              isDisabled={homeSaving}
-              items={ONBOARDING_PRACTICE_TIMES.map((item) => ({
-                id: item.id,
-                name: item.label,
-              }))}
-            />
+              description="Home uses this when it suggests a next step."
+            >
+              <FieldSelect
+                placeholder={t('settings.home.practicePlaceholder')}
+                selectedKey={practiceTime}
+                onChange={(value) => void handlePracticeTime(value)}
+                isDisabled={homeSaving}
+                items={ONBOARDING_PRACTICE_TIMES.map((item) => ({
+                  id: item.id,
+                  name: item.label,
+                }))}
+              />
+            </SettingRow>
             {homeError ? (
-              <Typography type="body-sm" className="text-danger">
+              <Typography type="body-sm" className="py-2 text-danger">
                 {homeError}
               </Typography>
             ) : null}
-          </div>
-        </AppCard>
+          </SettingsSection>
+        </div>
       ) : null}
 
       {activeTab === 'appearance' ? (
-        <AppCard className="p-5">
-          <div className="flex flex-col gap-4">
-            <AppCard.Title className="font-normal tracking-tight">
-              {t('settings.appearance.title')}
-            </AppCard.Title>
-            {mounted ? (
-              <>
-                <FieldSelect
-                  label={t('settings.appearance.theme')}
-                  placeholder={t('settings.appearance.themePlaceholder')}
-                  selectedKey={theme ?? 'light'}
-                  onChange={setTheme}
-                  items={themeOptions}
-                />
-                <FieldSelect
+        <div className="flex flex-col gap-8">
+          <SettingsPageHeader
+            title={t('settings.appearance.title')}
+            subtitle="How the app looks, and which language the menus use."
+          />
+          {mounted ? (
+            <>
+              <SettingsSection title={t('settings.appearance.title')}>
+                <SettingRow label={t('settings.appearance.theme')} description="Light, dark, or match this device.">
+                  <FieldSelect
+                    placeholder={t('settings.appearance.themePlaceholder')}
+                    selectedKey={theme ?? 'light'}
+                    onChange={setTheme}
+                    items={themeOptions}
+                  />
+                </SettingRow>
+              </SettingsSection>
+              <SettingsSection title={t('settings.appearance.language')}>
+                <SettingRow
                   label={t('settings.appearance.language')}
-                  placeholder={t('settings.appearance.language')}
-                  selectedKey={locale}
-                  isDisabled={localeSaving}
-                  onChange={(value) => {
-                    void (async () => {
-                      setLocaleError('');
-                      setLocaleSaving(true);
-                      try {
-                        await setLocale(value as AppLocale);
-                      } catch (err) {
-                        setLocaleError(
-                          err instanceof Error ? err.message : 'Could not save language.'
-                        );
-                      } finally {
-                        setLocaleSaving(false);
-                      }
-                    })();
-                  }}
-                  items={LOCALE_OPTIONS.map((item) => ({ id: item.id, name: item.name }))}
-                />
-                <Typography type="body-xs" color="muted">
-                  {t('settings.appearance.languageDescription')}
-                </Typography>
+                  description={t('settings.appearance.languageDescription')}
+                >
+                  <FieldSelect
+                    placeholder={t('settings.appearance.language')}
+                    selectedKey={locale}
+                    isDisabled={localeSaving}
+                    onChange={(value) => {
+                      void (async () => {
+                        setLocaleError('');
+                        setLocaleSaving(true);
+                        try {
+                          await setLocale(value as AppLocale);
+                        } catch (err) {
+                          setLocaleError(err instanceof Error ? err.message : 'Could not save language.');
+                        } finally {
+                          setLocaleSaving(false);
+                        }
+                      })();
+                    }}
+                    items={LOCALE_OPTIONS.map((item) => ({ id: item.id, name: item.name }))}
+                  />
+                </SettingRow>
                 {localeError ? (
-                  <Typography type="body-sm" className="text-danger">
+                  <Typography type="body-sm" className="py-2 text-danger">
                     {localeError}
                   </Typography>
                 ) : null}
-              </>
-            ) : (
-              <div className="h-16" aria-hidden />
-            )}
-          </div>
-        </AppCard>
+              </SettingsSection>
+            </>
+          ) : (
+            <div className="h-16" aria-hidden />
+          )}
+        </div>
       ) : null}
 
       {activeTab === 'data' ? (
-        <AppCard className="p-5">
-          <div className="flex flex-col gap-4">
-            <AppCard.Title className="font-normal tracking-tight">{t('settings.data.title')}</AppCard.Title>
+        <div className="flex flex-col gap-8">
+          <SettingsPageHeader
+            title={t('settings.data.title')}
+            subtitle="A file of what is stored for your account."
+          />
+          <SettingsSection title={t('settings.data.title')}>
             {exportError ? (
-              <Typography type="body-sm" className="text-danger">
+              <Typography type="body-sm" className="py-2 text-danger">
                 {exportError}
               </Typography>
             ) : null}
-            <div>
+            <SettingRow label={t('settings.data.download')} description="Diary, check-ins, and account details.">
               <Button
                 size="sm"
                 variant="outline"
@@ -464,40 +587,39 @@ function SettingsFormBody() {
               >
                 {t('settings.data.download')}
               </Button>
-            </div>
-          </div>
-        </AppCard>
+            </SettingRow>
+          </SettingsSection>
+        </div>
       ) : null}
 
       {activeTab === 'help' ? (
-        <AppCard className="p-5">
-          <div className="flex flex-col gap-4">
-            <AppCard.Title className="font-normal tracking-tight">{t('settings.help.title')}</AppCard.Title>
+        <div className="flex flex-col gap-8">
+          <SettingsPageHeader title={t('settings.help.title')} subtitle="If you need urgent help, or want to sign out." />
+          <section className="flex flex-col gap-3">
+            <Typography type="body-sm">Urgent help</Typography>
             <CrisisResources variant="full" />
-            <div className="flex flex-wrap gap-2">
-              {helpLinks.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={buttonVariants({ size: 'sm', variant: 'ghost' })}
-                >
-                  {item.name}
+          </section>
+          <SettingsSection title={t('settings.help.title')}>
+            {helpLinks.map((item) => (
+              <SettingRow key={item.href} label={item.name}>
+                <Link href={item.href} className="text-sm text-foreground underline-offset-2 hover:underline">
+                  Open
                 </Link>
-              ))}
-            </div>
-            <div>
+              </SettingRow>
+            ))}
+            <SettingRow label={t('settings.help.logout')} description="Ends this session on this device.">
               <Button
                 size="sm"
-                variant="ghost"
+                variant="outline"
                 isPending={loggingOut}
                 isDisabled={loggingOut}
                 onPress={() => void handleLogout()}
               >
                 {t('settings.help.logout')}
               </Button>
-            </div>
-          </div>
-        </AppCard>
+            </SettingRow>
+          </SettingsSection>
+        </div>
       ) : null}
     </SettingsPageShell>
   );

@@ -26,6 +26,7 @@ import type { PinnedPractice } from '@/lib/pinnedPractices';
 import type { HomeSkyBlend } from '@/lib/timeOfDay';
 import type { HomeActivityItem, TutorialStep } from '@/lib/home';
 import { firstNameFromUser, type NameSource } from '@/lib/userName';
+import { notificationPrefsFromUser } from '@/lib/userSettings';
 import { statusLabel } from '@/lib/sessionUi';
 
 /** Shared thumbs-up/down control (Home greeting + Diary). */
@@ -249,12 +250,12 @@ export function HomeTutorial({ steps }: { steps: TutorialStep[] }) {
           return (
             <AppCard
               key={step.id}
-              className={`h-full w-[calc((100%-2.25rem)*0.3)] shrink-0 snap-start p-5 ${done ? 'opacity-45' : ''}`}
+              className={`h-full w-[calc(100%-3.25rem)] shrink-0 snap-start p-4 sm:w-[calc((100%-2.25rem)*0.3)] sm:p-5 ${done ? 'opacity-45' : ''}`}
             >
               <div className="flex h-full flex-col justify-between gap-4">
                 <div className="flex min-w-0 flex-col gap-1">
                   <AppCard.Title className="font-normal tracking-tight">{step.title}</AppCard.Title>
-                  <Typography type="body-sm" color="muted" className="break-words">
+                  <Typography type="body-sm" color="muted">
                     {step.description}
                   </Typography>
                 </div>
@@ -469,7 +470,13 @@ export function UserGreeting({
     if (checkInSettled) setCheckIn(checkInValue ?? null);
   }, [checkInSettled, checkInValue]);
 
-  const notificationIds = [WELCOME_NOTIFICATION_ID, ...notifications.map((item) => item.id)];
+  const notificationPrefs = notificationPrefsFromUser(user);
+  const visibleNotifications = notificationPrefs.inApp && notificationPrefs.activity ? notifications : [];
+  const showWelcome = notificationPrefs.inApp && notificationPrefs.welcome;
+  const notificationIds = [
+    ...(showWelcome ? [WELCOME_NOTIFICATION_ID] : []),
+    ...visibleNotifications.map((item) => item.id),
+  ];
   const unreadCount = notificationIds.filter((id) => !seenIds.includes(id)).length;
 
   const openNotifications = () => {
@@ -557,6 +564,7 @@ export function UserGreeting({
         </Typography>
         <div className="flex shrink-0 items-center gap-3">
           {presence ? <HomeGentleStreak presence={presence} /> : null}
+          {notificationPrefs.inApp ? (
           <button
             type="button"
             aria-label={t('home.notifications')}
@@ -575,6 +583,7 @@ export function UserGreeting({
               </span>
             ) : null}
           </button>
+          ) : null}
         </div>
       </div>
       {showCheckIn ? (
@@ -595,10 +604,19 @@ export function UserGreeting({
         title={t('home.notifications')}
       >
         <ul className="flex list-none flex-col gap-3 pl-0">
-          <li>
-            <Typography type="body-sm">{t('home.notificationsWelcome')}</Typography>
-          </li>
-          {notifications.map((item) => (
+          {showWelcome ? (
+            <li>
+              <Typography type="body-sm">{t('home.notificationsWelcome')}</Typography>
+            </li>
+          ) : null}
+          {notificationIds.length === 0 ? (
+            <li>
+              <Typography type="body-sm" color="muted">
+                {t('home.notificationsEmpty')}
+              </Typography>
+            </li>
+          ) : null}
+          {visibleNotifications.map((item) => (
             <li key={item.id}>
               <Link
                 href={item.href}

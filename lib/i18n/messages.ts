@@ -18,12 +18,13 @@ const en: MessageTree = {
   settings: {
     title: 'Settings',
     group: {
-      account: 'Account',
+      account: 'Profile',
       preferences: 'Preferences',
       support: 'Support',
     },
     tab: {
-      profile: 'Profile',
+      profile: 'Account',
+      notifications: 'Notifications',
       data: 'Your data',
       home: 'Home',
       appearance: 'Appearance',
@@ -171,12 +172,13 @@ const fr: MessageTree = {
   settings: {
     title: 'Paramètres',
     group: {
-      account: 'Compte',
+      account: 'Profil',
       preferences: 'Préférences',
       support: 'Aide',
     },
     tab: {
-      profile: 'Profil',
+      profile: 'Compte',
+      notifications: 'Notifications',
       data: 'Vos données',
       home: 'Accueil',
       appearance: 'Apparence',

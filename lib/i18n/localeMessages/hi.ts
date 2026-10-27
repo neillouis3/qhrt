@@ -15,12 +15,13 @@ export const hi: MessageTree = {
   settings: {
     title: 'सेटिंग्स',
     group: {
-      account: 'खाता',
+      account: 'प्रोफ़ाइल',
       preferences: 'प्राथमिकताएँ',
       support: 'सहायता',
     },
     tab: {
-      profile: 'प्रोफ़ाइल',
+      profile: 'खाता',
+      notifications: 'सूचनाएं',
       data: 'आपका डेटा',
       home: 'होम',
       appearance: 'दिखावट',
