@@ -7,7 +7,7 @@ import { buildHomeDiaryStats } from '@/lib/diaryStats';
 import { practiceTimeFromUser, homeCheckInFromUser } from '@/lib/userSettings';
 import { buildGentlePresence } from '@/lib/gentlePresence';
 import { pinnedFromUserMetadata } from '@/lib/pinnedPractices';
-import { buildCheckInWeek, presenceDaysFromUserMetadata } from '@/lib/homeCheckIn';
+import { buildCheckInWeek, homeCheckInDayFromUser, presenceDaysFromUserMetadata } from '@/lib/homeCheckIn';
 
 /**
  * GET — next step for Home, plus intake progress.
@@ -90,6 +90,7 @@ export async function GET(request: NextRequest) {
     const checkInWeek = homeCheckInFromUser(userResult.user)
       ? buildCheckInWeek(userMeta)
       : [];
+    const checkIn = homeCheckInDayFromUser(userResult.user);
 
     return NextResponse.json(
       {
@@ -101,6 +102,7 @@ export async function GET(request: NextRequest) {
         gentlePresence,
         pins,
         checkInWeek,
+        checkIn,
       },
       { status: 200 }
     );

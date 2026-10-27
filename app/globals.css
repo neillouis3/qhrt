@@ -457,6 +457,25 @@ body {
   }
 }
 
+@keyframes home-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.home-enter {
+  animation: home-enter 0.45s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-enter {
+    animation: none;
+  }
+}
+
 /* Home — time-of-day ambient (yellow / orange / blue glob + blur); scrolls with page */
 .home-ambient {
   position: absolute;

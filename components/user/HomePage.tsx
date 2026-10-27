@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { buttonVariants, Typography } from '@heroui/react';
@@ -12,6 +12,7 @@ import {
   HomePinned,
   HomeTimeIndicator,
   HomeTutorial,
+  readSeenNotificationIds,
   UserGreeting,
 } from '@/components/home/HomeDashboardSections';
 import SessionRow from '@/components/session/SessionRow';
@@ -20,17 +21,29 @@ import UserPageShell from '@/components/layout/UserPageShell';
 import { idlePracticeNext, type HomeActivityItem, type HomeNext, type TutorialStep } from '@/lib/home';
 import type { HomeDiaryStats as HomeDiaryStatsData } from '@/lib/diaryStats';
 import type { GentlePresence } from '@/lib/gentlePresence';
-import type { CheckInWeekDay } from '@/lib/homeCheckIn';
+import type { CheckInWeekDay, HomeCheckInValue } from '@/lib/homeCheckIn';
 import type { PinnedPractice } from '@/lib/pinnedPractices';
 import { usePinnedPractices } from '@/hooks/usePinnedPractices';
 import type { NameSource } from '@/lib/userName';
 import { homeCheckInFromUser, practiceTimeFromUser } from '@/lib/userSettings';
 import { statusLabel } from '@/lib/sessionUi';
 
+export interface HomeDashboardData {
+  next?: HomeNext;
+  activity?: HomeActivityItem[];
+  tutorial?: TutorialStep[];
+  diaryStats?: HomeDiaryStatsData;
+  gentlePresence?: GentlePresence;
+  pins?: PinnedPractice[];
+  checkInWeek?: CheckInWeekDay[];
+  checkIn?: HomeCheckInValue | null;
+}
+
 interface HomePageProps {
   userId?: string;
   user?: NameSource;
   intakeCompleted?: boolean;
+  initialDashboard?: HomeDashboardData | null;
 }
 
 const BROWSE_HREFS = [
@@ -98,24 +111,36 @@ function HomeShortcuts() {
   );
 }
 
+function checkInFromDashboard(data: HomeDashboardData | null | undefined): HomeCheckInValue | null {
+  return data?.checkIn === 'up' || data?.checkIn === 'down' ? data.checkIn : null;
+}
+
 export default function HomePage({
   userId,
   user,
   intakeCompleted = false,
+  initialDashboard = null,
 }: HomePageProps) {
   const router = useRouter();
   const { t } = useLocale();
-  const [next, setNext] = useState<HomeNext>(() =>
-    fallbackNext(intakeCompleted, practiceTimeFromUser(user) || null)
+  const [next, setNext] = useState<HomeNext>(
+    () => initialDashboard?.next ?? fallbackNext(intakeCompleted, practiceTimeFromUser(user) || null)
   );
-  const [activity, setActivity] = useState<HomeActivityItem[]>([]);
-  const [tutorial, setTutorial] = useState<TutorialStep[]>([]);
-  const [diaryStats, setDiaryStats] = useState<HomeDiaryStatsData | null>(null);
-  const [loading, setLoading] = useState(Boolean(userId));
-  const [gentlePresence, setGentlePresence] = useState<GentlePresence | null>(null);
+  const [activity, setActivity] = useState<HomeActivityItem[]>(() => initialDashboard?.activity ?? []);
+  const [tutorial, setTutorial] = useState<TutorialStep[]>(() => initialDashboard?.tutorial ?? []);
+  const [diaryStats, setDiaryStats] = useState<HomeDiaryStatsData | null>(() => initialDashboard?.diaryStats ?? null);
+  const [loading, setLoading] = useState(() => initialDashboard == null && Boolean(userId));
+  const [gentlePresence, setGentlePresence] = useState<GentlePresence | null>(
+    () => initialDashboard?.gentlePresence ?? null
+  );
   const [unpinningKey, setUnpinningKey] = useState<string | null>(null);
-  const { pins, syncPins, togglePin } = usePinnedPractices();
-  const [checkInWeek, setCheckInWeek] = useState<CheckInWeekDay[]>([]);
+  const { pins, syncPins, togglePin } = usePinnedPractices(initialDashboard?.pins ?? []);
+  const [checkInWeek, setCheckInWeek] = useState<CheckInWeekDay[]>(() => initialDashboard?.checkInWeek ?? []);
+  const [checkInValue, setCheckInValue] = useState<HomeCheckInValue | null>(() =>
+    checkInFromDashboard(initialDashboard)
+  );
+  const [seenIds] = useState<string[]>(() => readSeenNotificationIds(userId));
+  const skipInitialFetch = useRef(initialDashboard != null);
   const showCheckIn = homeCheckInFromUser(user);
   const currentTutorial = tutorial.find((step) => step.status === 'current');
   const nextStepRepeatsTutorial =
@@ -141,6 +166,7 @@ export default function HomePage({
       if (data.gentlePresence) setGentlePresence(data.gentlePresence);
       if (data.pins) syncPins(data.pins);
       if (Array.isArray(data.checkInWeek)) setCheckInWeek(data.checkInWeek);
+      setCheckInValue(checkInFromDashboard(data));
     } catch (err) {
       console.error('[HomePage] Failed to fetch next step:', err);
     } finally {
@@ -165,12 +191,22 @@ export default function HomePage({
   };
 
   useEffect(() => {
+    if (skipInitialFetch.current) {
+      skipInitialFetch.current = false;
+      return;
+    }
     if (userId) void fetchNext();
     else setLoading(false);
   }, [userId, fetchNext]);
 
   return (
     <UserPageShell transparentBg>
+      {loading ? (
+        <div role="status" aria-live="polite" className="sr-only">
+          {t('home.nextStep.loading')}
+        </div>
+      ) : (
+      <div className="home-enter flex flex-col gap-10">
       <HomeTimeIndicator />
 
       <UserGreeting
@@ -178,11 +214,14 @@ export default function HomePage({
         userId={userId}
         showCheckIn={showCheckIn}
         onCheckInComplete={() => void fetchNext()}
-        presence={!loading ? gentlePresence : null}
+        presence={gentlePresence}
         notifications={activity}
+        checkInValue={checkInValue}
+        checkInSettled
+        initialSeenIds={seenIds}
       />
 
-      {!loading && showCheckIn && checkInWeek.length > 0 ? (
+      {showCheckIn && checkInWeek.length > 0 ? (
         <HomeMoodWeek week={checkInWeek} />
       ) : null}
 
@@ -191,14 +230,7 @@ export default function HomePage({
           <Typography type="body-xs" color="muted">
             {t('home.nextStep.label')}
           </Typography>
-          {loading ? (
-            <AppCard className="p-5">
-              <Typography type="body-sm" color="muted">
-                {t('home.nextStep.loading')}
-              </Typography>
-            </AppCard>
-          ) : (
-            <AppCard className="p-5">
+          <AppCard className="p-5">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex min-w-0 flex-col gap-1">
                   <AppCard.Title className="font-normal tracking-tight">{next.title}</AppCard.Title>
@@ -209,18 +241,16 @@ export default function HomePage({
                 </Link>
               </div>
             </AppCard>
-          )}
         </div>
       )}
 
-      {!loading && tutorial.length > 0 ? <HomeTutorial steps={tutorial} /> : null}
+      {tutorial.length > 0 ? <HomeTutorial steps={tutorial} /> : null}
 
-      {!loading && pins.length > 0 ? (
+      {pins.length > 0 ? (
         <HomePinned pins={pins} onUnpin={(pin) => void handleUnpin(pin)} unpinningKey={unpinningKey} />
       ) : null}
 
-      {!loading ? (
-        activity.length > 0 ? (
+      {activity.length > 0 ? (
           <div className="flex flex-col gap-3">
             <Typography type="body" className="font-normal">
               {t('home.recent')}
@@ -252,12 +282,11 @@ export default function HomePage({
               })}
             </div>
           </div>
-        ) : intakeCompleted ? (
-          <HomeShortcuts />
-        ) : null
+      ) : intakeCompleted ? (
+        <HomeShortcuts />
       ) : null}
 
-      {!loading && diaryStats ? <HomeDiaryStats stats={diaryStats} /> : null}
+      {diaryStats ? <HomeDiaryStats stats={diaryStats} /> : null}
 
       <div className="flex flex-col gap-3">
         <Typography type="body-xs" color="muted">
@@ -284,6 +313,8 @@ export default function HomePage({
       </div>
 
       <CrisisResources variant="compact" />
+      </div>
+      )}
     </UserPageShell>
   );
 }

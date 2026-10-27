@@ -131,9 +131,11 @@ export function HomeGentleStreak({ presence }: { presence: GentlePresence }) {
 }
 
 function withFlankingDays(week: CheckInWeekDay[]): CheckInWeekDay[] {
-  if (week.length !== 7 || week.some((day) => day.edge)) return week;
-  const first = new Date(`${week[0].date}T12:00:00`);
-  const last = new Date(`${week[week.length - 1].date}T12:00:00`);
+  const firstDay = week[0];
+  const lastDay = week[week.length - 1];
+  if (week.length !== 7 || !firstDay || !lastDay || week.some((day) => day.edge)) return week;
+  const first = new Date(`${firstDay.date}T12:00:00`);
+  const last = new Date(`${lastDay.date}T12:00:00`);
   const before = new Date(first);
   before.setDate(first.getDate() - 1);
   const after = new Date(last);
@@ -424,7 +426,7 @@ function readLegacyCheckIn(userId: string): CheckIn {
 const WELCOME_NOTIFICATION_ID = 'welcome';
 const SEEN_NOTIFICATIONS_KEY_PREFIX = 'qhrt-notifications-seen:';
 
-function readSeenNotificationIds(userId?: string): string[] {
+export function readSeenNotificationIds(userId?: string): string[] {
   if (!userId || typeof window === 'undefined') return [];
   try {
     const raw = localStorage.getItem(`${SEEN_NOTIFICATIONS_KEY_PREFIX}${userId}`);
@@ -459,6 +461,9 @@ export function UserGreeting({
   onCheckInComplete,
   presence = null,
   notifications = [],
+  checkInValue = null,
+  checkInSettled = false,
+  initialSeenIds = [],
 }: {
   user: NameSource;
   userId?: string;
@@ -466,18 +471,21 @@ export function UserGreeting({
   onCheckInComplete?: () => void;
   presence?: GentlePresence | null;
   notifications?: HomeActivityItem[];
+  checkInValue?: HomeCheckInValue | null;
+  checkInSettled?: boolean;
+  initialSeenIds?: string[];
 }) {
   const { t } = useLocale();
   const name = firstNameFromUser(user);
   const greeting = t(`home.greeting.${greetingKeyForHour(new Date().getHours())}`);
-  const [checkIn, setCheckIn] = useState<CheckIn>(null);
-  const [loadingCheckIn, setLoadingCheckIn] = useState(Boolean(userId && showCheckIn));
+  const [checkIn, setCheckIn] = useState<CheckIn>(checkInValue);
+  const [loadingCheckIn, setLoadingCheckIn] = useState(Boolean(userId && showCheckIn && !checkInSettled));
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [seenIds, setSeenIds] = useState<string[]>([]);
+  const [seenIds, setSeenIds] = useState<string[]>(initialSeenIds);
 
   useEffect(() => {
-    setSeenIds(readSeenNotificationIds(userId));
-  }, [userId]);
+    if (checkInSettled) setCheckIn(checkInValue ?? null);
+  }, [checkInSettled, checkInValue]);
 
   const notificationIds = [WELCOME_NOTIFICATION_ID, ...notifications.map((item) => item.id)];
   const unreadCount = notificationIds.filter((id) => !seenIds.includes(id)).length;
@@ -532,8 +540,9 @@ export function UserGreeting({
   }, [userId]);
 
   useEffect(() => {
+    if (checkInSettled) return;
     void loadCheckIn();
-  }, [loadCheckIn]);
+  }, [checkInSettled, loadCheckIn]);
 
   const pick = async (next: HomeCheckInValue) => {
     if (!userId || checkIn) return;
