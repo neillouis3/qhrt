@@ -13,10 +13,6 @@ export default function OnboardingPage() {
     if (loading) return;
     if (!session) {
       router.replace('/login');
-      return;
-    }
-    if (session.intakeCompleted) {
-      router.replace('/home');
     }
   }, [loading, router, session]);
 
@@ -25,7 +21,7 @@ export default function OnboardingPage() {
     router.push('/home');
   };
 
-  if (loading || !session || session.intakeCompleted) {
+  if (loading || !session) {
     return <div className="min-h-svh bg-background" />;
   }
 

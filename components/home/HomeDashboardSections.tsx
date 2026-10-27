@@ -256,7 +256,6 @@ export function HomeTutorial({ steps }: { steps: TutorialStep[] }) {
   }
 
   const completedCount = steps.filter((step) => step.status === 'complete').length;
-  const current = steps.find((step) => step.status === 'current');
 
   return (
     <div className="flex w-full flex-col gap-4">
@@ -269,24 +268,29 @@ export function HomeTutorial({ steps }: { steps: TutorialStep[] }) {
         </Typography>
       </div>
 
-      {current ? (
-        <AppCard className="p-5">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex w-full min-w-0 flex-col gap-1">
-              <AppCard.Title className="font-normal tracking-tight">{current.title}</AppCard.Title>
-              <Typography type="body-sm" color="muted" className="break-words">
-                {current.description}
-              </Typography>
-            </div>
-            <Link
-              href={current.href}
-              className={`${buttonVariants({ size: 'sm', variant: 'outline' })} shrink-0`}
-            >
-              {t('home.tutorial.go')}
-            </Link>
-          </div>
-        </AppCard>
-      ) : null}
+      <div className="grid grid-cols-3 gap-3">
+        {steps.map((step) => {
+          const done = step.status === 'complete';
+          return (
+            <AppCard key={step.id} className={`h-full p-5 ${done ? 'opacity-45' : ''}`}>
+              <div className="flex h-full flex-col justify-between gap-4">
+                <div className="flex min-w-0 flex-col gap-1">
+                  <AppCard.Title className="font-normal tracking-tight">{step.title}</AppCard.Title>
+                  <Typography type="body-sm" color="muted" className="break-words">
+                    {step.description}
+                  </Typography>
+                </div>
+                <Link
+                  href={step.href}
+                  className={`${buttonVariants({ size: 'sm', variant: 'outline' })} w-fit`}
+                >
+                  {done ? t('home.tutorial.again') : t('home.tutorial.go')}
+                </Link>
+              </div>
+            </AppCard>
+          );
+        })}
+      </div>
     </div>
   );
 }

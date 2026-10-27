@@ -99,6 +99,7 @@ export const hi: MessageTree = {
       progress: '{done} में से {total} पूर्ण',
       then: 'फिर',
       go: 'जाएँ',
+      again: 'फिर कोशिश करें',
     },
     shortcuts: {
       focusTitle: 'फ़ोकस क्षेत्र',

@@ -88,17 +88,6 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
 
-    if (pathname === '/onboarding' && user) {
-      const { data: progress } = await supabaseServer
-        .from('user_progress')
-        .select('intake_completed')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (progress?.intake_completed) {
-        return NextResponse.redirect(new URL('/home', request.url));
-      }
-    }
   }
 
   if (isSettingsRoute && !isAuthenticated) {

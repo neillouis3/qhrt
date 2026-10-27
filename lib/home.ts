@@ -151,8 +151,8 @@ const TUTORIAL_STEPS: Array<{
 }> = [
   {
     id: 'onboarding',
-    title: 'Set your focus',
-    description: 'Choose what you want to work on.',
+    title: 'Onboarding',
+    description: 'Help us get to know you.',
     defaultHref: '/onboarding',
   },
   {

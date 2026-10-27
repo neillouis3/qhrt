@@ -99,6 +99,7 @@ export const tl: MessageTree = {
       progress: '{done} sa {total} tapos na',
       then: 'Susunod',
       go: 'Pumunta',
+      again: 'Subukan muli',
     },
     shortcuts: {
       focusTitle: 'Mga pokus',

@@ -101,6 +101,7 @@ const en: MessageTree = {
       progress: '{done} of {total} complete',
       then: 'Then',
       go: 'Go',
+      again: 'Try again',
     },
     shortcuts: {
       focusTitle: 'Focus areas',
@@ -253,6 +254,7 @@ const fr: MessageTree = {
       progress: '{done} sur {total} terminé(s)',
       then: 'Ensuite',
       go: 'Aller',
+      again: 'Réessayer',
     },
     shortcuts: {
       focusTitle: 'Thèmes',
