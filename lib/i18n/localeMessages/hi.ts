@@ -85,6 +85,9 @@ export const hi: MessageTree = {
       many: 'इस सप्ताह आप {count} दिन आए।',
     },
     checkInWeek: 'इस सप्ताह आपके wellness चेक-इन',
+    notifications: 'सूचनाएं',
+    notificationsEmpty: 'अभी कोई सूचना नहीं।',
+    notificationsWelcome: 'स्वागत है। हमें खुशी है कि आप यहाँ हैं।',
     pinned: 'पिन किया',
     nextStep: {
       label: 'सुझाया गया अगला कदम',

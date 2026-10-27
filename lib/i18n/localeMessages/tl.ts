@@ -85,6 +85,9 @@ export const tl: MessageTree = {
       many: 'Dumating ka {count} araw ngayong linggo.',
     },
     checkInWeek: 'Iyong wellness check-in ngayong linggo',
+    notifications: 'Mga abiso',
+    notificationsEmpty: 'Wala pang abiso.',
+    notificationsWelcome: 'Welcome. Ikinagagalak namin na nandito ka.',
     pinned: 'Naka-pin',
     nextStep: {
       label: 'Iminumungkahing susunod na hakbang',

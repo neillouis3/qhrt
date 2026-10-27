@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button, Typography, buttonVariants } from '@heroui/react';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { ThumbsDownIcon, ThumbsUpIcon } from '@hugeicons/core-free-icons';
+import { FlashIcon, Notification01Icon, ThumbsDownIcon, ThumbsUpIcon } from '@hugeicons/core-free-icons';
+import Modal from '@/components/ui/Modal';
 import AppCard from '@/components/ui/AppCard';
 import SessionRow from '@/components/session/SessionRow';
 import { useLocale } from '@/context/LocaleContext';
@@ -23,7 +24,7 @@ import {
 import type { DiaryMood } from '@/lib/types/diary';
 import type { PinnedPractice } from '@/lib/pinnedPractices';
 import { homeTimeLabelKey, type HomeSkyBlend } from '@/lib/timeOfDay';
-import type { TutorialStep } from '@/lib/home';
+import type { HomeActivityItem, TutorialStep } from '@/lib/home';
 import { firstNameFromUser, type NameSource } from '@/lib/userName';
 import { statusLabel } from '@/lib/sessionUi';
 
@@ -54,12 +55,15 @@ export function CheckInButtons({
         aria-pressed={value === 'up'}
         isDisabled={locked || value === 'down'}
         onPress={() => onPick('up')}
+        className={
+          value === 'up' ? 'opacity-100 data-[disabled]:opacity-100' : undefined
+        }
       >
         <HugeiconsIcon
           icon={ThumbsUpIcon}
           size={size === 'md' ? 20 : 18}
-          strokeWidth={1.5}
-          className={value === 'up' ? 'text-foreground' : 'text-muted'}
+          strokeWidth={1.75}
+          className={value === 'up' ? 'text-blue-500' : 'text-muted'}
         />
       </Button>
       <Button
@@ -70,12 +74,15 @@ export function CheckInButtons({
         aria-pressed={value === 'down'}
         isDisabled={locked || value === 'up'}
         onPress={() => onPick('down')}
+        className={
+          value === 'down' ? 'opacity-100 data-[disabled]:opacity-100' : undefined
+        }
       >
         <HugeiconsIcon
           icon={ThumbsDownIcon}
           size={size === 'md' ? 20 : 18}
-          strokeWidth={1.5}
-          className={value === 'down' ? 'text-foreground' : 'text-muted'}
+          strokeWidth={1.75}
+          className={value === 'down' ? 'text-blue-950' : 'text-muted'}
         />
       </Button>
     </div>
@@ -114,29 +121,51 @@ export function HomeGentleStreak({ presence }: { presence: GentlePresence }) {
   const message = days === 1 ? t('home.presence.one') : t('home.presence.many', { count: days });
 
   return (
-    <Typography type="body-sm" color="muted">
-      {message}
-    </Typography>
+    <div className="flex items-center gap-0.5" aria-label={message}>
+      <HugeiconsIcon icon={FlashIcon} size={28} strokeWidth={1.75} className="text-amber-500" aria-hidden />
+      <Typography type="h4" weight="normal" className="tabular-nums">
+        {days}
+      </Typography>
+    </div>
   );
 }
 
-function moodWeekDayLabel(dateKey: string): string {
-  const date = new Date(`${dateKey}T12:00:00`);
-  return date.toLocaleDateString(undefined, { weekday: 'short' });
+function withFlankingDays(week: CheckInWeekDay[]): CheckInWeekDay[] {
+  if (week.length !== 7 || week.some((day) => day.edge)) return week;
+  const first = new Date(`${week[0].date}T12:00:00`);
+  const last = new Date(`${week[week.length - 1].date}T12:00:00`);
+  const before = new Date(first);
+  before.setDate(first.getDate() - 1);
+  const after = new Date(last);
+  after.setDate(last.getDate() + 1);
+  return [
+    { date: toDateKey(before), value: null, edge: true },
+    ...week,
+    { date: toDateKey(after), value: null, edge: true },
+  ];
 }
 
 export function HomeMoodWeek({ week }: { week: CheckInWeekDay[] }) {
   const { t } = useLocale();
   if (!weekHasCheckIns(week)) return null;
+  const days = withFlankingDays(week);
+  const todayKey = toDateKey(new Date());
 
   return (
-    <div className="flex flex-col gap-2">
-      <Typography type="body-xs" color="muted">
-        {t('home.checkInWeek')}
-      </Typography>
-      <div className="flex flex-wrap gap-3 sm:gap-4" role="list" aria-label={t('home.checkInAria.week')}>
-        {week.map((day) => {
-          const dayLabel = moodWeekDayLabel(day.date);
+    <div
+      className="[mask-image:linear-gradient(to_right,transparent,black_14%,black_86%,transparent)] [-webkit-mask-image:linear-gradient(to_right,transparent,black_14%,black_86%,transparent)]"
+      role="list"
+      aria-label={t('home.checkInWeek')}
+    >
+      <div
+        className="grid"
+        style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}
+      >
+        {days.map((day, index) => {
+          const date = new Date(`${day.date}T12:00:00`);
+          const dayLabel = date.toLocaleDateString(undefined, { weekday: 'short' });
+          const isToday = day.date === todayKey;
+          const isEdge = day.edge === true || (days.length > 7 && (index === 0 || index === days.length - 1));
           const ariaDay =
             day.value === 'up'
               ? t('home.checkInAria.dayUp', { day: dayLabel })
@@ -145,33 +174,27 @@ export function HomeMoodWeek({ week }: { week: CheckInWeekDay[] }) {
                 : t('home.checkInAria.dayNone', { day: dayLabel });
 
           return (
-          <div
-            key={day.date}
-            role="listitem"
-            className="flex min-w-[2.75rem] flex-col items-center gap-1"
-          >
-            <span
-              className="flex size-9 items-center justify-center rounded-full border border-border/60 bg-default/20"
+            <div
+              key={day.date}
+              role="listitem"
               aria-label={ariaDay}
+              aria-current={isToday ? 'date' : undefined}
+              className={`flex flex-col items-center gap-2 ${isEdge ? 'opacity-60 blur-[2px]' : ''}`}
             >
-              {day.value === 'up' ? (
-                <HugeiconsIcon icon={ThumbsUpIcon} size={16} strokeWidth={1.5} className="text-foreground" />
-              ) : day.value === 'down' ? (
-                <HugeiconsIcon
-                  icon={ThumbsDownIcon}
-                  size={16}
-                  strokeWidth={1.5}
-                  className="text-muted"
-                />
-              ) : (
-                <span className="size-1.5 rounded-full bg-border" aria-hidden />
-              )}
-            </span>
-            <Typography type="body-xs" color="muted" className="text-[0.65rem] uppercase tracking-wide">
-              {moodWeekDayLabel(day.date)}
-            </Typography>
-          </div>
-        );
+              <Typography type="body-sm">{dayLabel}</Typography>
+              <span
+                className={`size-1.5 rounded-full ${day.value ? 'bg-muted' : 'bg-transparent'}`}
+                aria-hidden
+              />
+              <span
+                className={`flex size-9 items-center justify-center rounded-full text-sm tabular-nums ${
+                  isToday ? 'bg-foreground/12 text-foreground' : 'text-muted'
+                }`}
+              >
+                {date.getDate()}
+              </span>
+            </div>
+          );
         })}
       </div>
     </div>
@@ -235,7 +258,7 @@ export function HomeTutorial({ steps }: { steps: TutorialStep[] }) {
 
   return (
     <div className="flex w-full flex-col gap-4">
-      <div className="flex flex-col gap-1">
+      <div className="flex items-baseline gap-3">
         <Typography type="body" className="font-normal">
           {t('home.tutorial.title')}
         </Typography>
@@ -398,6 +421,28 @@ function readLegacyCheckIn(userId: string): CheckIn {
   }
 }
 
+const WELCOME_NOTIFICATION_ID = 'welcome';
+const SEEN_NOTIFICATIONS_KEY_PREFIX = 'qhrt-notifications-seen:';
+
+function readSeenNotificationIds(userId?: string): string[] {
+  if (!userId || typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(`${SEEN_NOTIFICATIONS_KEY_PREFIX}${userId}`);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeSeenNotificationIds(userId: string, ids: string[]) {
+  try {
+    localStorage.setItem(`${SEEN_NOTIFICATIONS_KEY_PREFIX}${userId}`, JSON.stringify(ids));
+  } catch {
+    // Ignore.
+  }
+}
+
 function clearLegacyCheckIn(userId: string) {
   try {
     localStorage.removeItem(legacyCheckInKey(userId));
@@ -412,17 +457,38 @@ export function UserGreeting({
   userId,
   showCheckIn = true,
   onCheckInComplete,
+  presence = null,
+  notifications = [],
 }: {
   user: NameSource;
   userId?: string;
   showCheckIn?: boolean;
   onCheckInComplete?: () => void;
+  presence?: GentlePresence | null;
+  notifications?: HomeActivityItem[];
 }) {
   const { t } = useLocale();
   const name = firstNameFromUser(user);
   const greeting = t(`home.greeting.${greetingKeyForHour(new Date().getHours())}`);
   const [checkIn, setCheckIn] = useState<CheckIn>(null);
   const [loadingCheckIn, setLoadingCheckIn] = useState(Boolean(userId && showCheckIn));
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [seenIds, setSeenIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    setSeenIds(readSeenNotificationIds(userId));
+  }, [userId]);
+
+  const notificationIds = [WELCOME_NOTIFICATION_ID, ...notifications.map((item) => item.id)];
+  const unreadCount = notificationIds.filter((id) => !seenIds.includes(id)).length;
+
+  const openNotifications = () => {
+    setNotificationsOpen(true);
+    if (!userId) return;
+    const next = [...new Set([...seenIds, ...notificationIds])];
+    setSeenIds(next);
+    writeSeenNotificationIds(userId, next);
+  };
 
   const loadCheckIn = useCallback(async () => {
     if (!userId) {
@@ -494,9 +560,32 @@ export function UserGreeting({
 
   return (
     <div className="flex flex-col gap-2">
-      <Typography type="h1" weight="normal">
-        {greeting}, {name}
-      </Typography>
+      <div className="flex items-center justify-between gap-4">
+        <Typography type="h1" weight="normal">
+          {greeting}, {name}
+        </Typography>
+        <div className="flex shrink-0 items-center gap-3">
+          {presence ? <HomeGentleStreak presence={presence} /> : null}
+          <button
+            type="button"
+            aria-label={t('home.notifications')}
+            aria-haspopup="dialog"
+            aria-expanded={notificationsOpen}
+            className="relative inline-flex size-10 cursor-pointer items-center justify-center rounded-full text-foreground transition-colors hover:bg-foreground/10 focus-visible:bg-foreground/10 focus-visible:outline-none"
+            onClick={openNotifications}
+          >
+            <HugeiconsIcon icon={Notification01Icon} size={26} strokeWidth={1.75} />
+            {unreadCount > 0 ? (
+              <span
+                className="absolute top-0.5 right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-foreground px-1 text-[10px] leading-none font-medium text-background tabular-nums"
+                aria-hidden
+              >
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            ) : null}
+          </button>
+        </div>
+      </div>
       {showCheckIn ? (
         <div className="flex flex-wrap items-center gap-4">
           <Typography type="body" color="muted">
@@ -509,6 +598,31 @@ export function UserGreeting({
           />
         </div>
       ) : null}
+      <Modal
+        isOpen={notificationsOpen}
+        onClose={() => setNotificationsOpen(false)}
+        title={t('home.notifications')}
+      >
+        <ul className="flex list-none flex-col gap-3 pl-0">
+          <li>
+            <Typography type="body-sm">{t('home.notificationsWelcome')}</Typography>
+          </li>
+          {notifications.map((item) => (
+            <li key={item.id}>
+              <Link
+                href={item.href}
+                className="flex flex-col gap-0.5"
+                onClick={() => setNotificationsOpen(false)}
+              >
+                <Typography type="body-sm">{item.title}</Typography>
+                <Typography type="body-xs" color="muted">
+                  {item.detail}
+                </Typography>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </Modal>
     </div>
   );
 }

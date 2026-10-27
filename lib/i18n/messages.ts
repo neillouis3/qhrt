@@ -87,6 +87,9 @@ const en: MessageTree = {
       many: 'You showed up {count} days this week.',
     },
     checkInWeek: 'Your wellness check-ins this week',
+    notifications: 'Notifications',
+    notificationsEmpty: 'No notifications yet.',
+    notificationsWelcome: 'Welcome. We are glad to have you here.',
     pinned: 'Pinned',
     nextStep: {
       label: 'Suggested next step',
@@ -236,6 +239,9 @@ const fr: MessageTree = {
       many: 'Vous êtes venu·e {count} jours cette semaine.',
     },
     checkInWeek: 'Vos bilans cette semaine',
+    notifications: 'Notifications',
+    notificationsEmpty: 'Aucune notification.',
+    notificationsWelcome: 'Bienvenue. Nous sommes contents de vous avoir ici.',
     pinned: 'Épinglé',
     nextStep: {
       label: 'Prochaine étape suggérée',

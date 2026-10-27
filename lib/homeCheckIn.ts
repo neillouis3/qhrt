@@ -13,6 +13,8 @@ export interface HomeCheckInDay {
 export interface CheckInWeekDay {
   date: string;
   value: HomeCheckInValue | null;
+  /** Day just outside the Sunday–Saturday week, shown faded on the edge. */
+  edge?: boolean;
 }
 
 export const HOME_CHECK_IN_DIARY_TITLE = 'Home check-in';
@@ -75,18 +77,28 @@ export function buildCheckInWeek(
 ): CheckInWeekDay[] {
   const byDate = new Map(checkInHistoryFromMetadata(meta).map((day) => [day.date, day.value]));
   const today = new Date(`${todayKey}T12:00:00`);
+  const sunday = new Date(today);
+  sunday.setDate(today.getDate() - today.getDay());
+  const start = new Date(sunday);
+  start.setDate(sunday.getDate() - 1);
   const week: CheckInWeekDay[] = [];
-  for (let offset = 6; offset >= 0; offset -= 1) {
-    const date = new Date(today);
-    date.setDate(date.getDate() - offset);
+  for (let offset = 0; offset < 9; offset += 1) {
+    const date = new Date(start);
+    date.setDate(start.getDate() + offset);
     const key = toDateKey(date);
-    week.push({ date: key, value: byDate.get(key) ?? null });
+    week.push({
+      date: key,
+      value: byDate.get(key) ?? null,
+      edge: offset === 0 || offset === 8,
+    });
   }
   return week;
 }
 
 export function weekHasCheckIns(week: CheckInWeekDay[]): boolean {
-  return week.some((day) => day.value !== null);
+  const core = week.filter((day) => !day.edge);
+  const days = core.length > 0 ? core : week;
+  return days.some((day) => day.value !== null);
 }
 
 export function diaryMoodFromCheckIn(value: HomeCheckInValue): DiaryMood {

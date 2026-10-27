@@ -8,7 +8,6 @@ import AppCard from '@/components/ui/AppCard';
 import CrisisResources from '@/components/ui/CrisisResources';
 import {
   HomeDiaryStats,
-  HomeGentleStreak,
   HomeMoodWeek,
   HomePinned,
   HomeTimeIndicator,
@@ -179,9 +178,9 @@ export default function HomePage({
         userId={userId}
         showCheckIn={showCheckIn}
         onCheckInComplete={() => void fetchNext()}
+        presence={!loading ? gentlePresence : null}
+        notifications={activity}
       />
-
-      {!loading && gentlePresence ? <HomeGentleStreak presence={gentlePresence} /> : null}
 
       {!loading && showCheckIn && checkInWeek.length > 0 ? (
         <HomeMoodWeek week={checkInWeek} />
