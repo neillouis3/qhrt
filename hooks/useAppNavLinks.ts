@@ -21,6 +21,7 @@ export function usePublicNavLinks(): NavItem[] {
   return useMemo(
     () => [
       { name: t('nav.about'), path: '/about' },
+      { name: t('nav.privacy'), path: '/privacy' },
       { name: t('nav.contact'), path: '/contact' },
     ],
     [t]

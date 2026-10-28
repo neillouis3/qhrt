@@ -16,12 +16,6 @@ import LandingFaq from '@/components/marketing/LandingFaq';
 import { LandingCta } from '@/components/marketing/MarketingCtas';
 import SiteFooter from '@/components/layout/SiteFooter';
 
-const facts = [
-  { label: 'Privacy', value: 'PIPEDA compliant' },
-  { label: 'Content', value: 'Expertly curated' },
-  { label: 'Access', value: 'Free to use' },
-];
-
 const features = [
   {
     title: 'Focus-area check-ins',
@@ -74,21 +68,6 @@ export default function LandingPage() {
                 fit your life.
               </Typography>
             </div>
-
-            <dl className="flex flex-wrap items-start gap-x-10 gap-y-5">
-              {facts.map((fact) => (
-                <div key={fact.label} className="flex flex-col gap-1">
-                  <dt className="m-0">
-                    <Typography type="body-xs" color="muted">
-                      {fact.label}
-                    </Typography>
-                  </dt>
-                  <dd className="m-0">
-                    <Typography type="body-sm">{fact.value}</Typography>
-                  </dd>
-                </div>
-              ))}
-            </dl>
 
             <LandingCta />
           </div>
