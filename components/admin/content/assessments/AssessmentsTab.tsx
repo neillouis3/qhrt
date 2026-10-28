@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Table } from '@heroui/react';
 import ContentErrorBoundary from '@/components/admin/ContentErrorBoundary';
 import { ConfirmModal } from '../shared/ConfirmModal';
+import { SearchBox } from '../shared/SearchBox';
 import { Toggle } from '../shared/Toggle';
 import { TableRowActions } from '../shared/TableRowActions';
-import type { AssessmentDefinition, Workbook } from '@/lib/assessments';
-import { AssessmentEditor, emptyDraft, type AssessmentDraft } from './AssessmentEditor';
+import type { AssessmentDefinition } from '@/lib/assessments';
 import { PlusIcon, primaryButtonClass, secondaryButtonClass } from './fields';
 
 const METHOD_LABELS: Record<AssessmentDefinition['scoring_method'], string> = {
@@ -19,24 +20,20 @@ export function AssessmentsTab({
 }: {
   showToast: (msg: string, type: 'success' | 'error') => void;
 }) {
+  const router = useRouter();
   const [assessments, setAssessments] = useState<AssessmentDefinition[]>([]);
-  const [workbooks, setWorkbooks] = useState<Workbook[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [editing, setEditing] = useState<AssessmentDraft | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<AssessmentDefinition | null>(null);
+  const [search, setSearch] = useState('');
 
   const fetchData = useCallback(async () => {
     setLoadError(null);
     try {
-      const [aRes, wRes] = await Promise.all([
-        fetch('/api/admin/assessments'),
-        fetch('/api/admin/workbooks'),
-      ]);
-      const [aJson, wJson] = await Promise.all([aRes.json(), wRes.json()]);
+      const aRes = await fetch('/api/admin/assessments');
+      const aJson = await aRes.json();
       if (!aRes.ok) throw new Error(aJson.error || 'Failed to load assessments');
       setAssessments(aJson.assessments ?? []);
-      setWorkbooks(wJson.workbooks ?? []);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load assessments';
       setLoadError(message);
@@ -76,38 +73,34 @@ export function AssessmentsTab({
     fetchData();
   };
 
-  if (editing) {
-    return (
-      <ContentErrorBoundary fallbackTitle="Assessment editor failed to load">
-        <AssessmentEditor
-          key={editing.id ?? 'new'}
-          initial={editing}
-          workbooks={workbooks}
-          showToast={showToast}
-          onCancel={() => setEditing(null)}
-          onSaved={() => {
-            setEditing(null);
-            fetchData();
-          }}
-        />
-      </ContentErrorBoundary>
+  const rows = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    if (!term) return assessments;
+    return assessments.filter(
+      (item) =>
+        item.title.toLowerCase().includes(term) ||
+        item.slug.toLowerCase().includes(term) ||
+        (item.description ?? '').toLowerCase().includes(term)
     );
-  }
+  }, [assessments, search]);
 
   return (
     <ContentErrorBoundary fallbackTitle="Assessments failed to load">
       <div>
-        <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-muted">
-            Each assessment scores answers and links people to workbooks. Nothing here is a diagnosis.
+            Each assessment is built in three steps: details, questions, then results. Nothing here is a diagnosis.
           </p>
-          <button
-            onClick={() => setEditing(emptyDraft(assessments.length + 1))}
-            className={`${primaryButtonClass} flex shrink-0 items-center gap-2`}
-          >
-            <PlusIcon />
-            Add Assessment
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <SearchBox placeholder="Search assessments" onSearch={setSearch} />
+            <button
+              onClick={() => router.push('/content/assessments/new')}
+              className={`${primaryButtonClass} flex shrink-0 items-center gap-2`}
+            >
+              <PlusIcon />
+              Add Assessment
+            </button>
+          </div>
         </div>
 
         {loading ? (
@@ -135,7 +128,6 @@ export function AssessmentsTab({
               <Table.Content aria-label="Assessments">
                 <Table.Header>
                   <Table.Column isRowHeader>Title</Table.Column>
-                  <Table.Column>Slug</Table.Column>
                   <Table.Column>Questions</Table.Column>
                   <Table.Column>Scoring</Table.Column>
                   <Table.Column>Outcomes</Table.Column>
@@ -143,23 +135,41 @@ export function AssessmentsTab({
                   <Table.Column>Actions</Table.Column>
                 </Table.Header>
                 <Table.Body renderEmptyState={() => 'No assessments yet.'}>
-                  {assessments.map((a) => (
-                    <Table.Row key={a.id} id={a.id}>
-                      <Table.Cell>{a.title}</Table.Cell>
-                      <Table.Cell>
-                        <span className="font-mono text-xs">{a.slug}</span>
-                      </Table.Cell>
-                      <Table.Cell>{a.questions.length}</Table.Cell>
-                      <Table.Cell>{METHOD_LABELS[a.scoring_method]}</Table.Cell>
-                      <Table.Cell>{a.outcomes.length}</Table.Cell>
-                      <Table.Cell>
-                        <Toggle checked={a.is_active} onChange={() => handleToggleActive(a)} />
-                      </Table.Cell>
-                      <Table.Cell>
-                        <TableRowActions onEdit={() => setEditing(a)} onDelete={() => setConfirmDelete(a)} />
-                      </Table.Cell>
-                    </Table.Row>
-                  ))}
+                  {rows.map((a) => {
+                    const workbookLinks = a.outcomes.reduce(
+                      (sum, outcome) => sum + outcome.workbookIds.length,
+                      0
+                    );
+                    return (
+                      <Table.Row key={a.id} id={a.id}>
+                        <Table.Cell>
+                          <div className="flex flex-col">
+                            <span>{a.title}</span>
+                            <span className="font-mono text-xs text-muted">{a.slug}</span>
+                          </div>
+                        </Table.Cell>
+                        <Table.Cell>{a.questions.length}</Table.Cell>
+                        <Table.Cell>{METHOD_LABELS[a.scoring_method]}</Table.Cell>
+                        <Table.Cell>
+                          {a.outcomes.length}
+                          {workbookLinks > 0 ? (
+                            <span className="text-muted"> · {workbookLinks} workbook links</span>
+                          ) : a.outcomes.length === 0 ? (
+                            <span className="text-muted"> · none</span>
+                          ) : null}
+                        </Table.Cell>
+                        <Table.Cell>
+                          <Toggle checked={a.is_active} onChange={() => handleToggleActive(a)} />
+                        </Table.Cell>
+                        <Table.Cell>
+                          <TableRowActions
+                            onEdit={() => router.push(`/content/assessments/${a.id}`)}
+                            onDelete={() => setConfirmDelete(a)}
+                          />
+                        </Table.Cell>
+                      </Table.Row>
+                    );
+                  })}
                 </Table.Body>
               </Table.Content>
             </Table.ScrollContainer>
