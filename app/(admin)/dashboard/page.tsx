@@ -558,7 +558,7 @@ function StatCard({
   );
 }
 
-function sumWindow(rows: Array<{ count: number }>, start: number, end: number) {
+function sumWindow(rows: Array<{ count: number }>, start: number, end?: number) {
   return rows.slice(start, end).reduce((sum, row) => sum + row.count, 0);
 }
 
