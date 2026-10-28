@@ -82,37 +82,114 @@ function formatNum(value: number | null | undefined, digits = 0): string {
   });
 }
 
+function Sparkline({ values }: { values: number[] }) {
+  if (values.length < 2) return null;
+  const max = Math.max(...values, 1);
+  const min = Math.min(...values, 0);
+  const width = 88;
+  const height = 28;
+  const span = max - min || 1;
+  const points = values
+    .map((value, index) => {
+      const x = (index / (values.length - 1)) * width;
+      const y = height - ((value - min) / span) * height;
+      return `${x},${y}`;
+    })
+    .join(' ');
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} className="h-7 w-[5.5rem] text-foreground" aria-hidden>
+      <polyline
+        points={points}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 function StatCard({
   label,
   value,
-  subtitle,
+  hint,
+  spark,
+  active,
   onPress,
 }: {
   label: string;
   value: string;
-  subtitle?: string;
+  hint?: string;
+  spark?: number[];
+  active?: boolean;
   onPress?: () => void;
 }) {
-  const card = (
-    <AppCard className="p-5">
-      <Typography type="body-xs" color="muted">
-        {label}
-      </Typography>
-      <Typography type="h4" weight="normal">
+  const className = `flex w-full flex-col gap-3 rounded-lg bg-default/30 p-5 text-left transition-colors ${
+    active ? 'ring-1 ring-foreground/25' : onPress ? 'hover:bg-default/45' : ''
+  }`;
+  const inner = (
+    <>
+      <div className="flex items-start justify-between gap-3">
+        <Typography type="body-xs" color="muted">
+          {label}
+        </Typography>
+        {spark && spark.length > 1 ? <Sparkline values={spark} /> : null}
+      </div>
+      <Typography type="h3" weight="normal">
         {value}
       </Typography>
-      {subtitle ? (
+      {hint ? (
         <Typography type="body-xs" color="muted">
-          {subtitle}
+          {hint}
         </Typography>
       ) : null}
-    </AppCard>
+    </>
   );
-  if (!onPress) return card;
+  if (!onPress) {
+    return <div className={className}>{inner}</div>;
+  }
   return (
-    <button type="button" className="w-full text-left" onClick={onPress}>
-      {card}
+    <button type="button" onClick={onPress} className={className}>
+      {inner}
     </button>
+  );
+}
+
+function StatusChip({
+  label,
+  muted,
+  onPress,
+}: {
+  label: string;
+  muted?: boolean;
+  onPress?: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onPress}
+      className={`rounded-full px-2 py-0.5 text-xs transition-opacity hover:opacity-70 ${
+        muted ? 'bg-muted/15 text-muted' : 'bg-foreground/10 text-foreground'
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function FunnelRow({ label, value, max }: { label: string; value: number; max: number }) {
+  const width = max > 0 ? Math.max(8, Math.round((value / max) * 100)) : 8;
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-baseline justify-between gap-3">
+        <Typography type="body-sm">{label}</Typography>
+        <Typography type="body-sm">{value}</Typography>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full bg-muted/15">
+        <div className="h-full rounded-full bg-foreground/80" style={{ width: `${width}%` }} />
+      </div>
+    </div>
   );
 }
 
@@ -311,6 +388,7 @@ export default function AdminUsersPage() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [intakeFilter, setIntakeFilter] = useState('all');
+  const [joinedFilter, setJoinedFilter] = useState<'all' | '7d'>('all');
 
   // Pagination (client-side)
   const [currentPage, setCurrentPage] = useState(1);
@@ -377,7 +455,7 @@ export default function AdminUsersPage() {
     return () => {
       cancelled = true;
     };
-  }, [debouncedSearch, roleFilter, intakeFilter]);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -442,6 +520,11 @@ export default function AdminUsersPage() {
       result = result.filter((u) => u.email.toLowerCase().includes(term));
     }
 
+    if (joinedFilter === '7d') {
+      const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+      result = result.filter((u) => new Date(u.created_at).getTime() >= cutoff);
+    }
+
     const sortBy = (sortDescriptor.column as SortField) || 'created_at';
     result.sort((a, b) => {
       let cmp = 0;
@@ -473,6 +556,7 @@ export default function AdminUsersPage() {
     allUsers,
     roleFilter,
     intakeFilter,
+    joinedFilter,
     debouncedSearch,
     sortDescriptor,
     currentPage,
@@ -519,7 +603,9 @@ export default function AdminUsersPage() {
           });
           if (!res.ok) throw new Error('Failed');
           showToast(`Role updated to "${roleLabel}" for ${user.email}`, 'success');
-          setAllUsers((prev) => prev.filter((u) => u.id !== user.id));
+          setAllUsers((prev) =>
+            prev.map((entry) => (entry.id === user.id ? { ...entry, role: newRole } : entry))
+          );
         } catch {
           showToast('Failed to update role.', 'error');
         }
@@ -551,15 +637,39 @@ export default function AdminUsersPage() {
     });
   };
 
-  const intakePending = Math.max(0, stats.totalUsers - stats.intakeCompleted);
+  const live = useMemo(() => {
+    const total = allUsers.length;
+    const admins = allUsers.filter((user) => user.role === 'admin').length;
+    const intake = allUsers.filter((user) => user.intake_completed).length;
+    const withSessions = allUsers.filter((user) => user.sessions_completed > 0).length;
+    const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const new7d = allUsers.filter((user) => new Date(user.created_at).getTime() >= cutoff).length;
+    const days = Array.from({ length: 14 }, (_, index) => {
+      const date = new Date();
+      date.setHours(0, 0, 0, 0);
+      date.setDate(date.getDate() - (13 - index));
+      return date.getTime();
+    });
+    const spark = days.map((start) => {
+      const end = start + 24 * 60 * 60 * 1000;
+      return allUsers.filter((user) => {
+        const joined = new Date(user.created_at).getTime();
+        return joined >= start && joined < end;
+      }).length;
+    });
+    return { total, admins, intake, pending: Math.max(0, total - intake), withSessions, new7d, spark };
+  }, [allUsers]);
+
   const stressDelta =
     stats.avgStressBefore != null && stats.avgStressAfter != null
       ? stats.avgStressAfter - stats.avgStressBefore
       : null;
-  const hasFilters = roleFilter !== 'all' || intakeFilter !== 'all' || Boolean(search);
+  const hasFilters =
+    roleFilter !== 'all' || intakeFilter !== 'all' || joinedFilter !== 'all' || Boolean(search);
   const clearFilters = () => {
     setRoleFilter('all');
     setIntakeFilter('all');
+    setJoinedFilter('all');
     setSearch('');
   };
 
@@ -587,7 +697,7 @@ export default function AdminUsersPage() {
 
   if (loading) {
     return (
-      <UserPageShell wide>
+      <UserPageShell wide="75">
         <PageHeader title="Users" />
         <DashboardBodySkeleton />
       </UserPageShell>
@@ -595,90 +705,124 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <UserPageShell wide>
-      <PageHeader title="Users" />
+    <UserPageShell wide="75">
+      <PageHeader
+        title="Users"
+        subtitle="Click a card to filter the table. Chips in the list do the same."
+      />
 
-      <div className="flex flex-col gap-3">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <StatCard
-            label="Total users"
-            value={formatNum(stats.totalUsers)}
-            subtitle={`${formatNum(stats.sessionsCompleted)} session records`}
-          />
-          <StatCard
-            label="Intake completed"
-            value={formatNum(stats.intakeCompleted)}
-            subtitle={`${pct(stats.intakeCompleted, stats.totalUsers)} of accounts`}
-          />
-          <StatCard
-            label="Intake pending"
-            value={formatNum(intakePending)}
-            subtitle={`${pct(intakePending, stats.totalUsers)} · show in list`}
-            onPress={() => setIntakeFilter('pending')}
-          />
-          <StatCard
-            label="Active (7 days)"
-            value={formatNum(stats.activeUsers7d)}
-            subtitle={`${pct(stats.activeUsers7d, stats.totalUsers)} of accounts`}
-          />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          label="Accounts"
+          value={formatNum(live.total)}
+          hint={`${live.admins} admin${live.admins === 1 ? '' : 's'}`}
+          spark={live.spark}
+          active={!hasFilters}
+          onPress={clearFilters}
+        />
+        <StatCard
+          label="New this week"
+          value={formatNum(live.new7d)}
+          hint="Joined in the last 7 days"
+          active={joinedFilter === '7d'}
+          onPress={() => {
+            setJoinedFilter('7d');
+            setCurrentPage(1);
+          }}
+        />
+        <StatCard
+          label="Intake pending"
+          value={formatNum(live.pending)}
+          hint={`${pct(live.pending, live.total)} of accounts`}
+          active={intakeFilter === 'pending'}
+          onPress={() => {
+            setIntakeFilter('pending');
+            setCurrentPage(1);
+          }}
+        />
+        <StatCard
+          label="Active (7 days)"
+          value={formatNum(stats.activeUsers7d)}
+          hint={`${pct(stats.activeUsers7d, live.total || stats.totalUsers)} of accounts`}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+        <AppCard className="flex flex-col gap-5 p-5 lg:col-span-2">
+          <div>
+            <Typography type="body">In the list</Typography>
+            <Typography type="body-xs" color="muted">
+              Counts from everyone loaded, not just this page.
+            </Typography>
+          </div>
+          <FunnelRow label="Accounts" value={live.total} max={live.total} />
+          <FunnelRow label="Finished intake" value={live.intake} max={Math.max(live.total, 1)} />
+          <FunnelRow label="Has sessions" value={live.withSessions} max={Math.max(live.total, 1)} />
+          {stressDelta != null ? (
+            <Typography type="body-xs" color="muted">
+              Average stress {formatNum(stats.avgStressBefore, 2)} → {formatNum(stats.avgStressAfter, 2)}
+            </Typography>
+          ) : null}
+        </AppCard>
+
+        <div className="flex flex-col gap-4 lg:col-span-3">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+            <div className="min-w-0 flex-1">
+              <Input
+                fullWidth
+                placeholder="Search by email"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3 lg:w-[22rem]">
+              <FieldSelect
+                placeholder="All roles"
+                selectedKey={roleFilter}
+                onChange={(key) => {
+                  setRoleFilter(key);
+                  setCurrentPage(1);
+                }}
+                items={[
+                  { id: 'all', name: 'All roles' },
+                  { id: 'user', name: 'User' },
+                  { id: 'admin', name: 'Admin' },
+                ]}
+              />
+              <FieldSelect
+                placeholder="All intake"
+                selectedKey={intakeFilter}
+                onChange={(key) => {
+                  setIntakeFilter(key);
+                  setCurrentPage(1);
+                }}
+                items={[
+                  { id: 'all', name: 'All intake' },
+                  { id: 'completed', name: 'Completed' },
+                  { id: 'pending', name: 'Pending' },
+                ]}
+              />
+            </div>
+            {hasFilters ? (
+              <Button size="sm" variant="ghost" onPress={clearFilters}>
+                Clear
+              </Button>
+            ) : null}
+          </div>
+          {processing ? (
+            <Typography type="body-xs" color="muted">
+              Updating…
+            </Typography>
+          ) : (
+            <Typography type="body-xs" color="muted">
+              {displayedUsers.pagination.totalUsers} matching
+              {joinedFilter === '7d' ? ' · joined this week' : ''}
+            </Typography>
+          )}
         </div>
-        {stressDelta != null ? (
-          <Typography type="body-xs" color="muted">
-            Average stress {formatNum(stats.avgStressBefore, 2)} → {formatNum(stats.avgStressAfter, 2)}{' '}
-            (Δ {stressDelta > 0 ? '+' : ''}
-            {formatNum(stressDelta, 2)})
-          </Typography>
-        ) : null}
       </div>
 
       <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-          <div className="min-w-0 flex-1">
-            <Input
-              fullWidth
-              placeholder="Search by email"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3 lg:w-[22rem]">
-            <FieldSelect
-              placeholder="All roles"
-              selectedKey={roleFilter}
-              onChange={setRoleFilter}
-              items={[
-                { id: 'all', name: 'All roles' },
-                { id: 'user', name: 'User' },
-                { id: 'admin', name: 'Admin' },
-              ]}
-            />
-            <FieldSelect
-              placeholder="All intake"
-              selectedKey={intakeFilter}
-              onChange={setIntakeFilter}
-              items={[
-                { id: 'all', name: 'All intake' },
-                { id: 'completed', name: 'Completed' },
-                { id: 'pending', name: 'Pending' },
-              ]}
-            />
-          </div>
-          {hasFilters ? (
-            <Button size="sm" variant="ghost" onPress={clearFilters}>
-              Clear
-            </Button>
-          ) : null}
-        </div>
-        {processing ? (
-          <Typography type="body-xs" color="muted">
-            Updating…
-          </Typography>
-        ) : hasFilters ? (
-          <Typography type="body-xs" color="muted">
-            {displayedUsers.pagination.totalUsers} matching
-          </Typography>
-        ) : null}
-
         <Table>
         <Table.ScrollContainer>
           <Table.Content
@@ -723,8 +867,25 @@ export default function AdminUsersPage() {
               {displayedUsers.users.map((u) => (
                 <Table.Row key={u.id} id={u.id}>
                   <Table.Cell>{u.email}</Table.Cell>
-                  <Table.Cell>{u.role}</Table.Cell>
-                  <Table.Cell>{u.intake_completed ? 'Done' : 'Pending'}</Table.Cell>
+                  <Table.Cell>
+                    <StatusChip
+                      label={u.role === 'admin' ? 'Admin' : 'User'}
+                      onPress={() => {
+                        setRoleFilter(u.role);
+                        setCurrentPage(1);
+                      }}
+                    />
+                  </Table.Cell>
+                  <Table.Cell>
+                    <StatusChip
+                      label={u.intake_completed ? 'Done' : 'Pending'}
+                      muted={!u.intake_completed}
+                      onPress={() => {
+                        setIntakeFilter(u.intake_completed ? 'completed' : 'pending');
+                        setCurrentPage(1);
+                      }}
+                    />
+                  </Table.Cell>
                   <Table.Cell>{u.sessions_completed}</Table.Cell>
                   <Table.Cell>
                     {new Date(u.created_at).toLocaleDateString('en-US', {

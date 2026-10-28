@@ -8,18 +8,12 @@ import { useState, useEffect, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { createPortal } from 'react-dom';
-import { Button, Typography, buttonVariants } from '@heroui/react';
+import { Button, Typography } from '@heroui/react';
 import AppCard from '@/components/ui/AppCard';
 import { PageHeader } from '@/components/layout/UserPageShell';
 import { DashboardBodySkeleton } from '@/components/layout/PageSkeleton';
 import UserPageShell from '@/components/layout/UserPageShell';
 import ErrorState from '@/components/layout/ErrorState';
-
-const ADMIN_QUICK_LINKS = [
-  { name: 'Users', href: '/users' },
-  { name: 'Content', href: '/content' },
-  { name: 'Analytics', href: '/analytics' },
-] as const;
 
 // ---------------------------------------------------------------------------
 // Types
@@ -207,7 +201,7 @@ function AxisChart({
 function BarChart({
   data,
   height = 180,
-  barColor = 'fill-primary',
+  barColor = 'fill-foreground',
   label,
 }: {
   data: Array<{ date: string; count: number }>;
@@ -260,6 +254,7 @@ function BarChart({
         {data.map((d, i) => {
           const barHeight = (d.count / yMax) * usable;
           const slotX = i * slotWidth;
+          const active = tooltip?.content.date === formatDayLong(d.date);
           return (
             <g key={d.date}>
               <rect
@@ -268,8 +263,8 @@ function BarChart({
                 width={barWidth}
                 height={Math.max(barHeight, 0)}
                 className={barColor}
-                rx={2}
-                opacity={0.85}
+                rx={3}
+                opacity={tooltip && !active ? 0.28 : 0.92}
               />
               <rect
                 x={slotX}
@@ -277,6 +272,7 @@ function BarChart({
                 width={slotWidth}
                 height={height}
                 fill="transparent"
+                className="cursor-crosshair"
                 onMouseEnter={(e) => {
                   setTooltip({
                     pos: { x: e.clientX, y: e.clientY },
@@ -319,12 +315,15 @@ function BarChart({
 function LineChart({
   data,
   height = 180,
-  lineColor = 'stroke-primary',
+  lineColor = 'stroke-foreground',
 }: {
   data: Array<{ date: string; value: number | null }>;
   height?: number;
   lineColor?: string;
 }) {
+  const [tooltip, setTooltip] = useState<{ pos: TooltipPosition; content: TooltipContent } | null>(
+    null
+  );
   const validData = data.filter((d) => d.value != null) as Array<{ date: string; value: number }>;
   if (validData.length < 2) {
     return (
@@ -351,6 +350,7 @@ function LineChart({
   const yOf = (value: number) => plotTop + (1 - (value - yMin) / range) * usable;
   const xOf = (i: number) => (i / Math.max(validData.length - 1, 1)) * chartWidth;
   const points = validData.map((d, i) => `${xOf(i)},${yOf(d.value)}`).join(' ');
+  const area = `0,${height} ${points} ${chartWidth},${height}`;
 
   return (
     <AxisChart
@@ -361,6 +361,7 @@ function LineChart({
       yFormat={yFormat}
       xLabels={chartXLabels(validData, validData.length)}
     >
+      <ChartTooltip position={tooltip?.pos ?? null} content={tooltip?.content ?? null} />
       <svg
         viewBox={`0 0 ${chartWidth} ${height}`}
         className="h-full w-full"
@@ -379,6 +380,7 @@ function LineChart({
             strokeDasharray={tick === yMin ? '0' : '3 3'}
           />
         ))}
+        <polygon points={area} className="fill-foreground/10" />
         <polyline
           points={points}
           fill="none"
@@ -389,7 +391,29 @@ function LineChart({
           vectorEffect="non-scaling-stroke"
         />
         {validData.map((d, i) => (
-          <circle key={d.date} cx={xOf(i)} cy={yOf(d.value)} r="3" className="fill-primary" />
+          <g key={d.date}>
+            <circle cx={xOf(i)} cy={yOf(d.value)} r="3.5" className="fill-foreground" />
+            <rect
+              x={xOf(i) - chartWidth / Math.max(validData.length, 1) / 2}
+              y={0}
+              width={chartWidth / Math.max(validData.length, 1)}
+              height={height}
+              fill="transparent"
+              className="cursor-crosshair"
+              onMouseEnter={(e) => {
+                setTooltip({
+                  pos: { x: e.clientX, y: e.clientY },
+                  content: { label: 'mood', value: yFormat(d.value), date: formatDayLong(d.date) },
+                });
+              }}
+              onMouseMove={(e) => {
+                setTooltip((prev) =>
+                  prev ? { ...prev, pos: { x: e.clientX, y: e.clientY } } : null
+                );
+              }}
+              onMouseLeave={() => setTooltip(null)}
+            />
+          </g>
         ))}
       </svg>
     </AxisChart>
@@ -445,29 +469,127 @@ function RatingDistribution({
 // Stat Card Component
 // ---------------------------------------------------------------------------
 
+function Sparkline({ values }: { values: number[] }) {
+  if (values.length < 2) return null;
+  const max = Math.max(...values, 1);
+  const min = Math.min(...values, 0);
+  const width = 88;
+  const height = 28;
+  const span = max - min || 1;
+  const points = values
+    .map((value, index) => {
+      const x = (index / (values.length - 1)) * width;
+      const y = height - ((value - min) / span) * height;
+      return `${x},${y}`;
+    })
+    .join(' ');
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} className="h-7 w-[5.5rem] text-foreground" aria-hidden>
+      <polyline
+        points={points}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function deltaLabel(current: number, previous: number): { text: string; up: boolean | null } {
+  if (previous <= 0 && current <= 0) return { text: 'No change', up: null };
+  if (previous <= 0) return { text: 'New this period', up: true };
+  const pct = Math.round(((current - previous) / previous) * 100);
+  if (pct === 0) return { text: 'Flat vs prior', up: null };
+  return { text: `${pct > 0 ? '+' : ''}${pct}% vs prior`, up: pct > 0 };
+}
+
 function StatCard({
   label,
   value,
-  subtitle,
+  hint,
+  delta,
+  spark,
+  active,
+  onSelect,
 }: {
   label: string;
   value: string | number;
-  subtitle?: string;
+  hint?: string;
+  delta?: { text: string; up: boolean | null };
+  spark?: number[];
+  active?: boolean;
+  onSelect?: () => void;
 }) {
   return (
-    <AppCard className="p-5">
-      <Typography type="body-xs" color="muted">
-        {label}
-      </Typography>
-      <Typography type="h4" weight="normal">
+    <button
+      type="button"
+      onClick={onSelect}
+      className={`flex flex-col gap-3 rounded-lg bg-default/30 p-5 text-left transition-colors ${
+        active ? 'ring-1 ring-foreground/25' : 'hover:bg-default/45'
+      }`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <Typography type="body-xs" color="muted">
+          {label}
+        </Typography>
+        {spark && spark.length > 1 ? <Sparkline values={spark} /> : null}
+      </div>
+      <Typography type="h3" weight="normal">
         {value}
       </Typography>
-      {subtitle ? (
-        <Typography type="body-xs" color="muted">
-          {subtitle}
-        </Typography>
-      ) : null}
-    </AppCard>
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        {delta ? (
+          <Typography
+            type="body-xs"
+            className={delta.up === true ? 'text-foreground' : 'text-muted'}
+          >
+            {delta.text}
+          </Typography>
+        ) : null}
+        {hint ? (
+          <Typography type="body-xs" color="muted">
+            {hint}
+          </Typography>
+        ) : null}
+      </div>
+    </button>
+  );
+}
+
+function sumWindow(rows: Array<{ count: number }>, start: number, end: number) {
+  return rows.slice(start, end).reduce((sum, row) => sum + row.count, 0);
+}
+
+function FunnelRow({
+  label,
+  value,
+  max,
+  href,
+}: {
+  label: string;
+  value: number;
+  max: number;
+  href?: string;
+}) {
+  const width = max > 0 ? Math.max(8, Math.round((value / max) * 100)) : 8;
+  const inner = (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-baseline justify-between gap-3">
+        <Typography type="body-sm">{label}</Typography>
+        <Typography type="body-sm">{value}</Typography>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full bg-muted/15">
+        <div className="h-full rounded-full bg-foreground/80" style={{ width: `${width}%` }} />
+      </div>
+    </div>
+  );
+  if (!href) return inner;
+  return (
+    <Link href={href} className="block rounded-md transition-opacity hover:opacity-80">
+      {inner}
+    </Link>
   );
 }
 
@@ -480,6 +602,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState<'7d' | '30d'>('30d');
+  const [chartTab, setChartTab] = useState<'signups' | 'sessions'>('signups');
 
   useEffect(() => {
     let cancelled = false;
@@ -524,13 +647,23 @@ export default function AdminDashboard() {
     return data.moodByDay.slice(-days);
   }, [data, timeRange]);
 
-  // Engagement rate
+  const days = timeRange === '7d' ? 7 : 30;
+
+  const signupDelta = useMemo(() => {
+    const rows = data?.signupsByDay ?? [];
+    return deltaLabel(sumWindow(rows, -days), sumWindow(rows, -days * 2, -days));
+  }, [data, days]);
+
+  const sessionDelta = useMemo(() => {
+    const rows = data?.sessionsByDay ?? [];
+    return deltaLabel(sumWindow(rows, -days), sumWindow(rows, -days * 2, -days));
+  }, [data, days]);
+
   const engagementRate = useMemo(() => {
     if (!data || data.totalUsers === 0) return null;
     return Math.round((data.activeUsers30d / data.totalUsers) * 100);
   }, [data]);
 
-  // Intake completion rate
   const intakeCompletionRate = useMemo(() => {
     if (!data || data.totalUsers === 0) return null;
     return Math.round((data.intakeCompleted / data.totalUsers) * 100);
@@ -538,7 +671,7 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <UserPageShell wide>
+      <UserPageShell wide="75">
         <PageHeader title="Dashboard" subtitle="Loading…" />
         <DashboardBodySkeleton />
       </UserPageShell>
@@ -557,18 +690,22 @@ export default function AdminDashboard() {
     );
   }
 
+  const chartData = chartTab === 'signups' ? filteredSignups : filteredSessions;
+  const chartEmpty =
+    chartTab === 'signups' ? 'No signup data yet' : 'No session data yet';
+
   return (
-    <UserPageShell wide>
+    <UserPageShell wide="75">
       <PageHeader
         title="Dashboard"
-        subtitle="Signups, sessions, ratings, and stress impact"
+        subtitle="What people are doing on the platform, and how it is landing."
         actions={
           <div className="flex flex-wrap items-center justify-end gap-2">
             {(['7d', '30d'] as const).map((range) => (
               <Button
                 key={range}
                 size="sm"
-                variant={timeRange === range ? 'primary' : 'ghost'}
+                variant={timeRange === range ? 'secondary' : 'ghost'}
                 onPress={() => setTimeRange(range)}
               >
                 {range === '7d' ? '7 days' : '30 days'}
@@ -578,106 +715,134 @@ export default function AdminDashboard() {
         }
       />
 
-      <div className="flex flex-col gap-3">
-        <Typography type="body-xs" color="muted">
-          Quick links
-        </Typography>
-        <div className="flex flex-wrap gap-2">
-          {ADMIN_QUICK_LINKS.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={buttonVariants({ size: 'sm', variant: 'ghost' })}
-            >
-              {item.name}
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          label="Total users"
+          label="People"
           value={data.totalUsers}
-          subtitle={`${engagementRate != null ? `${engagementRate}%` : '—'} active (30d)`}
+          hint={`${engagementRate ?? 0}% active in 30d`}
+          delta={signupDelta}
+          spark={filteredSignups.map((row) => row.count)}
+          active={chartTab === 'signups'}
+          onSelect={() => setChartTab('signups')}
         />
         <StatCard
-          label="Total sessions"
+          label="Sessions"
           value={data.totalSessions}
-          subtitle={`${data.activeUsers7d} active (7d)`}
+          hint={`${data.activeUsers7d} active this week`}
+          delta={sessionDelta}
+          spark={filteredSessions.map((row) => row.count)}
+          active={chartTab === 'sessions'}
+          onSelect={() => setChartTab('sessions')}
         />
         <StatCard
-          label="Intake completion"
+          label="Intake"
           value={`${intakeCompletionRate ?? 0}%`}
-          subtitle={`${data.intakeCompleted} of ${data.totalUsers} users`}
+          hint={`${data.intakeCompleted} finished onboarding`}
         />
         <StatCard
-          label="Avg rating"
+          label="Rating"
           value={data.ratingDistribution?.avgRating?.toFixed(1) ?? '—'}
-          subtitle={
-            data.ratingDistribution ? `${data.ratingDistribution.total} ratings` : 'No data yet'
+          hint={
+            data.ratingDistribution
+              ? `${data.ratingDistribution.total} session ratings`
+              : 'Waiting on ratings'
           }
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <AppCard className="p-5">
-          <Typography type="body" className="mb-1">
-            User signups
-          </Typography>
-          <Typography type="body-xs" color="muted" className="mb-4">
-            New users registered per day
-          </Typography>
-          {filteredSignups.length > 0 ? (
-            <BarChart data={filteredSignups} barColor="fill-primary" label="signups" />
-          ) : (
-            <Typography type="body-sm" color="muted" className="py-12 text-center">
-              No signup data available
+      <AppCard className="p-5">
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <Typography type="body">Activity</Typography>
+            <Typography type="body-xs" color="muted">
+              Hover a day for the exact count. Switch People / Sessions from the cards above, or here.
             </Typography>
-          )}
-        </AppCard>
+          </div>
+          <div className="flex gap-1">
+            {(['signups', 'sessions'] as const).map((tab) => (
+              <Button
+                key={tab}
+                size="sm"
+                variant={chartTab === tab ? 'secondary' : 'ghost'}
+                onPress={() => setChartTab(tab)}
+              >
+                {tab === 'signups' ? 'Signups' : 'Sessions'}
+              </Button>
+            ))}
+          </div>
+        </div>
+        {chartData.length > 0 ? (
+          <BarChart
+            data={chartData}
+            height={220}
+            label={chartTab === 'signups' ? 'signups' : 'sessions'}
+          />
+        ) : (
+          <Typography type="body-sm" color="muted" className="py-16 text-center">
+            {chartEmpty}
+          </Typography>
+        )}
+      </AppCard>
 
-        <AppCard className="p-5">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+        <AppCard className="p-5 lg:col-span-3">
           <Typography type="body" className="mb-1">
-            Session activity
+            Mood over time
           </Typography>
           <Typography type="body-xs" color="muted" className="mb-4">
-            Sessions completed per day
-          </Typography>
-          {filteredSessions.length > 0 ? (
-            <BarChart data={filteredSessions} barColor="fill-primary" label="sessions" />
-          ) : (
-            <Typography type="body-sm" color="muted" className="py-12 text-center">
-              No session data available
-            </Typography>
-          )}
-        </AppCard>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <AppCard className="p-5">
-          <Typography type="body" className="mb-1">
-            Mood trend
-          </Typography>
-          <Typography type="body-xs" color="muted" className="mb-4">
-            Average mood score over time
+            Average diary mood. Hover a point to read the day.
           </Typography>
           {filteredMood && filteredMood.some((d) => d.avg_mood != null) ? (
             <LineChart data={filteredMood.map((d) => ({ date: d.date, value: d.avg_mood }))} />
           ) : (
             <Typography type="body-sm" color="muted" className="py-12 text-center">
-              Mood data will appear once users start logging moods
+              Mood shows up once people start logging days.
             </Typography>
           )}
         </AppCard>
 
+        <AppCard className="flex flex-col gap-5 p-5 lg:col-span-2">
+          <div>
+            <Typography type="body">Path through the product</Typography>
+            <Typography type="body-xs" color="muted">
+              Open a step to inspect it.
+            </Typography>
+          </div>
+          <FunnelRow label="Accounts" value={data.totalUsers} max={data.totalUsers} href="/users" />
+          <FunnelRow
+            label="Finished intake"
+            value={data.intakeCompleted}
+            max={Math.max(data.totalUsers, 1)}
+            href="/users"
+          />
+          <FunnelRow
+            label="Active this week"
+            value={data.activeUsers7d}
+            max={Math.max(data.totalUsers, 1)}
+          />
+          <FunnelRow
+            label="Active in 30 days"
+            value={data.activeUsers30d}
+            max={Math.max(data.totalUsers, 1)}
+          />
+        </AppCard>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <AppCard className="p-5">
-          <Typography type="body" className="mb-1">
-            Rating distribution
-          </Typography>
-          <Typography type="body-xs" color="muted" className="mb-4">
-            Session ratings from users
-          </Typography>
+          <div className="mb-4 flex items-end justify-between gap-3">
+            <div>
+              <Typography type="body">Session ratings</Typography>
+              <Typography type="body-xs" color="muted">
+                How sessions felt after the fact.
+              </Typography>
+            </div>
+            {data.ratingDistribution ? (
+              <Typography type="h4" weight="normal">
+                {data.ratingDistribution.avgRating.toFixed(1)}
+              </Typography>
+            ) : null}
+          </div>
           {data.ratingDistribution ? (
             <RatingDistribution
               distribution={data.ratingDistribution.distribution}
@@ -685,116 +850,65 @@ export default function AdminDashboard() {
             />
           ) : (
             <Typography type="body-sm" color="muted" className="py-12 text-center">
-              Rating data will appear once users start rating sessions
+              Ratings appear after people finish sessions.
+            </Typography>
+          )}
+        </AppCard>
+
+        <AppCard className="p-5">
+          <Typography type="body" className="mb-1">
+            Stress before and after
+          </Typography>
+          <Typography type="body-xs" color="muted" className="mb-6">
+            Average reported stress across people with both readings.
+          </Typography>
+          {data.stressReduction ? (
+            <div className="flex flex-col gap-5">
+              <div className="flex flex-col gap-2">
+                <div className="flex justify-between gap-3">
+                  <Typography type="body-sm" color="muted">
+                    Before
+                  </Typography>
+                  <Typography type="body-sm">{data.stressReduction.avgBefore.toFixed(1)}</Typography>
+                </div>
+                <div className="h-3 overflow-hidden rounded-full bg-muted/15">
+                  <div
+                    className="h-full rounded-full bg-foreground/35"
+                    style={{ width: `${Math.min(100, (data.stressReduction.avgBefore / 10) * 100)}%` }}
+                  />
+                </div>
+              </div>
+              <div className="flex flex-col gap-2">
+                <div className="flex justify-between gap-3">
+                  <Typography type="body-sm" color="muted">
+                    After
+                  </Typography>
+                  <Typography type="body-sm">{data.stressReduction.avgAfter.toFixed(1)}</Typography>
+                </div>
+                <div className="h-3 overflow-hidden rounded-full bg-muted/15">
+                  <div
+                    className="h-full rounded-full bg-foreground"
+                    style={{ width: `${Math.min(100, (data.stressReduction.avgAfter / 10) * 100)}%` }}
+                  />
+                </div>
+              </div>
+              <Typography type="body-sm">
+                {data.stressReduction.reductionPercent > 0
+                  ? `${data.stressReduction.reductionPercent}% lower after sessions`
+                  : `${Math.abs(data.stressReduction.reductionPercent)}% higher after sessions`}
+                <span className="text-muted">
+                  {' '}
+                  · {data.stressReduction.userCount} people
+                </span>
+              </Typography>
+            </div>
+          ) : (
+            <Typography type="body-sm" color="muted" className="py-12 text-center">
+              Stress comparison waits on session check-ins.
             </Typography>
           )}
         </AppCard>
       </div>
-
-      <AppCard className="p-5">
-        <Typography type="body" className="mb-1">
-          Stress reduction
-        </Typography>
-        <Typography type="body-xs" color="muted" className="mb-4">
-          Average stress before and after sessions
-        </Typography>
-        {data.stressReduction ? (
-          <div className="grid grid-cols-1 items-center gap-8 md:grid-cols-3">
-            <div className="text-center">
-              <Typography type="body-xs" color="muted" className="mb-2">
-                Avg stress (before)
-              </Typography>
-              <div className="relative inline-flex items-center justify-center">
-                <svg viewBox="0 0 36 36" className="h-28 w-28">
-                  <circle
-                    cx="18"
-                    cy="18"
-                    r="15.915"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="3"
-                    className="text-muted/10"
-                  />
-                  <circle
-                    cx="18"
-                    cy="18"
-                    r="15.915"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="3"
-                    className="text-danger"
-                    strokeDasharray={`${(data.stressReduction.avgBefore / 10) * 100} 100`}
-                    strokeLinecap="round"
-                    transform="rotate(-90 18 18)"
-                  />
-                </svg>
-                <span className="absolute text-2xl">
-                  {data.stressReduction.avgBefore.toFixed(1)}
-                </span>
-              </div>
-            </div>
-
-            <div className="text-center">
-              <Typography type="h4" weight="normal">
-                {data.stressReduction.reductionPercent > 0
-                  ? `${data.stressReduction.reductionPercent}%`
-                  : `${Math.abs(data.stressReduction.reductionPercent)}% ↑`}
-              </Typography>
-              <Typography type="body-sm" color="muted">
-                {data.stressReduction.reductionPercent > 0
-                  ? 'Average reduction'
-                  : 'Average increase'}
-              </Typography>
-              <Typography type="body-xs" color="muted" className="mt-2">
-                Based on {data.stressReduction.userCount} users with stress data
-              </Typography>
-            </div>
-
-            <div className="text-center">
-              <Typography type="body-xs" color="muted" className="mb-2">
-                Avg stress (after)
-              </Typography>
-              <div className="relative inline-flex items-center justify-center">
-                <svg viewBox="0 0 36 36" className="h-28 w-28">
-                  <circle
-                    cx="18"
-                    cy="18"
-                    r="15.915"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="3"
-                    className="text-muted/10"
-                  />
-                  <circle
-                    cx="18"
-                    cy="18"
-                    r="15.915"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="3"
-                    className="text-primary"
-                    strokeDasharray={`${(data.stressReduction.avgAfter / 10) * 100} 100`}
-                    strokeLinecap="round"
-                    transform="rotate(-90 18 18)"
-                  />
-                </svg>
-                <span className="absolute text-2xl">
-                  {data.stressReduction.avgAfter.toFixed(1)}
-                </span>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <Typography type="body-sm" color="muted" className="py-12 text-center">
-            Stress metrics will appear once users complete sessions with stress tracking
-          </Typography>
-        )}
-      </AppCard>
-
-      <Typography type="body-xs" color="muted">
-        Some metrics populate as people use the platform. Mood, ratings, and engagement detail will
-        fill in over time.
-      </Typography>
     </UserPageShell>
   );
 }
