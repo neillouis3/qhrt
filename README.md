@@ -51,6 +51,9 @@ supabase/005_therapeutic_engine_schema.sql
 supabase/006_body_composition_seed.sql
 supabase/007_mood_logs_and_ratings.sql
 supabase/008_diary_entries.sql
+supabase/009_assessment_engine.sql
+supabase/010_learning_modules.sql
+supabase/011_user_avatars.sql
 ```
 
 ### 4. Run the development server

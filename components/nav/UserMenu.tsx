@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { Avatar, Button, Dropdown, Typography } from '@heroui/react';
+import { Dropdown, Typography } from '@heroui/react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   ArrowRight01Icon,
@@ -18,7 +18,8 @@ import {
 import type { IconSvgElement } from '@hugeicons/react';
 import { useLocale } from '@/context/LocaleContext';
 import { LOCALE_OPTIONS } from '@/lib/locale';
-import { firstNameFromUser, fullNameFromUser, initialsFromUser, type NameSource } from '@/lib/userName';
+import UserAvatar from '@/components/ui/UserAvatar';
+import { firstNameFromUser, fullNameFromUser, type NameSource } from '@/lib/userName';
 
 export interface UserMenuProps {
   user: NameSource;
@@ -56,7 +57,6 @@ export default function UserMenu({ user, onSettings, onLogout }: UserMenuProps) 
   const [mounted, setMounted] = useState(false);
   const name = fullNameFromUser(user, 'Account');
   const email = user?.email?.trim() ?? '';
-  const initial = initialsFromUser(user);
   const shortName = firstNameFromUser(user, name);
   const languageName = LOCALE_OPTIONS.find((item) => item.id === locale)?.name ?? 'English';
   const themeKey = theme === 'light' || theme === 'dark' || theme === 'system' ? theme : 'system';
@@ -67,17 +67,18 @@ export default function UserMenu({ user, onSettings, onLogout }: UserMenuProps) 
 
   return (
     <Dropdown>
-      <Button size="sm" variant="ghost" aria-label={`${name} menu`} className="gap-2 px-1.5">
-        <Avatar size="sm" color="accent">
-          <Avatar.Fallback>{initial}</Avatar.Fallback>
-        </Avatar>
-        <span className="max-w-32 truncate text-sm font-normal">{shortName}</span>
-      </Button>
+      <Dropdown.Trigger
+        aria-label={`${name} menu`}
+        className="group inline-flex h-auto items-center gap-2 rounded-none bg-transparent p-0 text-foreground shadow-none outline-none hover:bg-transparent data-[hovered]:bg-transparent data-[pressed]:bg-transparent data-[focus-visible]:bg-transparent"
+      >
+        <UserAvatar user={user} size="sm" />
+        <span className="max-w-32 truncate text-sm font-normal underline-offset-[3px] group-hover:underline group-data-[pressed]:underline group-focus-visible:underline">
+          {shortName}
+        </span>
+      </Dropdown.Trigger>
       <Dropdown.Popover placement="bottom end" className="w-80">
         <div className="flex items-center gap-3 px-3 pt-3 pb-2">
-          <Avatar size="md" color="accent">
-            <Avatar.Fallback>{initial}</Avatar.Fallback>
-          </Avatar>
+          <UserAvatar user={user} size="md" />
           <div className="min-w-0">
             <Typography type="body-sm" className="truncate">
               {name}

@@ -1,10 +1,9 @@
 'use client';
 
-import { Suspense, useEffect, useState, type ReactNode } from 'react';
+import { Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Avatar,
   Button,
   Input,
   Label,
@@ -14,12 +13,17 @@ import {
 } from '@heroui/react';
 import { useTheme } from 'next-themes';
 import { useSession, clearSessionCache, logoutOnClient } from '@/hooks/useSession';
-import { initialsFromUser, namePartsFromUser } from '@/lib/userName';
+import { namePartsFromUser } from '@/lib/userName';
+import { avatarStampFromUser } from '@/lib/userAvatar';
+import { resizeAvatarFile } from '@/lib/resizeAvatar';
+import UserAvatar from '@/components/ui/UserAvatar';
 import {
+  assessmentLayoutFromUser,
   homeCheckInFromUser,
   notificationPrefsFromUser,
   practiceTimeFromUser,
   pronounsFromUser,
+  type AssessmentLayout,
 } from '@/lib/userSettings';
 import { ONBOARDING_PRACTICE_TIMES, ONBOARDING_PRONOUNS } from '@/lib/onboarding';
 import CrisisResources from '@/components/ui/CrisisResources';
@@ -148,6 +152,14 @@ function SettingsFormBody() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [localeSaving, setLocaleSaving] = useState(false);
   const [localeError, setLocaleError] = useState('');
+  const [assessmentLayout, setAssessmentLayout] = useState<AssessmentLayout>('step');
+  const [layoutSaving, setLayoutSaving] = useState(false);
+  const [layoutError, setLayoutError] = useState('');
+  const [photoSaving, setPhotoSaving] = useState(false);
+  const [photoError, setPhotoError] = useState('');
+  const [photoSaved, setPhotoSaved] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   const themeOptions = [
     { id: 'light', name: t('settings.theme.light') },
@@ -179,6 +191,7 @@ function SettingsFormBody() {
     setLastName(names.lastName);
     setPronouns(pronounsFromUser(session.user));
     setPracticeTime(practiceTimeFromUser(session.user));
+    setAssessmentLayout(assessmentLayoutFromUser(session.user));
     setHomeCheckIn(homeCheckInFromUser(session.user));
     const notifications = notificationPrefsFromUser(session.user);
     setNotifyInApp(notifications.inApp);
@@ -187,7 +200,57 @@ function SettingsFormBody() {
   }, [session]);
 
   const email = session?.user.email ?? '';
-  const initial = initialsFromUser(session?.user);
+  const hasPhoto = Boolean(photoPreview || avatarStampFromUser(session?.user));
+
+  const handlePhotoPick = async (file: File | undefined) => {
+    if (!file) return;
+    setPhotoSaving(true);
+    setPhotoError('');
+    setPhotoSaved(false);
+    let previewUrl: string | null = null;
+    try {
+      const blob = await resizeAvatarFile(file);
+      previewUrl = URL.createObjectURL(blob);
+      setPhotoPreview(previewUrl);
+      const body = new FormData();
+      body.append('file', blob, 'avatar.jpg');
+      const response = await fetch('/api/settings/avatar', { method: 'POST', body });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(typeof data.error === 'string' ? data.error : 'Could not save that photo.');
+      }
+      setPhotoSaved(true);
+      clearSessionCache();
+    } catch (err) {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      setPhotoPreview(null);
+      setPhotoError(err instanceof Error ? err.message : 'Could not save that photo.');
+    } finally {
+      setPhotoSaving(false);
+      if (photoInputRef.current) photoInputRef.current.value = '';
+    }
+  };
+
+  const handlePhotoRemove = async () => {
+    setPhotoSaving(true);
+    setPhotoError('');
+    setPhotoSaved(false);
+    try {
+      const response = await fetch('/api/settings/avatar', { method: 'DELETE' });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(typeof data.error === 'string' ? data.error : 'Could not remove that photo.');
+      }
+      if (photoPreview) URL.revokeObjectURL(photoPreview);
+      setPhotoPreview(null);
+      setPhotoSaved(true);
+      clearSessionCache();
+    } catch (err) {
+      setPhotoError(err instanceof Error ? err.message : 'Could not remove that photo.');
+    } finally {
+      setPhotoSaving(false);
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -305,11 +368,10 @@ function SettingsFormBody() {
             subtitle="Manage your profile, login information, and devices."
           />
           <SettingsSection title="Profile">
-            <div className="flex flex-col gap-4 py-4 sm:flex-row sm:items-center">
-              <Avatar size="md" color="accent">
-                <Avatar.Fallback>{initial}</Avatar.Fallback>
-              </Avatar>
-              <div className="grid min-w-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="flex flex-col gap-4 py-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                <UserAvatar user={session?.user} size="md" src={photoPreview ?? undefined} />
+                <div className="grid min-w-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-2">
                 <TextField name="firstName" fullWidth>
                   <Label htmlFor="settings-first-name">First name</Label>
                   <Input
@@ -330,6 +392,36 @@ function SettingsFormBody() {
                     onChange={(e) => setLastName(e.target.value)}
                   />
                 </TextField>
+                </div>
+              </div>
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="sr-only"
+                onChange={(e) => void handlePhotoPick(e.target.files?.[0])}
+              />
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  isPending={photoSaving}
+                  isDisabled={photoSaving}
+                  onPress={() => photoInputRef.current?.click()}
+                >
+                  {t('settings.profile.changePhoto')}
+                </Button>
+                {hasPhoto ? (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    isPending={photoSaving}
+                    isDisabled={photoSaving}
+                    onPress={() => void handlePhotoRemove()}
+                  >
+                    {t('settings.profile.removePhoto')}
+                  </Button>
+                ) : null}
               </div>
             </div>
             <SettingRow label="Pronouns" description="Only you see this.">
@@ -340,6 +432,16 @@ function SettingsFormBody() {
                 items={ONBOARDING_PRONOUNS.map((item) => ({ id: item.id, name: item.label }))}
               />
             </SettingRow>
+            {photoError ? (
+              <Typography type="body-sm" className="py-2 text-danger">
+                {photoError}
+              </Typography>
+            ) : null}
+            {photoSaved && !photoError ? (
+              <Typography type="body-sm" color="muted" className="py-2">
+                {t('settings.profile.photoSaved')}
+              </Typography>
+            ) : null}
             {error ? (
               <Typography type="body-sm" className="py-2 text-danger">
                 {error}
@@ -555,6 +657,40 @@ function SettingsFormBody() {
                 {localeError ? (
                   <Typography type="body-sm" className="py-2 text-danger">
                     {localeError}
+                  </Typography>
+                ) : null}
+              </SettingsSection>
+              <SettingsSection title={t('settings.appearance.moduleLayout')}>
+                <SettingRow
+                  label={t('settings.appearance.moduleLayout')}
+                  description={t('settings.appearance.moduleLayoutDescription')}
+                >
+                  <FieldSelect
+                    placeholder={t('settings.appearance.moduleLayout')}
+                    selectedKey={assessmentLayout}
+                    isDisabled={layoutSaving}
+                    onChange={(value) => {
+                      const previous = assessmentLayout;
+                      const next = value === 'form' ? 'form' : 'step';
+                      setAssessmentLayout(next);
+                      setLayoutError('');
+                      setLayoutSaving(true);
+                      void patchSettings({ assessmentLayout: next })
+                        .catch((err) => {
+                          setAssessmentLayout(previous);
+                          setLayoutError(err instanceof Error ? err.message : 'Could not save settings.');
+                        })
+                        .finally(() => setLayoutSaving(false));
+                    }}
+                    items={[
+                      { id: 'step', name: t('settings.appearance.moduleLayoutStep') },
+                      { id: 'form', name: t('settings.appearance.moduleLayoutForm') },
+                    ]}
+                  />
+                </SettingRow>
+                {layoutError ? (
+                  <Typography type="body-sm" className="py-2 text-danger">
+                    {layoutError}
                   </Typography>
                 ) : null}
               </SettingsSection>
