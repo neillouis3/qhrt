@@ -9,15 +9,75 @@ import AppCard from '@/components/ui/AppCard';
 import FocusSessionLayout from '@/components/layout/FocusSessionLayout';
 import { FocusContentSkeleton } from '@/components/layout/PageSkeleton';
 import ProgressNav, { linearProgressStatus, type ProgressStep } from '@/components/session/ProgressNav';
+import { useSession } from '@/hooks/useSession';
+import { assessmentLayoutFromUser } from '@/lib/userSettings';
 import {
   visibleQuestions,
   type AssessmentAnswers,
   type AssessmentResult,
   type PublicAssessment,
+  type PublicQuestion,
   type ResultWorkbook,
 } from '@/lib/assessments';
 
 const INTRO_ID = '__intro';
+
+function questionAnchor(key: string) {
+  return `assessment-q-${key}`;
+}
+
+function scrollToQuestion(key: string) {
+  document.getElementById(questionAnchor(key))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function QuestionBlock({
+  question,
+  value,
+  onChange,
+}: {
+  question: PublicQuestion;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div id={questionAnchor(question.key)} className="scroll-mt-8">
+    <AppCard className="flex flex-col gap-4 p-5">
+      <Typography type="body">
+        {question.text}
+        {!question.required && <span className="ml-2 text-xs text-muted">(optional)</span>}
+      </Typography>
+      {question.type === 'text' ? (
+        <TextArea
+          fullWidth
+          rows={4}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Type your answer…"
+          aria-label={question.text}
+        />
+      ) : (
+        <RadioGroup
+          value={value || undefined}
+          onChange={onChange}
+          aria-label={question.text}
+          className="flex flex-col gap-2"
+        >
+          {question.options.map((opt) => (
+            <Radio key={opt.value} value={opt.value}>
+              <Radio.Content>
+                <Radio.Control>
+                  <Radio.Indicator />
+                </Radio.Control>
+                {opt.label}
+              </Radio.Content>
+            </Radio>
+          ))}
+        </RadioGroup>
+      )}
+    </AppCard>
+    </div>
+  );
+}
 
 function draftKey(slug: string) {
   return `qhrt.assessment.${slug}.draft`;
@@ -120,6 +180,8 @@ function ResultView({
 }
 
 export default function AssessmentRunner({ slug, showResult }: { slug: string; showResult: boolean }) {
+  const { session } = useSession();
+  const formLayout = assessmentLayoutFromUser(session?.user) === 'form';
   const [assessment, setAssessment] = useState<PublicAssessment | null>(null);
   const [result, setResult] = useState<AssessmentResult | null>(null);
   const [answers, setAnswers] = useState<AssessmentAnswers>({});
@@ -186,16 +248,24 @@ export default function AssessmentRunner({ slug, showResult }: { slug: string; s
       label: 'Introduction',
       status: result ? 'complete' : onIntro ? 'current' : 'complete',
     },
-    ...visible.map((question, i) => ({
-      id: question.key,
-      index: String(i + 1),
-      label: question.text,
-      status: result
+    ...visible.map((question, i) => {
+      const answered = Boolean((answers[question.key] ?? '').trim());
+      const status = result
         ? ('complete' as const)
         : onIntro
           ? ('upcoming' as const)
-          : linearProgressStatus(i, questionIndex, Boolean((answers[question.key] ?? '').trim())),
-    })),
+          : formLayout
+            ? answered
+              ? ('complete' as const)
+              : ('upcoming' as const)
+            : linearProgressStatus(i, questionIndex, answered);
+      return {
+        id: question.key,
+        index: String(i + 1),
+        label: question.text,
+        status,
+      };
+    }),
   ];
 
   const progress = (
@@ -210,7 +280,13 @@ export default function AssessmentRunner({ slug, showResult }: { slug: string; s
                 return;
               }
               const next = visible.findIndex((question) => question.key === id);
-              if (next >= 0 && next + 1 <= step) setStep(next + 1);
+              if (next < 0) return;
+              if (formLayout) {
+                setStep(1);
+                window.setTimeout(() => scrollToQuestion(id), 50);
+                return;
+              }
+              if (next + 1 <= step) setStep(next + 1);
             }
       }
     />
@@ -303,6 +379,7 @@ export default function AssessmentRunner({ slug, showResult }: { slug: string; s
   const isLast = !onIntro && questionIndex === visible.length - 1;
   const answer = question ? (answers[question.key] ?? '') : '';
   const canContinue = !question || !question.required || answer.trim() !== '';
+  const formReady = visible.every((q) => !q.required || (answers[q.key] ?? '').trim() !== '');
 
   const setAnswer = (key: string, value: string) => setAnswers((prev) => ({ ...prev, [key]: value }));
 
@@ -328,10 +405,13 @@ export default function AssessmentRunner({ slug, showResult }: { slug: string; s
     }
   };
 
+  const showForm = formLayout && !onIntro;
+
   return (
     <FocusSessionLayout
       progress={progress}
       onPause={pause}
+      contentAlign={showForm ? 'start' : 'center'}
       leadingActions={
         onIntro ? (
           <Button size="sm" variant="ghost" onPress={pause}>
@@ -343,7 +423,7 @@ export default function AssessmentRunner({ slug, showResult }: { slug: string; s
             size="sm"
             variant="tertiary"
             isDisabled={submitting}
-            onPress={() => setStep(step - 1)}
+            onPress={() => setStep(formLayout ? 0 : step - 1)}
           >
             Back
           </Button>
@@ -354,15 +434,15 @@ export default function AssessmentRunner({ slug, showResult }: { slug: string; s
           <Button size="sm" variant="primary" onPress={() => setStep(1)}>
             Begin
           </Button>
-        ) : isLast ? (
+        ) : formLayout || isLast ? (
           <Button
             size="sm"
             variant="primary"
             isPending={submitting}
-            isDisabled={!canContinue || submitting}
+            isDisabled={!(formLayout ? formReady : canContinue) || submitting}
             onPress={handleSubmit}
           >
-            See my workbooks
+            Submit
           </Button>
         ) : (
           <Button size="sm" variant="primary" isDisabled={!canContinue} onPress={() => setStep(step + 1)}>
@@ -390,42 +470,23 @@ export default function AssessmentRunner({ slug, showResult }: { slug: string; s
             </Typography>
           ) : null}
         </div>
-      ) : question ? (
-        <AppCard className="flex flex-col gap-4 p-5">
-          <Typography type="body">
-            {question.text}
-            {!question.required && <span className="ml-2 text-xs text-muted">(optional)</span>}
-          </Typography>
-
-          {question.type === 'text' ? (
-            <TextArea
-              fullWidth
-              rows={4}
-              value={answer}
-              onChange={(e) => setAnswer(question.key, e.target.value)}
-              placeholder="Type your answer…"
-              aria-label={question.text}
+      ) : formLayout ? (
+        <div className="flex flex-col gap-4">
+          {visible.map((item) => (
+            <QuestionBlock
+              key={item.key}
+              question={item}
+              value={answers[item.key] ?? ''}
+              onChange={(value) => setAnswer(item.key, value)}
             />
-          ) : (
-            <RadioGroup
-              value={answer || undefined}
-              onChange={(v) => setAnswer(question.key, v)}
-              aria-label={question.text}
-              className="flex flex-col gap-2"
-            >
-              {question.options.map((opt) => (
-                <Radio key={opt.value} value={opt.value}>
-                  <Radio.Content>
-                    <Radio.Control>
-                      <Radio.Indicator />
-                    </Radio.Control>
-                    {opt.label}
-                  </Radio.Content>
-                </Radio>
-              ))}
-            </RadioGroup>
-          )}
-        </AppCard>
+          ))}
+        </div>
+      ) : question ? (
+        <QuestionBlock
+          question={question}
+          value={answer}
+          onChange={(value) => setAnswer(question.key, value)}
+        />
       ) : null}
 
       {error ? (

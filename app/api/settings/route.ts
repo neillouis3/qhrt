@@ -5,6 +5,7 @@ import { requireUser } from '@/lib/adminAuth';
 import { apiError } from '@/lib/apiError';
 import { ONBOARDING_PRACTICE_TIMES, ONBOARDING_PRONOUNS, isId } from '@/lib/onboarding';
 import { isAppLocale } from '@/lib/locale';
+import { ASSESSMENT_LAYOUTS } from '@/lib/userSettings';
 
 function clip(value: unknown, max: number): string {
   if (typeof value !== 'string') return '';
@@ -65,6 +66,12 @@ export async function PATCH(request: NextRequest) {
 
     if ('locale' in body) {
       nextMeta.locale = isAppLocale(body.locale) ? body.locale : null;
+    }
+
+    if ('assessmentLayout' in body) {
+      nextMeta.assessment_layout = isId(ASSESSMENT_LAYOUTS, body.assessmentLayout)
+        ? body.assessmentLayout
+        : 'step';
     }
 
     const { error: metaError } = await supabaseServer.auth.admin.updateUserById(userId, {

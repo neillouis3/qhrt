@@ -21,6 +21,8 @@ export default function ModuleGuidePage({ slug, position }: { slug: string; posi
   const [payload, setPayload] = useState<GuidePayload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [index, setIndex] = useState(0);
+  const [finishing, setFinishing] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -41,10 +43,23 @@ export default function ModuleGuidePage({ slug, position }: { slug: string; posi
   const step = steps[index];
   const last = steps.length > 0 && index === steps.length - 1;
 
-  const finish = () => {
-    const userId = session?.user?.id;
-    if (userId && slug === 'qhrt-foundation' && position === 1) writeStartingOutDone(userId);
-    router.push(payload ? `/modules/${payload.module.slug}` : '/home');
+  const finish = async () => {
+    if (finishing) return;
+    setFinishing(true);
+    setSaveError(null);
+    try {
+      const res = await fetch(`/api/modules/${encodeURIComponent(slug)}/${position}`, { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(typeof data.error === 'string' ? data.error : 'Could not save this lesson.');
+      }
+      const userId = session?.user?.id;
+      if (userId && slug === 'qhrt-foundation' && position === 1) writeStartingOutDone(userId);
+      router.push(payload ? `/modules/${payload.module.slug}` : '/home');
+    } catch (err) {
+      setFinishing(false);
+      setSaveError(err instanceof Error ? err.message : 'Could not save this lesson.');
+    }
   };
 
   const progress = (
@@ -97,7 +112,7 @@ export default function ModuleGuidePage({ slug, position }: { slug: string; posi
       }
       actions={
         last ? (
-          <Button size="sm" variant="primary" onPress={finish}>
+          <Button size="sm" variant="primary" isPending={finishing} isDisabled={finishing} onPress={() => void finish()}>
             Done
           </Button>
         ) : (
@@ -108,9 +123,7 @@ export default function ModuleGuidePage({ slug, position }: { slug: string; posi
       }
     >
       <div className="flex flex-col gap-4">
-        <Typography type="body-xs" color="muted">
-          Module {payload.lesson.position} · {index + 1} of {steps.length}
-        </Typography>
+        {saveError ? <Typography type="body-sm">{saveError}</Typography> : null}
         <Typography type="h3" weight="normal">
           {step.title}
         </Typography>

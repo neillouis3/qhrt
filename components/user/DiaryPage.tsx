@@ -1,7 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, Input, Label, TextArea, Typography } from '@heroui/react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import Link from 'next/link';
+import { Button, Input, Label, TextArea, Typography, buttonVariants } from '@heroui/react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   ArrowLeft01Icon,
@@ -29,7 +30,32 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const KIND_LABEL: Record<DiaryCompletion['kind'], string> = {
   assessment: 'Workbook',
+  module: 'Module',
 };
+
+function MonthStat({ label, value }: { label: string; value: number }) {
+  return (
+    <AppCard className="flex flex-1 flex-col gap-1 px-4 py-3">
+      <Typography type="body-xs" color="muted">
+        {label}
+      </Typography>
+      <Typography type="h5" weight="normal">
+        {value}
+      </Typography>
+    </AppCard>
+  );
+}
+
+function DayBlock({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <section className="flex flex-col gap-3">
+      <Typography type="body-xs" color="muted">
+        {label}
+      </Typography>
+      {children}
+    </section>
+  );
+}
 
 function startOfMonth(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), 1);
@@ -55,6 +81,7 @@ export default function DiaryPage() {
   const [editing, setEditing] = useState<DiaryEntry | null>(null);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
+  const [composer, setComposer] = useState('');
   const [mood, setMood] = useState<DiaryMood | null>(null);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -84,6 +111,10 @@ export default function DiaryPage() {
   }, [fetchData]);
 
   const todayKey = toDateKey(new Date());
+
+  useEffect(() => {
+    setComposer('');
+  }, [selectedDate]);
 
   const checkInByDate = useMemo(() => {
     const map = new Map<string, HomeCheckInValue>();
@@ -164,15 +195,6 @@ export default function DiaryPage() {
     return { noteCount, completedCount };
   }, [completions, entries, month]);
 
-  const openCreate = () => {
-    if (selectedDate > todayKey) return;
-    setEditing(null);
-    setTitle('');
-    setBody('');
-    setMood(selectedCheckIn ? diaryMoodFromCheckIn(selectedCheckIn) : null);
-    setFormOpen(true);
-  };
-
   const openEdit = (entry: DiaryEntry) => {
     setEditing(entry);
     setTitle(entry.title ?? '');
@@ -223,6 +245,41 @@ export default function DiaryPage() {
     }
   };
 
+  const handleComposerSave = async () => {
+    if (selectedDate > todayKey) return;
+    const trimmed = composer.trim();
+    if (!trimmed) {
+      setError('Write a note before saving.');
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+
+    try {
+      const res = await fetch('/api/diary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          entryDate: selectedDate,
+          title: '',
+          body: trimmed,
+          mood: selectedCheckIn ? diaryMoodFromCheckIn(selectedCheckIn) : null,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(typeof data.error === 'string' ? data.error : 'Could not save note');
+      }
+      setComposer('');
+      await fetchData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save note');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleDelete = async (id: string) => {
     setDeletingId(id);
     setError(null);
@@ -245,10 +302,10 @@ export default function DiaryPage() {
   }
 
   return (
-    <UserPageShell>
+    <UserPageShell wide="75">
       <PageHeader
         title="Diary"
-        subtitle="Daily check-ins, completed work, and notes — organized by day."
+        subtitle="A quiet place for the day's check-ins, finished work, and notes."
       />
 
       {error && (
@@ -257,246 +314,275 @@ export default function DiaryPage() {
         </Typography>
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <AppCard className="p-5">
-          <Typography type="body-xs" color="muted">
-            Completed this month
-          </Typography>
-          <Typography type="h4" weight="normal">
-            {monthStats.completedCount}
-          </Typography>
-        </AppCard>
-        <AppCard className="p-5">
-          <Typography type="body-xs" color="muted">
-            Notes this month
-          </Typography>
-          <Typography type="h4" weight="normal">
-            {monthStats.noteCount}
-          </Typography>
-        </AppCard>
-      </div>
-
-      <section className="flex w-72 flex-col gap-2">
-        <div className="flex items-center justify-between gap-2">
-          <Typography type="body">{monthLabel}</Typography>
-          <div className="flex items-center">
-            <button
-              type="button"
-              aria-label="Previous month"
-              className="flex size-8 items-center justify-center text-foreground transition-opacity hover:opacity-60"
-              onClick={() => setMonth((current) => addMonths(current, -1))}
-            >
-              <HugeiconsIcon icon={ArrowLeft01Icon} size={16} strokeWidth={1.5} />
-            </button>
-            <button
-              type="button"
-              aria-label="Next month"
-              className="flex size-8 items-center justify-center text-foreground transition-opacity hover:opacity-60"
-              onClick={() => setMonth((current) => addMonths(current, 1))}
-            >
-              <HugeiconsIcon icon={ArrowRight01Icon} size={16} strokeWidth={1.5} />
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-7">
-          {WEEKDAYS.map((day) => (
-            <Typography
-              key={day}
-              type="body-xs"
-              color="muted"
-              className="flex h-7 items-center justify-center"
-            >
-              {day}
-            </Typography>
-          ))}
-          {calendarDays.map((cell, index) => {
-            if (!cell) {
-              return <div key={`empty-${index}`} className="size-9" />;
-            }
-            const isSelected = cell.key === selectedDate;
-            const isToday = cell.key === todayKey;
-            const isFuture = cell.key > todayKey;
-            const hasEntry = !isFuture && entryDates.has(cell.key);
-            const dayCheckIn = !isFuture ? checkInByDate.get(cell.key) : null;
-            return (
-              <button
-                key={cell.key}
-                type="button"
-                disabled={isFuture}
-                onClick={() => {
-                  if (!isFuture) setSelectedDate(cell.key);
-                }}
-                className={`flex size-9 flex-col items-center justify-center gap-0.5 rounded-lg text-sm leading-none transition-colors ${
-                  isFuture
-                    ? 'cursor-default text-muted opacity-40'
-                    : isSelected
-                      ? 'bg-accent-soft text-accent'
-                      : isToday
-                        ? 'font-medium text-foreground hover:bg-muted/5'
-                        : 'text-foreground hover:bg-muted/5'
-                }`}
-                aria-current={isToday ? 'date' : undefined}
-                aria-pressed={isSelected}
-                aria-disabled={isFuture}
-                aria-label={
-                  dayCheckIn
-                    ? `${cell.day}, checked in`
-                    : hasEntry
-                      ? `${cell.day}, has a diary entry`
-                      : isToday
-                        ? `${cell.day}, today`
-                        : String(cell.day)
-                }
-              >
-                {cell.day}
-                {dayCheckIn ? (
-                  <HugeiconsIcon
-                    icon={dayCheckIn === 'up' ? ThumbsUpIcon : ThumbsDownIcon}
-                    size={10}
-                    strokeWidth={1.5}
-                    className={isSelected ? 'text-accent' : 'text-primary'}
-                    aria-hidden
-                  />
-                ) : (
-                  <span
-                    className={`size-1.5 rounded-full ${
-                      hasEntry ? (isSelected ? 'bg-accent' : 'bg-primary') : 'bg-transparent'
-                    }`}
-                    aria-hidden
-                  />
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </section>
-
-      <section className="flex max-w-xl flex-col gap-8">
-        <div className="flex items-center justify-between gap-3">
-          <Typography type="h4" weight="normal">
-            {formatLongDate(selectedDate)}
-          </Typography>
-          {selectedDate <= todayKey ? (
-            <Button size="sm" variant="primary" onPress={openCreate}>
-              Add a note
-            </Button>
-          ) : null}
-        </div>
-
-        <div className="flex flex-col gap-3">
-          <Typography type="body-xs" color="muted">
-            Check-in
-          </Typography>
-          {selectedDate > todayKey ? (
-            <Typography type="body-sm" color="muted">
-              Check-ins are only for today or past days.
-            </Typography>
-          ) : selectedCheckIn ? (
-            <div className="flex flex-wrap items-center gap-3">
-              <Typography type="body-sm">
-                {selectedCheckIn === 'up' ? 'Doing okay' : 'A harder day'}
-              </Typography>
-              <CheckInButtons value={selectedCheckIn} disabled onPick={() => undefined} />
-              <Typography type="body-xs" color="muted">
-                Saved with your diary · mood{' '}
-                {moodLabel(diaryMoodFromCheckIn(selectedCheckIn))?.toLowerCase()}
-              </Typography>
+      <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(17rem,20rem)_minmax(0,1fr)]">
+        <aside className="flex flex-col gap-4 lg:sticky lg:top-6">
+          <AppCard className="p-5">
+            <div className="mb-4 flex items-center justify-between gap-2">
+              <Typography type="body">{monthLabel}</Typography>
+              <div className="flex items-center">
+                <button
+                  type="button"
+                  aria-label="Previous month"
+                  className="flex size-8 items-center justify-center rounded-full text-foreground transition-colors hover:bg-muted/10"
+                  onClick={() => setMonth((current) => addMonths(current, -1))}
+                >
+                  <HugeiconsIcon icon={ArrowLeft01Icon} size={16} strokeWidth={1.5} />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Next month"
+                  className="flex size-8 items-center justify-center rounded-full text-foreground transition-colors hover:bg-muted/10"
+                  onClick={() => setMonth((current) => addMonths(current, 1))}
+                >
+                  <HugeiconsIcon icon={ArrowRight01Icon} size={16} strokeWidth={1.5} />
+                </button>
+              </div>
             </div>
-          ) : selectedDate === todayKey ? (
-            <div className="flex flex-wrap items-center gap-3">
-              <Typography type="body-sm" color="muted">
-                Same quick thumbs as Home — we will add a diary line for you.
-              </Typography>
-              <CheckInButtons
-                value={null}
-                loading={checkInSaving}
-                onPick={(value) => void handleCheckIn(value)}
-              />
-            </div>
-          ) : (
-            <Typography type="body-sm" color="muted">
-              No check-in recorded this day.
-            </Typography>
-          )}
-        </div>
 
-        <div className="flex flex-col gap-2">
-          <Typography type="body-xs" color="muted">
-            Completed
-          </Typography>
-          {dayCompletions.length === 0 ? (
-            <Typography type="body-sm" color="muted">
-              {selectedDate === todayKey
-                ? 'Nothing completed today yet.'
-                : 'Nothing was completed on this day.'}
-            </Typography>
-          ) : (
-            <ul className="flex flex-col gap-3">
-              {dayCompletions.map((item) => (
-                <li key={`${item.kind}-${item.id}`} className="flex flex-col gap-0.5">
-                  <Typography type="body-sm">{item.title}</Typography>
-                  <Typography type="body-xs" color="muted">
-                    {KIND_LABEL[item.kind]} ·{' '}
-                    {new Date(item.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </Typography>
-                </li>
+            <div className="grid grid-cols-7">
+              {WEEKDAYS.map((day) => (
+                <Typography
+                  key={day}
+                  type="body-xs"
+                  color="muted"
+                  className="flex h-7 items-center justify-center"
+                >
+                  {day.slice(0, 2)}
+                </Typography>
               ))}
-            </ul>
-          )}
-        </div>
-
-        <div className="flex flex-col gap-4">
-          <Typography type="body-xs" color="muted">
-            Notes
-          </Typography>
-          {dayEntries.length === 0 ? (
-            <Typography type="body-sm" color="muted">
-              No notes on this day. Add how the day felt, or anything you want to remember.
-            </Typography>
-          ) : (
-            <div className="flex flex-col">
-              {dayEntries.map((entry, index) => {
-                const moodText = moodLabel(entry.mood);
+              {calendarDays.map((cell, index) => {
+                if (!cell) {
+                  return <div key={`empty-${index}`} className="aspect-square" />;
+                }
+                const isSelected = cell.key === selectedDate;
+                const isToday = cell.key === todayKey;
+                const isFuture = cell.key > todayKey;
+                const hasEntry = !isFuture && entryDates.has(cell.key);
+                const dayCheckIn = !isFuture ? checkInByDate.get(cell.key) : null;
                 return (
-                  <article
-                    key={entry.id}
-                    className={index === 0 ? 'flex flex-col gap-3 pb-6' : 'flex flex-col gap-3 border-t border-border py-6'}
+                  <button
+                    key={cell.key}
+                    type="button"
+                    disabled={isFuture}
+                    onClick={() => {
+                      if (!isFuture) setSelectedDate(cell.key);
+                    }}
+                    className={`flex aspect-square flex-col items-center justify-center gap-0.5 rounded-xl text-sm leading-none transition-colors ${
+                      isFuture
+                        ? 'cursor-default text-muted opacity-40'
+                        : isSelected
+                          ? 'bg-accent-soft text-accent'
+                          : isToday
+                            ? 'font-medium text-foreground ring-1 ring-border ring-inset hover:bg-muted/10'
+                            : 'text-foreground hover:bg-muted/10'
+                    }`}
+                    aria-current={isToday ? 'date' : undefined}
+                    aria-pressed={isSelected}
+                    aria-disabled={isFuture}
+                    aria-label={
+                      dayCheckIn
+                        ? `${cell.day}, checked in`
+                        : hasEntry
+                          ? `${cell.day}, has a diary entry`
+                          : isToday
+                            ? `${cell.day}, today`
+                            : String(cell.day)
+                    }
                   >
-                    {entry.title ? (
-                      <Typography type="body">{entry.title}</Typography>
-                    ) : null}
-                    <Typography type="body-sm">{entry.body}</Typography>
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <Typography type="body-xs" color="muted">
-                        {moodText ? `${moodText} · ` : ''}
-                        {new Date(entry.created_at).toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </Typography>
-                      <div className="flex items-center gap-1">
-                        <Button size="sm" variant="ghost" onPress={() => openEdit(entry)}>
-                          Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          isPending={deletingId === entry.id}
-                          isDisabled={deletingId === entry.id}
-                          onPress={() => handleDelete(entry.id)}
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    </div>
-                  </article>
+                    {cell.day}
+                    {dayCheckIn ? (
+                      <HugeiconsIcon
+                        icon={dayCheckIn === 'up' ? ThumbsUpIcon : ThumbsDownIcon}
+                        size={10}
+                        strokeWidth={1.5}
+                        className={isSelected ? 'text-accent' : 'text-primary'}
+                        aria-hidden
+                      />
+                    ) : (
+                      <span
+                        className={`size-1.5 rounded-full ${
+                          hasEntry ? (isSelected ? 'bg-accent' : 'bg-primary') : 'bg-transparent'
+                        }`}
+                        aria-hidden
+                      />
+                    )}
+                  </button>
                 );
               })}
             </div>
-          )}
-        </div>
-      </section>
+          </AppCard>
+
+          <div className="grid grid-cols-2 gap-3">
+            <MonthStat label="Completed" value={monthStats.completedCount} />
+            <MonthStat label="Notes" value={monthStats.noteCount} />
+          </div>
+        </aside>
+
+        <section className="flex min-h-[28rem] flex-col gap-8">
+          <div className="flex min-w-0 flex-col gap-1">
+            <Typography type="h4" weight="normal">
+              {formatLongDate(selectedDate)}
+            </Typography>
+            {selectedDate === todayKey ? (
+              <Typography type="body-xs" color="muted">
+                Today
+              </Typography>
+            ) : null}
+          </div>
+
+          <DayBlock label="Check-in">
+            {selectedDate > todayKey ? (
+              <Typography type="body-sm" color="muted">
+                Check-ins are only for today or past days.
+              </Typography>
+            ) : selectedCheckIn ? (
+              <div className="flex flex-wrap items-center gap-3">
+                <CheckInButtons value={selectedCheckIn} disabled onPick={() => undefined} />
+                <Typography type="body-sm">
+                  {selectedCheckIn === 'up' ? 'Doing okay' : 'A harder day'}
+                </Typography>
+              </div>
+            ) : selectedDate === todayKey ? (
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <Typography type="body-sm" color="muted">
+                  How is today feeling?
+                </Typography>
+                <CheckInButtons
+                  value={null}
+                  loading={checkInSaving}
+                  onPick={(value) => void handleCheckIn(value)}
+                />
+              </div>
+            ) : (
+              <Typography type="body-sm" color="muted">
+                No check-in recorded this day.
+              </Typography>
+            )}
+          </DayBlock>
+
+          <DayBlock label="Completed">
+            {dayCompletions.length === 0 ? (
+              selectedDate === todayKey ? (
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <Typography type="body-sm" color="muted">
+                    Finish a module and it will land here.
+                  </Typography>
+                  <Link href="/assessments" className={buttonVariants({ size: 'sm', variant: 'outline' })}>
+                    Open modules
+                  </Link>
+                </div>
+              ) : (
+                <Typography type="body-sm" color="muted">
+                  Nothing was completed on this day.
+                </Typography>
+              )
+            ) : (
+              <ul className="flex flex-col gap-2">
+                {dayCompletions.map((item) => (
+                  <li
+                    key={`${item.kind}-${item.id}`}
+                    className="flex items-baseline justify-between gap-3"
+                  >
+                    <div className="min-w-0">
+                      <Typography type="body-sm">{item.title}</Typography>
+                      <Typography type="body-xs" color="muted">
+                        {KIND_LABEL[item.kind]}
+                      </Typography>
+                    </div>
+                    <Typography type="body-xs" color="muted" className="shrink-0">
+                      {new Date(item.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </Typography>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </DayBlock>
+
+          <DayBlock label="Notes">
+            {selectedDate > todayKey ? (
+              <Typography type="body-sm" color="muted">
+                Notes are only for today or past days.
+              </Typography>
+            ) : (
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-2">
+                  <TextArea
+                    id="diary-composer"
+                    fullWidth
+                    rows={4}
+                    placeholder="Write a line about how this day felt."
+                    value={composer}
+                    disabled={saving}
+                    onChange={(e) => setComposer(e.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+                        event.preventDefault();
+                        void handleComposerSave();
+                      }
+                    }}
+                  />
+                  <div className="flex justify-end">
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      isPending={saving && !formOpen}
+                      isDisabled={saving || !composer.trim()}
+                      onPress={handleComposerSave}
+                    >
+                      Save
+                    </Button>
+                  </div>
+                </div>
+                {dayEntries.length > 0 ? (
+                  <div className="flex flex-col gap-3">
+                    {dayEntries.map((entry, index) => {
+                      const moodText = moodLabel(entry.mood);
+                      return (
+                        <article
+                          key={entry.id}
+                          className={
+                            index === 0
+                              ? 'flex flex-col gap-3'
+                              : 'flex flex-col gap-3 border-t border-border pt-4'
+                          }
+                        >
+                          {entry.title ? (
+                            <Typography type="body">{entry.title}</Typography>
+                          ) : null}
+                          <Typography type="body-sm">{entry.body}</Typography>
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <Typography type="body-xs" color="muted">
+                              {moodText ? `${moodText} · ` : ''}
+                              {new Date(entry.created_at).toLocaleTimeString([], {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </Typography>
+                            <div className="flex items-center gap-1">
+                              <Button size="sm" variant="ghost" onPress={() => openEdit(entry)}>
+                                Edit
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                isPending={deletingId === entry.id}
+                                isDisabled={deletingId === entry.id}
+                                onPress={() => handleDelete(entry.id)}
+                              >
+                                Delete
+                              </Button>
+                            </div>
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </DayBlock>
+        </section>
+      </div>
 
       <Modal
         isOpen={formOpen}

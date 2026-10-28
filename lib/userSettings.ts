@@ -10,6 +10,18 @@ import type { NameSource } from '@/lib/userName';
 
 export { localeFromUser, type AppLocale };
 
+export const ASSESSMENT_LAYOUTS = [
+  { id: 'step' },
+  { id: 'form' },
+] as const;
+
+export type AssessmentLayout = (typeof ASSESSMENT_LAYOUTS)[number]['id'];
+
+export function assessmentLayoutFromUser(user: NameSource): AssessmentLayout {
+  const value = metaValue(user, 'assessment_layout');
+  return value === 'form' ? 'form' : 'step';
+}
+
 function metaValue(user: NameSource, key: string): unknown {
   return user?.user_metadata?.[key];
 }

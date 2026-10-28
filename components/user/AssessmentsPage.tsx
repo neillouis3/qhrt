@@ -4,31 +4,17 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Typography, buttonVariants } from '@heroui/react';
 import AppCard from '@/components/ui/AppCard';
+import CoverWash from '@/components/ui/CoverWash';
 import { AssessmentGridSkeleton } from '@/components/layout/PageSkeleton';
 import UserPageShell, { PageHeader } from '@/components/layout/UserPageShell';
 import { useSession } from '@/hooks/useSession';
 import type { LearningModule } from '@/lib/modules';
 
-const WASH_TONES = ['meadow', 'bloom', 'dusk', 'mist'] as const;
-
-function washTone(slug: string) {
-  let hash = 0;
-  for (const char of slug) hash += char.charCodeAt(0);
-  return WASH_TONES[hash % WASH_TONES.length] ?? 'meadow';
-}
-
-function CoverWash({ slug }: { slug: string }) {
-  return (
-    <div className={`focus-card-wash focus-card-wash--${washTone(slug)}`} aria-hidden>
-      <span className="focus-card-wash__blob focus-card-wash__blob--a" />
-      <span className="focus-card-wash__blob focus-card-wash__blob--b" />
-      <span className="focus-card-wash__blob focus-card-wash__blob--c" />
-    </div>
-  );
-}
-
-function lessonLabel(count: number) {
+function lessonLabel(module: LearningModule) {
+  const count = module.lessons.length;
   if (count <= 0) return 'No lessons yet';
+  const done = module.lessons.filter((lesson) => lesson.completedAt).length;
+  if (done > 0) return `${done} of ${count} complete`;
   if (count === 1) return 'Module 1';
   return `${count} lessons`;
 }
@@ -77,7 +63,7 @@ export default function AssessmentsPage() {
   }
 
   return (
-    <UserPageShell>
+    <UserPageShell wide="75">
       <PageHeader
         title="Modules"
         subtitle="Take one topic at a time, and follow the lessons inside that module as the steps."
@@ -96,12 +82,12 @@ export default function AssessmentsPage() {
           </Typography>
         </AppCard>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {modules.map((module) => (
             <div key={module.id} className="relative aspect-square w-full">
               <AppCard className="absolute inset-0 overflow-hidden p-0">
                 <div className="relative flex h-full flex-col">
-                  <CoverWash slug={module.slug} />
+                  <CoverWash seed={module.slug} />
                   <div className="relative z-10 flex min-h-0 flex-1 flex-col gap-2 overflow-hidden p-4 pt-[46%]">
                     <AppCard.Header>
                       <AppCard.Title className="font-normal tracking-tight">{module.title}</AppCard.Title>
@@ -113,7 +99,7 @@ export default function AssessmentsPage() {
                     ) : null}
                     <AppCard.Footer className="mt-auto flex-wrap items-center justify-between gap-2">
                       <Typography type="body-xs" color="muted">
-                        {lessonLabel(module.lessons.length)}
+                        {lessonLabel(module)}
                       </Typography>
                       <Link
                         href={`/modules/${module.slug}`}

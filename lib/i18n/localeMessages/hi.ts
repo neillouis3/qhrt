@@ -7,6 +7,7 @@ export const hi: MessageTree = {
     diary: 'डायरी',
     assessments: 'मॉड्यूल',
     about: 'हमारे बारे में',
+    privacy: 'गोपनीयता',
     contact: 'संपर्क',
     login: 'लॉग इन',
     signup: 'खाता बनाएँ',
@@ -34,6 +35,10 @@ export const hi: MessageTree = {
       language: 'भाषा',
       languageDescription:
         'ऐप मेनू और सामान्य लेबल। सत्र की सामग्री अभी अपनी मूल भाषा में रहती है।',
+      moduleLayout: 'मॉड्यूल प्रश्न',
+      moduleLayoutDescription: 'एक समय में एक प्रश्न, या पूरे फ़ॉर्म एक पेज पर।',
+      moduleLayoutStep: 'एक-एक करके',
+      moduleLayoutForm: 'सब एक पेज पर',
     },
     theme: {
       light: 'हल्का',
@@ -50,6 +55,9 @@ export const hi: MessageTree = {
     profile: {
       save: 'सहेजें',
       saved: 'प्रोफ़ाइल सहेजी गई।',
+      changePhoto: 'फ़ोटो बदलें',
+      removePhoto: 'फ़ोटो हटाएँ',
+      photoSaved: 'फ़ोटो अपडेट हो गई।',
     },
     data: {
       title: 'आपका डेटा',

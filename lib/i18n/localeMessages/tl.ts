@@ -7,6 +7,7 @@ export const tl: MessageTree = {
     diary: 'Talaarawan',
     assessments: 'Mga module',
     about: 'Tungkol sa amin',
+    privacy: 'Pribasiya',
     contact: 'Makipag-ugnayan',
     login: 'Mag-log in',
     signup: 'Gumawa ng account',
@@ -34,6 +35,10 @@ export const tl: MessageTree = {
       language: 'Wika',
       languageDescription:
         'Mga menu at karaniwang label ng app. Ang nilalaman ng session ay nananatili sa orihinal na wika sa ngayon.',
+      moduleLayout: 'Mga tanong sa module',
+      moduleLayoutDescription: 'Isa-isang tanong, o ang buong form sa isang page.',
+      moduleLayoutStep: 'Isa-isa',
+      moduleLayoutForm: 'Lahat sa isang page',
     },
     theme: {
       light: 'Maliwanag',
@@ -50,6 +55,9 @@ export const tl: MessageTree = {
     profile: {
       save: 'I-save',
       saved: 'Na-save ang profile.',
+      changePhoto: 'Palitan ang larawan',
+      removePhoto: 'Alisin ang larawan',
+      photoSaved: 'Na-update ang larawan.',
     },
     data: {
       title: 'Iyong data',

@@ -10,6 +10,7 @@ const en: MessageTree = {
     diary: 'Diary',
     assessments: 'Modules',
     about: 'About',
+    privacy: 'Privacy',
     contact: 'Contact',
     login: 'Log in',
     signup: 'Sign up',
@@ -36,6 +37,10 @@ const en: MessageTree = {
       themePlaceholder: 'Theme',
       language: 'Language',
       languageDescription: 'App menus and common labels. Session content stays in its original language for now.',
+      moduleLayout: 'Module questions',
+      moduleLayoutDescription: 'One question at a time, or the full form on one page.',
+      moduleLayoutStep: 'One at a time',
+      moduleLayoutForm: 'All on one page',
     },
     theme: {
       light: 'Light',
@@ -52,6 +57,9 @@ const en: MessageTree = {
     profile: {
       save: 'Save',
       saved: 'Profile saved.',
+      changePhoto: 'Change photo',
+      removePhoto: 'Remove photo',
+      photoSaved: 'Photo updated.',
     },
     data: {
       title: 'Your data',
@@ -164,6 +172,7 @@ const fr: MessageTree = {
     diary: 'Journal',
     assessments: 'Modules',
     about: 'À propos',
+    privacy: 'Confidentialité',
     contact: 'Contact',
     login: 'Connexion',
     signup: 'Créer un compte',
@@ -191,6 +200,10 @@ const fr: MessageTree = {
       language: 'Langue',
       languageDescription:
         'Menus et libellés courants. Le contenu des séances reste dans sa langue d’origine pour l’instant.',
+      moduleLayout: 'Questions des modules',
+      moduleLayoutDescription: 'Une question à la fois, ou tout le formulaire sur une page.',
+      moduleLayoutStep: 'Une à la fois',
+      moduleLayoutForm: 'Toutes sur une page',
     },
     theme: {
       light: 'Clair',
@@ -207,6 +220,9 @@ const fr: MessageTree = {
     profile: {
       save: 'Enregistrer',
       saved: 'Profil enregistré.',
+      changePhoto: 'Changer la photo',
+      removePhoto: 'Retirer la photo',
+      photoSaved: 'Photo mise à jour.',
     },
     data: {
       title: 'Vos données',

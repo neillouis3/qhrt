@@ -75,6 +75,7 @@ export default function FocusSessionLayout({
   actions,
   leadingActions,
   onPause,
+  contentAlign = 'center',
   children,
 }: {
   progressLabel?: string;
@@ -84,6 +85,7 @@ export default function FocusSessionLayout({
   actions?: ReactNode;
   leadingActions?: ReactNode;
   onPause?: () => void;
+  contentAlign?: 'center' | 'start';
   children: ReactNode;
 }) {
   const [progressOpen, setProgressOpen] = useState(false);
@@ -127,8 +129,16 @@ export default function FocusSessionLayout({
           </div>
         </header>
 
-        <main className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-8 sm:px-8 lg:px-12 lg:py-10">
-          <div className="mx-auto flex min-h-full w-full max-w-2xl flex-col justify-center gap-8">
+        <main
+          className={`flex min-h-0 flex-1 flex-col overflow-y-auto px-4 sm:px-8 lg:px-12 ${
+            contentAlign === 'start' ? 'pt-28 pb-12 lg:pt-40 lg:pb-16' : 'py-8 lg:py-10'
+          }`}
+        >
+          <div
+            className={`mx-auto flex w-full max-w-2xl flex-col gap-8 ${
+              contentAlign === 'start' ? 'justify-start' : 'min-h-full justify-center'
+            }`}
+          >
             {title ? (
               <div className="flex flex-col gap-1">
                 <Typography type="h3" weight="normal">
