@@ -19,8 +19,8 @@ export const CONTENT_GROUPS: ContentNavGroup[] = [
     description:
       'Build self-check assessments: questions, scoring, and which workbooks each result links to.',
     items: [
-      { key: 'assessment-builder', label: 'Assessments' },
       { key: 'workbooks', label: 'Workbooks' },
+      { key: 'assessment-builder', label: 'Assessments' },
       { key: 'modules', label: 'Modules' },
     ],
   },

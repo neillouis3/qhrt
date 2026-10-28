@@ -103,6 +103,9 @@ export default function ContentSidebar({
           <Typography type="body-xs" color="muted">
             {group.label}
           </Typography>
+          <Typography type="body-xs" color="muted">
+            Suggested order: Workbooks, then Assessments, then Modules.
+          </Typography>
           {nav}
         </div>
       </aside>

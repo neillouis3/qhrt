@@ -89,9 +89,7 @@ function ContentPageBody() {
           />
         </div>
         <main className="min-w-0 flex-1">
-          {activeTab ? (
-            <CatalogPanel tab={activeTab} showToast={showToast} />
-          ) : null}
+          {activeTab ? <CatalogPanel tab={activeTab} showToast={showToast} /> : null}
         </main>
       </div>
 
