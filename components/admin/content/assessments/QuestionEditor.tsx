@@ -1,4 +1,5 @@
 import type { AnswerOption, AssessmentQuestion } from '@/lib/assessments';
+import { PRACTICE_CATALOG, isPracticeId, practiceById } from '@/lib/practices';
 import { Field, inputClass, smallButtonClass } from './fields';
 
 const SCALE_PRESETS: { id: string; label: string; options: AnswerOption[] }[] = [
@@ -74,7 +75,9 @@ export function QuestionEditor({
   return (
     <div className="rounded-xl border border-border p-4 space-y-4">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-sm font-medium">Question {index + 1}</span>
+        <span className="text-sm font-medium">
+          {question.type === 'practice' ? `Practice ${index + 1}` : `Question ${index + 1}`}
+        </span>
         <div className="flex gap-1.5">
           <button type="button" className={smallButtonClass} disabled={index === 0} onClick={() => onMove(-1)}>
             Up
@@ -93,6 +96,40 @@ export function QuestionEditor({
         </div>
       </div>
 
+      {question.type === 'practice' ? (
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <Field label="Practice" required>
+            <select
+              value={question.practiceId ?? ''}
+              onChange={(e) => {
+                const practiceId = isPracticeId(e.target.value) ? e.target.value : null;
+                const catalog = practiceById(practiceId);
+                set({
+                  practiceId,
+                  text: catalog && (!question.text || PRACTICE_CATALOG.some((item) => item.title === question.text))
+                    ? catalog.title
+                    : question.text,
+                });
+              }}
+              className={inputClass}
+            >
+              {PRACTICE_CATALOG.map((practice) => (
+                <option key={practice.id} value={practice.id}>
+                  {practice.title}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Prompt" hint="Shown above the practice. Defaults to the practice name.">
+            <input
+              type="text"
+              value={question.text}
+              onChange={(e) => set({ text: e.target.value })}
+              className={inputClass}
+            />
+          </Field>
+        </div>
+      ) : (
       <Field label="Question text" required>
         <textarea
           value={question.text}
@@ -101,7 +138,10 @@ export function QuestionEditor({
           className={inputClass}
         />
       </Field>
+      )}
 
+      {question.type !== 'practice' ? (
+      <>
       <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
         <Field label="Key" required hint="Stable id for answers and rules">
           <input
@@ -235,9 +275,14 @@ export function QuestionEditor({
           </div>
         </div>
       )}
+      </>
+      ) : null}
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <Field label="Show this question" hint="Hidden questions are skipped and not scored">
+        <Field
+          label={question.type === 'practice' ? 'Show this practice' : 'Show this question'}
+          hint="Hidden steps are skipped and not scored"
+        >
           <select
             value={question.showIf?.questionKey ?? ''}
             onChange={(e) =>

@@ -10,7 +10,9 @@ import {
   type ReactNode,
 } from 'react';
 import { useRouter } from 'next/navigation';
+import { Button } from '@heroui/react';
 import { scoreBounds, type AssessmentOutcome, type AssessmentQuestion, type Workbook } from '@/lib/assessments';
+import { practiceById, type PracticeId } from '@/lib/practices';
 import { BuilderShell } from '../BuilderShell';
 import { Toast } from '../shared/Toast';
 import {
@@ -35,6 +37,7 @@ interface AssessmentDraftContextValue {
   removeQuestion: (index: number) => void;
   moveQuestion: (index: number, direction: -1 | 1) => void;
   addQuestion: () => void;
+  addPractice: (practiceId: PracticeId) => void;
   addOutcome: () => void;
   updateOutcome: (index: number, next: AssessmentOutcome) => void;
   removeOutcome: (index: number) => void;
@@ -184,6 +187,32 @@ export function AssessmentDraftProvider({
           category: null,
           required: true,
           showIf: null,
+          practiceId: null,
+        },
+      ],
+    }));
+  };
+
+  const addPractice = (practiceId: PracticeId) => {
+    const practice = practiceById(practiceId);
+    if (!practice) return;
+    setDraft((current) => ({
+      ...current,
+      questions: [
+        ...current.questions,
+        {
+          key: uniqueKey(
+            'p',
+            current.questions.map((question) => question.key)
+          ),
+          text: practice.title,
+          type: 'practice',
+          options: [],
+          reverse: false,
+          category: null,
+          required: true,
+          showIf: null,
+          practiceId,
         },
       ],
     }));
@@ -268,6 +297,7 @@ export function AssessmentDraftProvider({
     removeQuestion,
     moveQuestion,
     addQuestion,
+    addPractice,
     addOutcome,
     updateOutcome,
     removeOutcome,
@@ -371,39 +401,30 @@ export function StepFooter({
   const go = (next: WizardStep) => router.push(wizardHref(assessmentId, next));
 
   return (
-    <div className="flex justify-between gap-3 border-t border-border pt-6">
+    <div className="flex justify-between gap-2 pt-2">
       {step === 'details' ? (
         <span />
       ) : (
-        <button
-          type="button"
-          className="px-4 py-2 text-sm font-medium rounded-lg border border-border text-muted hover:bg-muted/5"
-          onClick={() => go(step === 'results' ? 'questions' : 'details')}
-        >
+        <Button size="sm" variant="ghost" onPress={() => go(step === 'results' ? 'questions' : 'details')}>
           Back
-        </button>
+        </Button>
       )}
       {step === 'results' ? (
-        <button
-          type="button"
-          className="px-4 py-2 text-sm font-medium rounded-lg bg-primary text-white hover:bg-primary-dark disabled:opacity-50"
-          disabled={saving}
-          onClick={() => void save()}
-        >
-          {saving ? 'Saving…' : 'Save assessment'}
-        </button>
+        <Button size="sm" variant="primary" isPending={saving} isDisabled={saving} onPress={() => void save()}>
+          Save assessment
+        </Button>
       ) : (
-        <button
-          type="button"
-          className="px-4 py-2 text-sm font-medium rounded-lg bg-primary text-white hover:bg-primary-dark"
-          onClick={() => {
+        <Button
+          size="sm"
+          variant="primary"
+          onPress={() => {
             const problem = onContinue?.();
             if (problem) return;
             go(step === 'details' ? 'questions' : 'results');
           }}
         >
           Continue
-        </button>
+        </Button>
       )}
     </div>
   );

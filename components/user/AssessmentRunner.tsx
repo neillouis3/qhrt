@@ -11,6 +11,7 @@ import { FocusContentSkeleton } from '@/components/layout/PageSkeleton';
 import ProgressNav, { linearProgressStatus, type ProgressStep } from '@/components/session/ProgressNav';
 import { useSession } from '@/hooks/useSession';
 import { assessmentLayoutFromUser } from '@/lib/userSettings';
+import AssessmentPracticeStep from '@/components/user/AssessmentPracticeStep';
 import {
   visibleQuestions,
   type AssessmentAnswers,
@@ -19,6 +20,7 @@ import {
   type PublicQuestion,
   type ResultWorkbook,
 } from '@/lib/assessments';
+import { PRACTICE_DONE, isPracticeId } from '@/lib/practices';
 
 const INTRO_ID = '__intro';
 
@@ -181,7 +183,7 @@ function ResultView({
 
 export default function AssessmentRunner({ slug, showResult }: { slug: string; showResult: boolean }) {
   const { session } = useSession();
-  const formLayout = assessmentLayoutFromUser(session?.user) === 'form';
+  const preferForm = assessmentLayoutFromUser(session?.user) === 'form';
   const [assessment, setAssessment] = useState<PublicAssessment | null>(null);
   const [result, setResult] = useState<AssessmentResult | null>(null);
   const [answers, setAnswers] = useState<AssessmentAnswers>({});
@@ -228,6 +230,7 @@ export default function AssessmentRunner({ slug, showResult }: { slug: string; s
     () => (assessment ? visibleQuestions(assessment.questions, answers) : []),
     [assessment, answers]
   );
+  const formLayout = preferForm && !visible.some((item) => item.type === 'practice');
 
   const lastStep = visible.length;
   const onIntro = step === 0;
@@ -262,7 +265,7 @@ export default function AssessmentRunner({ slug, showResult }: { slug: string; s
       return {
         id: question.key,
         index: String(i + 1),
-        label: question.text,
+        label: question.type === 'practice' ? question.text || 'Practice' : question.text,
         status,
       };
     }),
@@ -378,17 +381,23 @@ export default function AssessmentRunner({ slug, showResult }: { slug: string; s
   const question = onIntro ? undefined : visible[questionIndex];
   const isLast = !onIntro && questionIndex === visible.length - 1;
   const answer = question ? (answers[question.key] ?? '') : '';
-  const canContinue = !question || !question.required || answer.trim() !== '';
-  const formReady = visible.every((q) => !q.required || (answers[q.key] ?? '').trim() !== '');
+  const practiceReady = question?.type !== 'practice' || answer === PRACTICE_DONE;
+  const canContinue =
+    practiceReady && (!question || question.type === 'practice' || !question.required || answer.trim() !== '');
+  const formReady = visible.every((q) => {
+    if (q.type === 'practice') return (answers[q.key] ?? '') === PRACTICE_DONE;
+    return !q.required || (answers[q.key] ?? '').trim() !== '';
+  });
 
   const setAnswer = (key: string, value: string) => setAnswers((prev) => ({ ...prev, [key]: value }));
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (override?: AssessmentAnswers) => {
     setSubmitting(true);
     setError(null);
     try {
+      const source = override ?? answers;
       const visibleKeys = new Set(visible.map((q) => q.key));
-      const payload = Object.fromEntries(Object.entries(answers).filter(([k]) => visibleKeys.has(k)));
+      const payload = Object.fromEntries(Object.entries(source).filter(([k]) => visibleKeys.has(k)));
       const res = await fetch(`/api/assessments/${encodeURIComponent(slug)}/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -406,6 +415,14 @@ export default function AssessmentRunner({ slug, showResult }: { slug: string; s
   };
 
   const showForm = formLayout && !onIntro;
+  const isPractice = question?.type === 'practice' && isPracticeId(question.practiceId);
+  const practiceActive = isPractice && answer !== PRACTICE_DONE;
+
+  const finishPractice = () => {
+    if (!question || !isPractice) return;
+    setAnswer(question.key, PRACTICE_DONE);
+    if (!isLast) setStep(step + 1);
+  };
 
   return (
     <FocusSessionLayout
@@ -434,13 +451,13 @@ export default function AssessmentRunner({ slug, showResult }: { slug: string; s
           <Button size="sm" variant="primary" onPress={() => setStep(1)}>
             Begin
           </Button>
-        ) : formLayout || isLast ? (
+        ) : practiceActive ? null : formLayout || isLast ? (
           <Button
             size="sm"
             variant="primary"
             isPending={submitting}
             isDisabled={!(formLayout ? formReady : canContinue) || submitting}
-            onPress={handleSubmit}
+            onPress={() => void handleSubmit()}
           >
             Submit
           </Button>
@@ -480,6 +497,21 @@ export default function AssessmentRunner({ slug, showResult }: { slug: string; s
               onChange={(value) => setAnswer(item.key, value)}
             />
           ))}
+        </div>
+      ) : practiceActive && question.practiceId ? (
+        <AssessmentPracticeStep
+          practiceId={question.practiceId}
+          prompt={question.text}
+          onFinished={finishPractice}
+        />
+      ) : isPractice ? (
+        <div className="flex flex-col gap-2">
+          <Typography type="h4" weight="normal">
+            {question.text || 'Practice'}
+          </Typography>
+          <Typography type="body-sm" color="muted">
+            Done. Submit when you are ready.
+          </Typography>
         </div>
       ) : question ? (
         <QuestionBlock

@@ -57,6 +57,8 @@ export function detailsReady(draft: AssessmentDraft): string | null {
 }
 
 export function questionsReady(draft: AssessmentDraft): string | null {
-  if (draft.questions.length === 0) return 'Add at least one question before continuing.';
+  if (draft.questions.filter((question) => question.type !== 'practice').length === 0) {
+    return 'Add at least one question before continuing.';
+  }
   return null;
 }

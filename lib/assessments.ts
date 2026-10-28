@@ -1,7 +1,8 @@
 import { supabaseServer } from '@/lib/supabaseClient';
+import { isPracticeId, practiceById, PRACTICE_DONE, type PracticeId } from '@/lib/practices';
 
 export type ScoringMethod = 'sum' | 'mean' | 'top_category';
-export type QuestionType = 'choice' | 'text';
+export type QuestionType = 'choice' | 'text' | 'practice';
 export type OutcomeMatch = 'score_range' | 'top_category' | 'fallback';
 
 export interface AnswerOption {
@@ -27,6 +28,8 @@ export interface AssessmentQuestion {
   required: boolean;
   /** Only shown (and scored) when an earlier answer matches. */
   showIf: QuestionCondition | null;
+  /** Catalog id when type is practice. */
+  practiceId: PracticeId | null;
 }
 
 export interface AssessmentOutcome {
@@ -102,6 +105,7 @@ export interface PublicQuestion {
   options: { value: string; label: string }[];
   required: boolean;
   showIf: QuestionCondition | null;
+  practiceId: PracticeId | null;
 }
 
 export interface PublicAssessment {
@@ -241,7 +245,7 @@ export function scoreBounds(questions: AssessmentQuestion[]): { min: number; max
 }
 
 const SCORING_METHODS: ScoringMethod[] = ['sum', 'mean', 'top_category'];
-const QUESTION_TYPES: QuestionType[] = ['choice', 'text'];
+const QUESTION_TYPES: QuestionType[] = ['choice', 'text', 'practice'];
 const OUTCOME_MATCHES: OutcomeMatch[] = ['score_range', 'top_category', 'fallback'];
 
 const KEY_PATTERN = /^[a-z0-9_]+$/;
@@ -287,15 +291,19 @@ export function normalizeQuestion(raw: unknown): AssessmentQuestion {
           values: Array.isArray(q.showIf.values) ? q.showIf.values.map(str).filter(Boolean) : [],
         }
       : null;
+  const rawPracticeId = str(q.practiceId);
+  const practiceId = type === 'practice' && isPracticeId(rawPracticeId) ? rawPracticeId : null;
+  const catalog = practiceById(practiceId);
   return {
     key: str(q.key),
-    text: str(q.text),
+    text: str(q.text) || catalog?.title || '',
     type,
     options: type === 'choice' ? options : [],
-    reverse: q.reverse === true,
-    category: optStr(q.category),
+    reverse: type === 'choice' && q.reverse === true,
+    category: type === 'practice' ? null : optStr(q.category),
     required: q.required === undefined ? true : q.required === true,
     showIf,
+    practiceId,
   };
 }
 
@@ -352,15 +360,21 @@ export function validateAssessmentInput(
 
   const questions = normalizeQuestions(body.questions);
   const outcomes = normalizeOutcomes(body.outcomes);
-  if (questions.length === 0) errors.push('Add at least one question.');
+  if (questions.filter((q) => q.type !== 'practice').length === 0) {
+    errors.push('Add at least one question.');
+  }
 
   const seenKeys = new Map<string, AssessmentQuestion>();
   const categories = new Set<string>();
   questions.forEach((q, i) => {
-    const label = `Question ${i + 1}`;
+    const label = q.type === 'practice' ? `Practice ${i + 1}` : `Question ${i + 1}`;
     if (!KEY_PATTERN.test(q.key)) errors.push(`${label}: key must use lowercase letters, numbers, or underscores.`);
     else if (seenKeys.has(q.key)) errors.push(`${label}: key "${q.key}" is used more than once.`);
-    if (!q.text) errors.push(`${label}: question text is required.`);
+    if (!q.text) errors.push(`${label}: ${q.type === 'practice' ? 'title' : 'question text'} is required.`);
+
+    if (q.type === 'practice') {
+      if (!q.practiceId) errors.push(`${label}: pick a practice.`);
+    }
 
     if (q.type === 'choice') {
       if (q.options.length < 2) errors.push(`${label}: add at least two answer options.`);
@@ -444,6 +458,7 @@ export function validateAnswers(
     const trimmed = v.trim();
     if (!trimmed) continue;
     if (q.type === 'choice' && !q.options.some((o) => o.value === trimmed)) continue;
+    if (q.type === 'practice' && trimmed !== PRACTICE_DONE) continue;
     provided[q.key] = trimmed.slice(0, MAX_TEXT_ANSWER);
   }
 
@@ -493,6 +508,7 @@ export function toPublicAssessment(a: AssessmentDefinition): PublicAssessment {
       options: q.options.map(({ value, label }) => ({ value, label })),
       required: q.required,
       showIf: q.showIf,
+      practiceId: q.practiceId,
     })),
   };
 }
