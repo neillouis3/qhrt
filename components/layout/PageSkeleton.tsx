@@ -35,11 +35,11 @@ function SessionRowBones({ count = 3 }: { count?: number }) {
 
 export function AssessmentGridSkeleton() {
   return (
-    <UserPageShell>
+    <UserPageShell wide="75">
       <div role="status" aria-label="Loading assessments" className="flex flex-col gap-10">
         <HeaderBones />
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 3 }, (_, index) => (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }, (_, index) => (
             <div key={index} className="relative aspect-square w-full">
               <AppCard className="absolute inset-0 overflow-hidden p-0">
                 <div className="flex h-full flex-col">
@@ -77,23 +77,32 @@ export function SessionListSkeleton() {
 
 export function DiarySkeleton() {
   return (
-    <UserPageShell>
+    <UserPageShell wide="75">
       <div role="status" aria-label="Loading diary" className="flex flex-col gap-10">
         <HeaderBones />
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {Array.from({ length: 2 }, (_, index) => (
-            <AppCard key={index} className="flex flex-col gap-3 p-5">
-              <Skeleton className="h-3 w-28 rounded-lg" />
-              <Skeleton className="h-7 w-10 rounded-lg" />
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(17rem,20rem)_minmax(0,1fr)]">
+          <div className="flex flex-col gap-4">
+            <AppCard className="flex flex-col gap-4 p-5">
+              <Skeleton className="h-5 w-36 rounded-lg" />
+              <div className="grid grid-cols-7 gap-1">
+                {Array.from({ length: 35 }, (_, index) => (
+                  <Skeleton key={index} className="aspect-square rounded-xl" />
+                ))}
+              </div>
             </AppCard>
-          ))}
-        </div>
-        <div className="flex w-72 flex-col gap-3">
-          <Skeleton className="h-5 w-36 rounded-lg" />
-          <div className="grid grid-cols-7 gap-1">
-            {Array.from({ length: 35 }, (_, index) => (
-              <Skeleton key={index} className="size-9 rounded-lg" />
-            ))}
+            <div className="grid grid-cols-2 gap-3">
+              {Array.from({ length: 2 }, (_, index) => (
+                <AppCard key={index} className="flex flex-col gap-2 px-4 py-3">
+                  <Skeleton className="h-3 w-16 rounded-lg" />
+                  <Skeleton className="h-6 w-8 rounded-lg" />
+                </AppCard>
+              ))}
+            </div>
+          </div>
+          <div className="flex min-h-[28rem] flex-col gap-6">
+            <Skeleton className="h-7 w-56 rounded-lg" />
+            <Skeleton className="h-16 w-full rounded-xl" />
+            <Skeleton className="h-12 w-2/3 rounded-xl" />
           </div>
         </div>
         <span className="sr-only">Loading diary</span>
@@ -104,7 +113,7 @@ export function DiarySkeleton() {
 
 export function HomeSkeleton() {
   return (
-    <UserPageShell transparentBg>
+    <UserPageShell wide="75" transparentBg>
       <div role="status" aria-label="Loading home" className="flex flex-col gap-10">
         <div className="flex flex-col gap-2">
           <Skeleton className="h-8 w-48 rounded-lg" />

@@ -223,7 +223,7 @@ export default function HomePage({
   }, [userId, fetchNext]);
 
   return (
-    <UserPageShell transparentBg>
+    <UserPageShell wide="75" transparentBg>
       {loading ? (
         <div role="status" aria-live="polite" className="sr-only">
           {t('home.nextStep.loading')}

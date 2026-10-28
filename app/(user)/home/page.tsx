@@ -32,7 +32,7 @@ export default function Home() {
 
   if (sessionLoading || !dashboardReady) {
     return (
-      <UserPageShell transparentBg>
+      <UserPageShell wide="75" transparentBg>
         <div role="status" aria-live="polite" className="sr-only">
           Loading home
         </div>
