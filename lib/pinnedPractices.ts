@@ -1,4 +1,4 @@
-export type PinKind = 'assessment' | 'breathe';
+export type PinKind = 'assessment' | 'breathe' | 'wind-down';
 
 export interface PinnedPractice {
   key: string;
@@ -16,7 +16,7 @@ export function pinKey(kind: PinKind, id: string): string {
 }
 
 function isPinKind(value: unknown): value is PinKind {
-  return value === 'assessment' || value === 'breathe';
+  return value === 'assessment' || value === 'breathe' || value === 'wind-down';
 }
 
 export function parsePinnedPractices(raw: unknown): PinnedPractice[] {

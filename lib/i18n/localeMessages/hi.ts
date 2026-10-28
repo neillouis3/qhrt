@@ -4,6 +4,7 @@ import type { MessageTree } from '@/lib/i18n/messages';
 export const hi: MessageTree = {
   nav: {
     home: 'होम',
+    practice: 'अभ्यास',
     diary: 'डायरी',
     assessments: 'मॉड्यूल',
     about: 'हमारे बारे में',
@@ -88,6 +89,8 @@ export const hi: MessageTree = {
       diary: 'डायरी',
       assessments: 'मॉड्यूल',
       breathe: 'साँस',
+      windDown: 'अभ्यास',
+      practice: 'अभ्यास',
     },
     presence: {
       one: 'इस सप्ताह आप 1 दिन आए।',

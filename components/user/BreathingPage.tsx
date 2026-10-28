@@ -56,13 +56,22 @@ const BREATHE_PIN = {
   href: '/breathe',
 };
 
-export default function BreathingPage() {
+export default function BreathingPage({
+  embedded = false,
+  title,
+  onFinished,
+}: {
+  embedded?: boolean;
+  title?: string;
+  onFinished?: () => void;
+} = {}) {
   const router = useRouter();
   const { resolvedTheme } = useTheme();
   const reduceMotion = usePrefersReducedMotion();
   const [phase, setPhase] = useState<Phase>('idle');
   const [scale, setScale] = useState(REST_SCALE);
   const [scene, setScene] = useState<BreatheSceneId>('orb');
+  const [cycles, setCycles] = useState(0);
   const [pinPending, setPinPending] = useState(false);
   const { syncPins, isPinned, togglePin } = usePinnedPractices();
 
@@ -84,7 +93,12 @@ export default function BreathingPage() {
     if (phase === 'idle') return;
     const ms = phase === 'inhale' ? INHALE_MS : EXHALE_MS;
     const id = window.setTimeout(() => {
-      setPhase((current) => (current === 'inhale' ? 'exhale' : 'inhale'));
+      if (phase === 'inhale') {
+        setPhase('exhale');
+        return;
+      }
+      setCycles((count) => count + 1);
+      setPhase('inhale');
     }, ms);
     return () => window.clearTimeout(id);
   }, [phase]);
@@ -118,8 +132,11 @@ export default function BreathingPage() {
     window.localStorage.setItem(SCENE_STORAGE_KEY, next);
   };
 
+  const readyToContinue = embedded && cycles >= 3;
+
   return (
-    <div className="relative flex h-svh overflow-hidden bg-background">
+    <div className={`relative flex overflow-hidden bg-background ${embedded ? 'min-h-[28rem] flex-1' : 'h-svh'}`}>
+      {embedded ? null : (
       <header className="absolute inset-x-0 top-0 z-10 flex items-center justify-between px-4 py-4 sm:px-6">
         <Link href="/home" aria-label="QHRT home" className="flex items-center">
           <Logo decorative />
@@ -153,8 +170,14 @@ export default function BreathingPage() {
           </Button>
         </div>
       </header>
+      )}
 
       <main className="relative flex min-h-0 flex-1 flex-col items-center justify-center gap-8 px-4 pb-8">
+        {embedded && title ? (
+          <Typography type="h4" weight="normal">
+            {title}
+          </Typography>
+        ) : null}
         {scene === 'balloon' ? (
           <>
             <BreatheClouds />
@@ -224,6 +247,11 @@ export default function BreathingPage() {
             );
           })}
         </div>
+        {readyToContinue ? (
+          <Button variant="primary" onPress={onFinished}>
+            Continue
+          </Button>
+        ) : null}
       </main>
     </div>
   );

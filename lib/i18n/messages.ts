@@ -7,6 +7,7 @@ export type MessageTree = { [key: string]: string | MessageTree };
 const en: MessageTree = {
   nav: {
     home: 'Home',
+    practice: 'Practice',
     diary: 'Diary',
     assessments: 'Modules',
     about: 'About',
@@ -90,6 +91,8 @@ const en: MessageTree = {
       diary: 'Diary',
       assessments: 'Modules',
       breathe: 'Breathe',
+      windDown: 'Practice',
+      practice: 'Practice',
     },
     presence: {
       one: 'You showed up 1 day this week.',
@@ -169,6 +172,7 @@ const en: MessageTree = {
 const fr: MessageTree = {
   nav: {
     home: 'Accueil',
+    practice: 'Pratique',
     diary: 'Journal',
     assessments: 'Modules',
     about: 'À propos',
@@ -253,6 +257,8 @@ const fr: MessageTree = {
       diary: 'Journal',
       assessments: 'Modules',
       breathe: 'Respiration',
+      windDown: 'Pratique',
+      practice: 'Pratique',
     },
     presence: {
       one: 'Vous êtes venu·e 1 jour cette semaine.',

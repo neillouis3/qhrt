@@ -53,6 +53,9 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
       pathname?.startsWith('/onboarding') ||
       pathname?.startsWith('/modules') ||
       pathname?.startsWith('/breathe') ||
+      pathname?.startsWith('/pause') ||
+      pathname?.startsWith('/practice') ||
+      pathname?.startsWith('/wind-down') ||
       pathname?.startsWith('/settings')) ??
     false;
   const isAdminRoute =

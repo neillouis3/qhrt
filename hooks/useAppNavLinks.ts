@@ -9,6 +9,7 @@ export function useUserNavLinks(): NavItem[] {
   return useMemo(
     () => [
       { name: t('nav.home'), path: '/home' },
+      { name: t('nav.practice'), path: '/practice' },
       { name: t('nav.diary'), path: '/diary' },
       { name: t('nav.assessments'), path: '/assessments' },
     ],

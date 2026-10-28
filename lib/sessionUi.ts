@@ -52,6 +52,7 @@ export function isFocusSessionPath(pathname: string | null | undefined): boolean
     /^\/assessments\/[^/]+\/?$/.test(pathname) ||
     pathname === '/breathe' ||
     pathname.startsWith('/breathe/') ||
+    pathname.startsWith('/wind-down/') ||
     pathname === '/starting-out' ||
     pathname.startsWith('/starting-out/') ||
     /^\/modules\/[^/]+\/\d+\/?$/.test(pathname)

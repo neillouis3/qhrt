@@ -30,7 +30,10 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith('/onboarding') ||
     pathname.startsWith('/starting-out') ||
     pathname.startsWith('/modules') ||
-    pathname.startsWith('/breathe');
+    pathname.startsWith('/breathe') ||
+    pathname.startsWith('/wind-down') ||
+    pathname.startsWith('/pause') ||
+    pathname.startsWith('/practice');
   const isSettingsRoute = pathname.startsWith('/settings');
   const isAuthRoute =
     pathname === '/login' || pathname === '/signup' || pathname === '/reset-password';
@@ -133,6 +136,12 @@ export const config = {
     '/diary/:path*',
     '/breathe',
     '/breathe/:path*',
+    '/pause',
+    '/pause/:path*',
+    '/practice',
+    '/practice/:path*',
+    '/wind-down',
+    '/wind-down/:path*',
     '/onboarding',
     '/starting-out',
     '/starting-out/:path*',
