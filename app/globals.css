@@ -28,6 +28,14 @@
   /* HeroUI overlays use --radius-3xl (up to 32px). Keep them on the same radius. */
   --radius-3xl: var(--radius);
   --app-navbar-height: 3.5rem;
+  --aid-mint: oklch(0.82 0.08 155);
+  --aid-sky: oklch(0.84 0.06 230);
+  --aid-sun: oklch(0.86 0.08 90);
+  --aid-paper: oklch(0.9 0.03 80);
+  --aid-peach: oklch(0.88 0.05 70);
+  --aid-rose: oklch(0.84 0.08 12);
+  --aid-lavender: oklch(0.84 0.07 290);
+  --aid-pink: oklch(0.86 0.08 350);
 }
 
 @theme inline {
@@ -74,6 +82,14 @@
   --focus: color-mix(in oklab, var(--foreground) 24%, transparent);
   --field-shadow: 0 0 0 0 transparent inset;
   --overlay-shadow: 0 0 1px 0 rgba(255, 255, 255, 0.3) inset;
+  --aid-mint: oklch(0.42 0.08 155);
+  --aid-sky: oklch(0.4 0.07 230);
+  --aid-sun: oklch(0.52 0.1 90);
+  --aid-paper: oklch(0.3 0.03 80);
+  --aid-peach: oklch(0.42 0.05 70);
+  --aid-rose: oklch(0.42 0.08 20);
+  --aid-lavender: oklch(0.4 0.07 290);
+  --aid-pink: oklch(0.42 0.08 350);
 }
 
 body {
@@ -339,8 +355,29 @@ body {
   animation: breathe-idle 5s ease-in-out infinite;
 }
 
+@keyframes wind-moon-idle {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(0.96);
+    opacity: 0.88;
+  }
+}
+
+.wind-moon--idle {
+  animation: wind-moon-idle 6.5s ease-in-out infinite;
+}
+
+.wind-star {
+  box-shadow: 0 0 6px currentColor;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .breathe-bubble--idle {
+  .breathe-bubble--idle,
+  .wind-moon--idle {
     animation: none;
   }
 }
@@ -1206,6 +1243,47 @@ body {
 
 .dark .browse-card-wash--mist .browse-card-wash__blob--c {
   background: #1f5f78;
+}
+
+.browse-card-wash--dusk {
+  background: linear-gradient(165deg, #f4f0ea 0%, #e8e0d4 48%, #d9cfc8 100%);
+}
+
+.browse-card-wash--dusk .browse-card-wash__blob--a {
+  background: #c4b5a5;
+  top: auto;
+  bottom: -28%;
+  left: -18%;
+  width: 72%;
+  height: 84%;
+}
+
+.browse-card-wash--dusk .browse-card-wash__blob--b {
+  background: #b7a4c4;
+  top: -36%;
+  right: -14%;
+  width: 62%;
+  height: 76%;
+}
+
+.browse-card-wash--dusk .browse-card-wash__blob--c {
+  background: #9aa7c2;
+}
+
+.dark .browse-card-wash--dusk {
+  background: linear-gradient(165deg, #1c1824 0%, #2a2438 52%, #231c2e 100%);
+}
+
+.dark .browse-card-wash--dusk .browse-card-wash__blob--a {
+  background: #4a3d5c;
+}
+
+.dark .browse-card-wash--dusk .browse-card-wash__blob--b {
+  background: #3d3558;
+}
+
+.dark .browse-card-wash--dusk .browse-card-wash__blob--c {
+  background: #2f3d58;
 }
 
 @media (prefers-reduced-motion: reduce) {

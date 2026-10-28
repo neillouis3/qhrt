@@ -25,6 +25,7 @@ import type { DiaryMood } from '@/lib/types/diary';
 import type { PinnedPractice } from '@/lib/pinnedPractices';
 import type { HomeSkyBlend } from '@/lib/timeOfDay';
 import type { HomeActivityItem, TutorialStep } from '@/lib/home';
+import { TutorialAid } from '@/components/home/TutorialAids';
 import { firstNameFromUser, type NameSource } from '@/lib/userName';
 import { notificationPrefsFromUser } from '@/lib/userSettings';
 import { statusLabel } from '@/lib/sessionUi';
@@ -253,11 +254,16 @@ export function HomeTutorial({ steps }: { steps: TutorialStep[] }) {
               className={`h-full w-[calc(100%-3.25rem)] shrink-0 snap-start p-4 sm:w-[calc((100%-2.25rem)*0.3)] sm:p-5 ${done ? 'opacity-45' : ''}`}
             >
               <div className="flex h-full flex-col justify-between gap-4">
-                <div className="flex min-w-0 flex-col gap-1">
-                  <AppCard.Title className="font-normal tracking-tight">{step.title}</AppCard.Title>
-                  <Typography type="body-sm" color="muted">
-                    {step.description}
-                  </Typography>
+                <div className="flex min-w-0 flex-col gap-3">
+                  <span className="flex size-16 items-center justify-center">
+                    <TutorialAid id={step.id} />
+                  </span>
+                  <div className="flex min-w-0 flex-col gap-1">
+                    <AppCard.Title className="font-normal tracking-tight">{step.title}</AppCard.Title>
+                    <Typography type="body-sm" color="muted">
+                      {step.description}
+                    </Typography>
+                  </div>
                 </div>
                 <Link
                   href={step.href}
@@ -576,7 +582,7 @@ export function UserGreeting({
             <HugeiconsIcon icon={Notification01Icon} size={26} strokeWidth={1.75} />
             {unreadCount > 0 ? (
               <span
-                className="absolute top-0.5 right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-foreground px-1 text-[10px] leading-none font-medium text-background tabular-nums"
+                className="absolute top-0.5 right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] leading-none font-medium text-white tabular-nums dark:bg-rose-400 dark:text-rose-950"
                 aria-hidden
               >
                 {unreadCount > 9 ? '9+' : unreadCount}

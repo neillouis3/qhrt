@@ -17,6 +17,7 @@ import {
 import type { SortDescriptor } from '@heroui/react';
 import Modal from '@/components/ui/Modal';
 import AppCard from '@/components/ui/AppCard';
+import { InsightCard } from '@/components/admin/InsightCard';
 import FieldSelect from '@/components/ui/FieldSelect';
 import { PageHeader } from '@/components/layout/UserPageShell';
 import { DashboardBodySkeleton } from '@/components/layout/PageSkeleton';
@@ -82,103 +83,43 @@ function formatNum(value: number | null | undefined, digits = 0): string {
   });
 }
 
-function Sparkline({ values }: { values: number[] }) {
-  if (values.length < 2) return null;
-  const max = Math.max(...values, 1);
-  const min = Math.min(...values, 0);
-  const width = 88;
-  const height = 28;
-  const span = max - min || 1;
-  const points = values
-    .map((value, index) => {
-      const x = (index / (values.length - 1)) * width;
-      const y = height - ((value - min) / span) * height;
-      return `${x},${y}`;
-    })
-    .join(' ');
-  return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="h-7 w-[5.5rem] text-foreground" aria-hidden>
-      <polyline
-        points={points}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.75"
-        strokeLinejoin="round"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  hint,
-  spark,
-  active,
-  onPress,
-}: {
-  label: string;
-  value: string;
-  hint?: string;
-  spark?: number[];
-  active?: boolean;
-  onPress?: () => void;
-}) {
-  const className = `flex w-full flex-col gap-3 rounded-lg bg-default/30 p-5 text-left transition-colors ${
-    active ? 'ring-1 ring-foreground/25' : onPress ? 'hover:bg-default/45' : ''
-  }`;
-  const inner = (
-    <>
-      <div className="flex items-start justify-between gap-3">
-        <Typography type="body-xs" color="muted">
-          {label}
-        </Typography>
-        {spark && spark.length > 1 ? <Sparkline values={spark} /> : null}
-      </div>
-      <Typography type="h3" weight="normal">
-        {value}
-      </Typography>
-      {hint ? (
-        <Typography type="body-xs" color="muted">
-          {hint}
-        </Typography>
-      ) : null}
-    </>
-  );
-  if (!onPress) {
-    return <div className={className}>{inner}</div>;
-  }
-  return (
-    <button type="button" onClick={onPress} className={className}>
-      {inner}
-    </button>
-  );
-}
-
 function StatusChip({
   label,
-  muted,
+  tone,
   onPress,
 }: {
   label: string;
-  muted?: boolean;
+  tone: 'admin' | 'user' | 'done' | 'pending';
   onPress?: () => void;
 }) {
+  const tones = {
+    admin: 'bg-violet-500/20 text-violet-800 dark:text-violet-200',
+    user: 'bg-sky-500/20 text-sky-800 dark:text-sky-200',
+    done: 'bg-emerald-500/20 text-emerald-800 dark:text-emerald-200',
+    pending: 'bg-amber-500/20 text-amber-800 dark:text-amber-200',
+  };
   return (
     <button
       type="button"
       onClick={onPress}
-      className={`rounded-full px-2 py-0.5 text-xs transition-opacity hover:opacity-70 ${
-        muted ? 'bg-muted/15 text-muted' : 'bg-foreground/10 text-foreground'
-      }`}
+      className={`rounded-full px-2 py-0.5 text-xs transition-opacity hover:opacity-70 ${tones[tone]}`}
     >
       {label}
     </button>
   );
 }
 
-function FunnelRow({ label, value, max }: { label: string; value: number; max: number }) {
+function FunnelRow({
+  label,
+  value,
+  max,
+  barClass,
+}: {
+  label: string;
+  value: number;
+  max: number;
+  barClass: string;
+}) {
   const width = max > 0 ? Math.max(8, Math.round((value / max) * 100)) : 8;
   return (
     <div className="flex flex-col gap-1.5">
@@ -186,8 +127,8 @@ function FunnelRow({ label, value, max }: { label: string; value: number; max: n
         <Typography type="body-sm">{label}</Typography>
         <Typography type="body-sm">{value}</Typography>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-muted/15">
-        <div className="h-full rounded-full bg-foreground/80" style={{ width: `${width}%` }} />
+      <div className="h-2.5 overflow-hidden rounded-full bg-muted/15">
+        <div className={`h-full rounded-full ${barClass}`} style={{ width: `${width}%` }} />
       </div>
     </div>
   );
@@ -712,7 +653,8 @@ export default function AdminUsersPage() {
       />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
+        <InsightCard
+          tone="meadow"
           label="Accounts"
           value={formatNum(live.total)}
           hint={`${live.admins} admin${live.admins === 1 ? '' : 's'}`}
@@ -720,7 +662,8 @@ export default function AdminUsersPage() {
           active={!hasFilters}
           onPress={clearFilters}
         />
-        <StatCard
+        <InsightCard
+          tone="mist"
           label="New this week"
           value={formatNum(live.new7d)}
           hint="Joined in the last 7 days"
@@ -730,7 +673,8 @@ export default function AdminUsersPage() {
             setCurrentPage(1);
           }}
         />
-        <StatCard
+        <InsightCard
+          tone="bloom"
           label="Intake pending"
           value={formatNum(live.pending)}
           hint={`${pct(live.pending, live.total)} of accounts`}
@@ -740,7 +684,8 @@ export default function AdminUsersPage() {
             setCurrentPage(1);
           }}
         />
-        <StatCard
+        <InsightCard
+          tone="dusk"
           label="Active (7 days)"
           value={formatNum(stats.activeUsers7d)}
           hint={`${pct(stats.activeUsers7d, live.total || stats.totalUsers)} of accounts`}
@@ -755,9 +700,24 @@ export default function AdminUsersPage() {
               Counts from everyone loaded, not just this page.
             </Typography>
           </div>
-          <FunnelRow label="Accounts" value={live.total} max={live.total} />
-          <FunnelRow label="Finished intake" value={live.intake} max={Math.max(live.total, 1)} />
-          <FunnelRow label="Has sessions" value={live.withSessions} max={Math.max(live.total, 1)} />
+          <FunnelRow
+            label="Accounts"
+            value={live.total}
+            max={live.total}
+            barClass="bg-emerald-500"
+          />
+          <FunnelRow
+            label="Finished intake"
+            value={live.intake}
+            max={Math.max(live.total, 1)}
+            barClass="bg-rose-400"
+          />
+          <FunnelRow
+            label="Has sessions"
+            value={live.withSessions}
+            max={Math.max(live.total, 1)}
+            barClass="bg-sky-500"
+          />
           {stressDelta != null ? (
             <Typography type="body-xs" color="muted">
               Average stress {formatNum(stats.avgStressBefore, 2)} → {formatNum(stats.avgStressAfter, 2)}
@@ -870,6 +830,7 @@ export default function AdminUsersPage() {
                   <Table.Cell>
                     <StatusChip
                       label={u.role === 'admin' ? 'Admin' : 'User'}
+                      tone={u.role === 'admin' ? 'admin' : 'user'}
                       onPress={() => {
                         setRoleFilter(u.role);
                         setCurrentPage(1);
@@ -879,7 +840,7 @@ export default function AdminUsersPage() {
                   <Table.Cell>
                     <StatusChip
                       label={u.intake_completed ? 'Done' : 'Pending'}
-                      muted={!u.intake_completed}
+                      tone={u.intake_completed ? 'done' : 'pending'}
                       onPress={() => {
                         setIntakeFilter(u.intake_completed ? 'completed' : 'pending');
                         setCurrentPage(1);

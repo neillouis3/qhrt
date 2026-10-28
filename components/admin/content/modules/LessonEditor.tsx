@@ -6,7 +6,8 @@ import type { AssessmentDefinition } from '@/lib/assessments';
 import type { GuideStep, LearningModule, LessonKind } from '@/lib/modules';
 import { BuilderShell } from '../BuilderShell';
 import { Toast } from '../shared/Toast';
-import { Field, inputClass, primaryButtonClass, secondaryButtonClass, smallButtonClass } from '../assessments/fields';
+import { Button } from '@heroui/react';
+import { Field, inputClass, smallButtonClass } from '../assessments/fields';
 
 type LessonDraft = {
   id?: string;
@@ -223,22 +224,19 @@ export function LessonEditor({ moduleId, lessonId }: { moduleId: string; lessonI
             />
             Visible
           </label>
-          <div className="flex justify-end gap-3 border-t border-border pt-6">
-            <button
-              type="button"
-              className={secondaryButtonClass}
-              onClick={() => router.push(`/content/modules/${moduleId}`)}
-            >
+          <div className="flex justify-end gap-2 pt-2">
+            <Button size="sm" variant="ghost" onPress={() => router.push(`/content/modules/${moduleId}`)}>
               Cancel
-            </button>
-            <button
-              type="button"
-              className={primaryButtonClass}
-              disabled={saving || !lesson.title.trim()}
-              onClick={() => void save()}
+            </Button>
+            <Button
+              size="sm"
+              variant="primary"
+              isPending={saving}
+              isDisabled={saving || !lesson.title.trim()}
+              onPress={() => void save()}
             >
-              {saving ? 'Saving…' : 'Save lesson'}
-            </button>
+              Save lesson
+            </Button>
           </div>
         </div>
       )}

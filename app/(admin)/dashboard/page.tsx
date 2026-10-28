@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { createPortal } from 'react-dom';
 import { Button, Typography } from '@heroui/react';
 import AppCard from '@/components/ui/AppCard';
+import { InsightCard } from '@/components/admin/InsightCard';
 import { PageHeader } from '@/components/layout/UserPageShell';
 import { DashboardBodySkeleton } from '@/components/layout/PageSkeleton';
 import UserPageShell from '@/components/layout/UserPageShell';
@@ -201,7 +202,7 @@ function AxisChart({
 function BarChart({
   data,
   height = 180,
-  barColor = 'fill-foreground',
+  barColor = 'text-emerald-600 dark:text-emerald-400',
   label,
 }: {
   data: Array<{ date: string; count: number }>;
@@ -232,7 +233,7 @@ function BarChart({
       <ChartTooltip position={tooltip?.pos ?? null} content={tooltip?.content ?? null} />
       <svg
         viewBox={`0 0 ${fixedWidth} ${height}`}
-        className="h-full w-full"
+        className={`h-full w-full ${barColor}`}
         preserveAspectRatio="none"
       >
         {ticks.map((tick) => {
@@ -262,7 +263,7 @@ function BarChart({
                 y={height - barHeight}
                 width={barWidth}
                 height={Math.max(barHeight, 0)}
-                className={barColor}
+                className="fill-current"
                 rx={3}
                 opacity={tooltip && !active ? 0.28 : 0.92}
               />
@@ -315,11 +316,9 @@ function BarChart({
 function LineChart({
   data,
   height = 180,
-  lineColor = 'stroke-foreground',
 }: {
   data: Array<{ date: string; value: number | null }>;
   height?: number;
-  lineColor?: string;
 }) {
   const [tooltip, setTooltip] = useState<{ pos: TooltipPosition; content: TooltipContent } | null>(
     null
@@ -364,7 +363,7 @@ function LineChart({
       <ChartTooltip position={tooltip?.pos ?? null} content={tooltip?.content ?? null} />
       <svg
         viewBox={`0 0 ${chartWidth} ${height}`}
-        className="h-full w-full"
+        className="h-full w-full text-rose-500 dark:text-rose-400"
         preserveAspectRatio="none"
       >
         {ticks.map((tick) => (
@@ -380,19 +379,19 @@ function LineChart({
             strokeDasharray={tick === yMin ? '0' : '3 3'}
           />
         ))}
-        <polygon points={area} className="fill-foreground/10" />
+        <polygon points={area} className="fill-current opacity-20" />
         <polyline
           points={points}
           fill="none"
-          className={lineColor}
-          strokeWidth="2"
+          className="stroke-current"
+          strokeWidth="2.5"
           strokeLinejoin="round"
           strokeLinecap="round"
           vectorEffect="non-scaling-stroke"
         />
         {validData.map((d, i) => (
           <g key={d.date}>
-            <circle cx={xOf(i)} cy={yOf(d.value)} r="3.5" className="fill-foreground" />
+            <circle cx={xOf(i)} cy={yOf(d.value)} r="3.5" className="fill-current" />
             <rect
               x={xOf(i) - chartWidth / Math.max(validData.length, 1) / 2}
               y={0}
@@ -469,93 +468,12 @@ function RatingDistribution({
 // Stat Card Component
 // ---------------------------------------------------------------------------
 
-function Sparkline({ values }: { values: number[] }) {
-  if (values.length < 2) return null;
-  const max = Math.max(...values, 1);
-  const min = Math.min(...values, 0);
-  const width = 88;
-  const height = 28;
-  const span = max - min || 1;
-  const points = values
-    .map((value, index) => {
-      const x = (index / (values.length - 1)) * width;
-      const y = height - ((value - min) / span) * height;
-      return `${x},${y}`;
-    })
-    .join(' ');
-  return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="h-7 w-[5.5rem] text-foreground" aria-hidden>
-      <polyline
-        points={points}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.75"
-        strokeLinejoin="round"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
 function deltaLabel(current: number, previous: number): { text: string; up: boolean | null } {
   if (previous <= 0 && current <= 0) return { text: 'No change', up: null };
   if (previous <= 0) return { text: 'New this period', up: true };
   const pct = Math.round(((current - previous) / previous) * 100);
   if (pct === 0) return { text: 'Flat vs prior', up: null };
   return { text: `${pct > 0 ? '+' : ''}${pct}% vs prior`, up: pct > 0 };
-}
-
-function StatCard({
-  label,
-  value,
-  hint,
-  delta,
-  spark,
-  active,
-  onSelect,
-}: {
-  label: string;
-  value: string | number;
-  hint?: string;
-  delta?: { text: string; up: boolean | null };
-  spark?: number[];
-  active?: boolean;
-  onSelect?: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={`flex flex-col gap-3 rounded-lg bg-default/30 p-5 text-left transition-colors ${
-        active ? 'ring-1 ring-foreground/25' : 'hover:bg-default/45'
-      }`}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <Typography type="body-xs" color="muted">
-          {label}
-        </Typography>
-        {spark && spark.length > 1 ? <Sparkline values={spark} /> : null}
-      </div>
-      <Typography type="h3" weight="normal">
-        {value}
-      </Typography>
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        {delta ? (
-          <Typography
-            type="body-xs"
-            className={delta.up === true ? 'text-foreground' : 'text-muted'}
-          >
-            {delta.text}
-          </Typography>
-        ) : null}
-        {hint ? (
-          <Typography type="body-xs" color="muted">
-            {hint}
-          </Typography>
-        ) : null}
-      </div>
-    </button>
-  );
 }
 
 function sumWindow(rows: Array<{ count: number }>, start: number, end?: number) {
@@ -567,11 +485,13 @@ function FunnelRow({
   value,
   max,
   href,
+  barClass,
 }: {
   label: string;
   value: number;
   max: number;
   href?: string;
+  barClass: string;
 }) {
   const width = max > 0 ? Math.max(8, Math.round((value / max) * 100)) : 8;
   const inner = (
@@ -580,8 +500,8 @@ function FunnelRow({
         <Typography type="body-sm">{label}</Typography>
         <Typography type="body-sm">{value}</Typography>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-muted/15">
-        <div className="h-full rounded-full bg-foreground/80" style={{ width: `${width}%` }} />
+      <div className="h-2.5 overflow-hidden rounded-full bg-muted/15">
+        <div className={`h-full rounded-full ${barClass}`} style={{ width: `${width}%` }} />
       </div>
     </div>
   );
@@ -716,30 +636,60 @@ export default function AdminDashboard() {
       />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
+        <InsightCard
+          tone="meadow"
           label="People"
           value={data.totalUsers}
           hint={`${engagementRate ?? 0}% active in 30d`}
-          delta={signupDelta}
+          extra={
+            <Typography
+              type="body-xs"
+              className={
+                signupDelta.up === true
+                  ? 'text-emerald-800 dark:text-emerald-200'
+                  : signupDelta.up === false
+                    ? 'text-rose-800 dark:text-rose-200'
+                    : 'text-foreground/70'
+              }
+            >
+              {signupDelta.text}
+            </Typography>
+          }
           spark={filteredSignups.map((row) => row.count)}
           active={chartTab === 'signups'}
-          onSelect={() => setChartTab('signups')}
+          onPress={() => setChartTab('signups')}
         />
-        <StatCard
+        <InsightCard
+          tone="mist"
           label="Sessions"
           value={data.totalSessions}
           hint={`${data.activeUsers7d} active this week`}
-          delta={sessionDelta}
+          extra={
+            <Typography
+              type="body-xs"
+              className={
+                sessionDelta.up === true
+                  ? 'text-emerald-800 dark:text-emerald-200'
+                  : sessionDelta.up === false
+                    ? 'text-rose-800 dark:text-rose-200'
+                    : 'text-foreground/70'
+              }
+            >
+              {sessionDelta.text}
+            </Typography>
+          }
           spark={filteredSessions.map((row) => row.count)}
           active={chartTab === 'sessions'}
-          onSelect={() => setChartTab('sessions')}
+          onPress={() => setChartTab('sessions')}
         />
-        <StatCard
+        <InsightCard
+          tone="bloom"
           label="Intake"
           value={`${intakeCompletionRate ?? 0}%`}
           hint={`${data.intakeCompleted} finished onboarding`}
         />
-        <StatCard
+        <InsightCard
+          tone="dusk"
           label="Rating"
           value={data.ratingDistribution?.avgRating?.toFixed(1) ?? '—'}
           hint={
@@ -775,6 +725,11 @@ export default function AdminDashboard() {
           <BarChart
             data={chartData}
             height={220}
+            barColor={
+              chartTab === 'signups'
+                ? 'text-emerald-600 dark:text-emerald-400'
+                : 'text-sky-600 dark:text-sky-400'
+            }
             label={chartTab === 'signups' ? 'signups' : 'sessions'}
           />
         ) : (
@@ -808,22 +763,31 @@ export default function AdminDashboard() {
               Open a step to inspect it.
             </Typography>
           </div>
-          <FunnelRow label="Accounts" value={data.totalUsers} max={data.totalUsers} href="/users" />
+          <FunnelRow
+            label="Accounts"
+            value={data.totalUsers}
+            max={data.totalUsers}
+            href="/users"
+            barClass="bg-emerald-500"
+          />
           <FunnelRow
             label="Finished intake"
             value={data.intakeCompleted}
             max={Math.max(data.totalUsers, 1)}
             href="/users"
+            barClass="bg-rose-400"
           />
           <FunnelRow
             label="Active this week"
             value={data.activeUsers7d}
             max={Math.max(data.totalUsers, 1)}
+            barClass="bg-sky-500"
           />
           <FunnelRow
             label="Active in 30 days"
             value={data.activeUsers30d}
             max={Math.max(data.totalUsers, 1)}
+            barClass="bg-violet-400"
           />
         </AppCard>
       </div>
@@ -871,9 +835,9 @@ export default function AdminDashboard() {
                   </Typography>
                   <Typography type="body-sm">{data.stressReduction.avgBefore.toFixed(1)}</Typography>
                 </div>
-                <div className="h-3 overflow-hidden rounded-full bg-muted/15">
+                <div className="h-3 overflow-hidden rounded-full bg-orange-500/15">
                   <div
-                    className="h-full rounded-full bg-foreground/35"
+                    className="h-full rounded-full bg-orange-400"
                     style={{ width: `${Math.min(100, (data.stressReduction.avgBefore / 10) * 100)}%` }}
                   />
                 </div>
@@ -885,14 +849,21 @@ export default function AdminDashboard() {
                   </Typography>
                   <Typography type="body-sm">{data.stressReduction.avgAfter.toFixed(1)}</Typography>
                 </div>
-                <div className="h-3 overflow-hidden rounded-full bg-muted/15">
+                <div className="h-3 overflow-hidden rounded-full bg-emerald-500/15">
                   <div
-                    className="h-full rounded-full bg-foreground"
+                    className="h-full rounded-full bg-emerald-500"
                     style={{ width: `${Math.min(100, (data.stressReduction.avgAfter / 10) * 100)}%` }}
                   />
                 </div>
               </div>
-              <Typography type="body-sm">
+              <Typography
+                type="body-sm"
+                className={
+                  data.stressReduction.reductionPercent > 0
+                    ? 'text-emerald-700 dark:text-emerald-300'
+                    : 'text-rose-700 dark:text-rose-300'
+                }
+              >
                 {data.stressReduction.reductionPercent > 0
                   ? `${data.stressReduction.reductionPercent}% lower after sessions`
                   : `${Math.abs(data.stressReduction.reductionPercent)}% higher after sessions`}

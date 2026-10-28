@@ -66,24 +66,19 @@ function pathFromModule(module: LearningModule): PathItem[] {
   return items;
 }
 
-function LessonCard({ item }: { item: PathItem }) {
+function LessonCard({ item, upNext }: { item: PathItem; upNext?: boolean }) {
   return (
-    <AppCard className="relative flex min-h-52 flex-col overflow-hidden p-0">
-      <CoverWash seed={item.seed} />
-      <div className="relative z-10 flex flex-1 flex-col justify-end gap-2 p-4 pt-16">
-        <Typography type="body-xs" color="muted">
-          {metaLine(item)}
-        </Typography>
-        <AppCard.Title className="font-normal tracking-tight">{item.title}</AppCard.Title>
-        {item.subtitle ? <AppCard.Description>{item.subtitle}</AppCard.Description> : null}
-        {item.href && item.action ? (
-          <Link href={item.href} className={`${buttonVariants({ size: 'sm', variant: 'outline' })} mt-1 w-fit`}>
-            {item.action}
-          </Link>
-        ) : (
-          <span className="h-8" aria-hidden />
-        )}
-      </div>
+    <AppCard className={`flex flex-col gap-2 p-5 ${item.ready ? '' : 'opacity-55'}`}>
+      <Typography type="body-xs" color="muted">
+        {upNext ? `Up next · ${metaLine(item)}` : metaLine(item)}
+      </Typography>
+      <AppCard.Title className="font-normal tracking-tight">{item.title}</AppCard.Title>
+      {item.subtitle ? <AppCard.Description>{item.subtitle}</AppCard.Description> : null}
+      {item.href && item.action ? (
+        <Link href={item.href} className={`${buttonVariants({ size: 'sm', variant: 'outline' })} mt-1 w-fit`}>
+          {item.action}
+        </Link>
+      ) : null}
     </AppCard>
   );
 }
@@ -173,25 +168,51 @@ export default function ModuleDetailPage({ slug }: { slug: string }) {
           </aside>
 
           <div className="flex flex-col gap-8">
-            <AppCard className="relative min-h-64 overflow-hidden p-0 sm:min-h-72">
+            <AppCard className="relative overflow-hidden p-0">
               <CoverWash seed={module.slug} fill />
-              <div className="relative z-10 flex min-h-64 flex-col justify-end gap-3 p-5 sm:min-h-72 sm:p-7">
-                <Typography type="body-xs" color="muted">
-                  {next
-                    ? `${next.completed ? 'Review' : 'Continue'} · ${metaLine(next)}`
-                    : 'This path is still being written.'}
-                </Typography>
-                <Typography type="h4" weight="normal">
-                  {next?.title ?? 'More soon'}
-                </Typography>
-                {next?.subtitle ? (
-                  <Typography type="body-sm" color="muted" className="max-w-lg">
-                    {next.subtitle}
+              <div className="relative z-10 flex flex-col gap-5 p-5 sm:flex-row sm:items-end sm:justify-between sm:p-6">
+                <div className="flex min-w-0 flex-1 flex-col gap-2">
+                  <Typography type="body-xs" color="muted">
+                    {next
+                      ? next.completed
+                        ? 'Finished · review any lesson below'
+                        : completedCount > 0
+                          ? 'Pick up where you left off'
+                          : 'Start here'
+                      : 'This path is still being written.'}
                   </Typography>
-                ) : null}
-                {next?.href && next.action ? (
-                  <Link href={next.href} className={`${buttonVariants({ size: 'sm', variant: 'primary' })} mt-1 w-fit`}>
-                    {next.action}
+                  <Typography type="h4" weight="normal">
+                    {next?.title ?? 'More soon'}
+                  </Typography>
+                  {next ? (
+                    <Typography type="body-sm" color="muted">
+                      {`Lesson ${next.position} of ${openCount || path.length}${
+                        next.kindLabel ? ` · ${next.kindLabel}` : ''
+                      }${next.minutes ? ` · ${minutesLabel(next.minutes)}` : ''}`}
+                    </Typography>
+                  ) : null}
+                  {openCount > 0 ? (
+                    <div className="mt-1 flex max-w-xs flex-col gap-1.5">
+                      <div className="h-1 overflow-hidden rounded-full bg-foreground/10">
+                        <div
+                          className="h-full rounded-full bg-foreground/45"
+                          style={{
+                            width: `${Math.round((completedCount / openCount) * 100)}%`,
+                          }}
+                        />
+                      </div>
+                      <Typography type="body-xs" color="muted">
+                        {`${completedCount} of ${openCount} complete`}
+                      </Typography>
+                    </div>
+                  ) : null}
+                </div>
+                {next?.href ? (
+                  <Link
+                    href={next.href}
+                    className={`${buttonVariants({ size: 'sm', variant: 'primary' })} w-fit shrink-0`}
+                  >
+                    {next.completed ? 'Review' : completedCount > 0 ? 'Continue' : 'Start'}
                   </Link>
                 ) : null}
               </div>
@@ -199,7 +220,11 @@ export default function ModuleDetailPage({ slug }: { slug: string }) {
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {path.map((item) => (
-                <LessonCard key={item.ready ? `lesson-${item.position}` : `placeholder-${item.position}`} item={item} />
+                <LessonCard
+                  key={item.ready ? `lesson-${item.position}` : `placeholder-${item.position}`}
+                  item={item}
+                  upNext={next?.position === item.position && !item.completed}
+                />
               ))}
             </div>
           </div>

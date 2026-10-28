@@ -102,10 +102,10 @@ export function idlePracticeNext(practiceTime?: string | null): HomeNext {
   }
   return {
     kind: 'practice',
-    title: 'A few minutes to settle',
-    description: 'Breathe with a simple inhale and exhale. No program, no questions.',
-    cta: 'Breathe',
-    href: '/breathe',
+    title: 'A short practice',
+    description: 'Breathe, settle, ground through your senses, or tense and release a muscle group.',
+    cta: 'Practice',
+    href: '/practice',
   };
 }
 
@@ -151,9 +151,9 @@ const TUTORIAL_STEPS: Array<{
 }> = [
   {
     id: 'starting-out',
-    title: 'Module 1',
-    description: 'Starting out with QHRT',
-    defaultHref: '/modules/qhrt-foundation/1',
+    title: 'Starting out with QHRT',
+    description: 'What a session is like, and what to notice in your body.',
+    defaultHref: '/modules/qhrt-foundation',
   },
   {
     id: 'onboarding',

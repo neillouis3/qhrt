@@ -43,18 +43,13 @@ export interface HomeDashboardData {
 
 function withFoundationLesson(steps: TutorialStep[], modules: LearningModule[]): TutorialStep[] {
   const foundation = modules.find((module) => module.slug === 'qhrt-foundation');
-  const lesson = foundation?.lessons.slice().sort((a, b) => a.position - b.position)[0];
-  if (!lesson) return steps;
-  return steps.map((step) =>
-    step.id === 'starting-out'
-      ? {
-          ...step,
-          title: `Module ${lesson.position}`,
-          description: lesson.title,
-          href: lesson.href,
-        }
-      : step
-  );
+  if (!foundation) return steps;
+  const nextLesson = foundation.lessons
+    .slice()
+    .sort((a, b) => a.position - b.position)
+    .find((lesson) => !lesson.completedAt);
+  const href = nextLesson?.href ?? `/modules/${foundation.slug}`;
+  return steps.map((step) => (step.id === 'starting-out' ? { ...step, href } : step));
 }
 
 interface HomePageProps {
@@ -68,6 +63,7 @@ const BROWSE_HREFS = [
   { key: 'diary', href: '/diary', tone: 'bloom' },
   { key: 'assessments', href: '/assessments', tone: 'meadow' },
   { key: 'breathe', href: '/breathe', tone: 'mist' },
+  { key: 'practice', href: '/practice', tone: 'dusk' },
 ] as const;
 
 function BrowseWash({ tone }: { tone: (typeof BROWSE_HREFS)[number]['tone'] }) {
@@ -313,7 +309,7 @@ export default function HomePage({
         <Typography type="body-xs" color="muted">
           {t('home.browse.title')}
         </Typography>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {BROWSE_HREFS.map((item) => (
             <Link
               key={item.href}

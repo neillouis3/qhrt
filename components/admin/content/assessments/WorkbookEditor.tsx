@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import type { Workbook } from '@/lib/assessments';
 import { BuilderShell } from '../BuilderShell';
 import { Toast } from '../shared/Toast';
-import { Field, inputClass, primaryButtonClass, secondaryButtonClass } from './fields';
+import { Button } from '@heroui/react';
+import { Field, inputClass } from './fields';
 
 export function WorkbookEditor({ workbookId }: { workbookId: string }) {
   const router = useRouter();
@@ -108,22 +109,19 @@ export function WorkbookEditor({ workbookId }: { workbookId: string }) {
               className={inputClass}
             />
           </Field>
-          <div className="flex justify-end gap-3 border-t border-border pt-6">
-            <button
-              type="button"
-              className={secondaryButtonClass}
-              onClick={() => router.push('/content?tab=workbooks')}
-            >
+          <div className="flex justify-end gap-2 pt-2">
+            <Button size="sm" variant="ghost" onPress={() => router.push('/content?tab=workbooks')}>
               Cancel
-            </button>
-            <button
-              type="button"
-              className={primaryButtonClass}
-              disabled={saving || !title.trim() || !url.trim()}
-              onClick={() => void save()}
+            </Button>
+            <Button
+              size="sm"
+              variant="primary"
+              isPending={saving}
+              isDisabled={saving || !title.trim() || !url.trim()}
+              onPress={() => void save()}
             >
-              {saving ? 'Saving…' : isNew ? 'Create workbook' : 'Save workbook'}
-            </button>
+              {isNew ? 'Create workbook' : 'Save workbook'}
+            </Button>
           </div>
         </div>
       )}
