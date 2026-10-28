@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { requireUser } from '@/lib/adminAuth';
 import { apiError, schemaMissingResponse } from '@/lib/apiError';
-import { loadModule } from '@/lib/modules';
+import { loadModule, withUserCompletions } from '@/lib/modules';
 
 export async function GET(request: NextRequest, context: { params: Promise<{ slug: string }> }) {
   const userResult = await requireUser(request);
@@ -14,10 +14,11 @@ export async function GET(request: NextRequest, context: { params: Promise<{ slu
     const result = await loadModule(slug);
     if ('missing' in result) return schemaMissingResponse('Module', 'supabase/010_learning_modules.sql');
     if (!result.module) return NextResponse.json({ error: 'Module not found.' }, { status: 404 });
+    const [module] = await withUserCompletions([result.module], userResult.user.id);
     return NextResponse.json({
       module: {
-        ...result.module,
-        lessons: result.module.lessons.map(({ steps, ...lesson }) => lesson),
+        ...module,
+        lessons: (module ?? result.module).lessons.map(({ steps, ...lesson }) => lesson),
       },
     });
   } catch (err) {

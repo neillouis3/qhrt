@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const [entriesRes, submissionsRes] = await Promise.all([
+    const [entriesRes, submissionsRes, moduleRes] = await Promise.all([
       db
         .from('diary_entries')
         .select('*')
@@ -40,6 +40,11 @@ export async function GET(request: NextRequest) {
         .select('id, created_at, assessments(title)')
         .eq('user_id', userId)
         .order('created_at', { ascending: false }),
+      db
+        .from('module_lesson_completions')
+        .select('id, completed_at, module_lessons(title, learning_modules(title))')
+        .eq('user_id', userId)
+        .order('completed_at', { ascending: false }),
     ]);
 
     if (entriesRes.error) {
@@ -62,6 +67,26 @@ export async function GET(request: NextRequest) {
         at: row.created_at as string,
       });
     }
+
+    if (!moduleRes.error) {
+      for (const row of moduleRes.data ?? []) {
+        const nested = row.module_lessons as
+          | { title?: string; learning_modules?: { title?: string } | { title?: string }[] }
+          | { title?: string; learning_modules?: { title?: string } | { title?: string }[] }[]
+          | null;
+        const lesson = Array.isArray(nested) ? nested[0] : nested;
+        const moduleNested = lesson?.learning_modules;
+        const moduleTitle = Array.isArray(moduleNested) ? moduleNested[0]?.title : moduleNested?.title;
+        completions.push({
+          id: row.id,
+          kind: 'module',
+          title: lesson?.title || moduleTitle || 'Module',
+          at: row.completed_at as string,
+        });
+      }
+    }
+
+    completions.sort((a, b) => b.at.localeCompare(a.at));
 
     const entries = ((entriesRes.error ? [] : entriesRes.data) ?? []) as DiaryEntry[];
     const checkInMap = buildCheckInByDate(userMeta, entries);

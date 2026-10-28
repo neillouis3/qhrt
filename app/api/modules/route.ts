@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { requireUser } from '@/lib/adminAuth';
 import { apiError, schemaMissingResponse } from '@/lib/apiError';
-import { loadModules } from '@/lib/modules';
+import { loadModules, withUserCompletions } from '@/lib/modules';
 
 export async function GET(request: NextRequest) {
   const userResult = await requireUser(request);
@@ -12,8 +12,9 @@ export async function GET(request: NextRequest) {
   try {
     const result = await loadModules();
     if ('missing' in result) return schemaMissingResponse('Module', 'supabase/010_learning_modules.sql');
+    const modules = await withUserCompletions(result.modules, userResult.user.id);
     return NextResponse.json({
-      modules: result.modules.map((module) => ({
+      modules: modules.map((module) => ({
         ...module,
         lessons: module.lessons.map(({ steps, ...lesson }) => lesson),
       })),
