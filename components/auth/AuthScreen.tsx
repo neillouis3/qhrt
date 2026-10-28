@@ -18,6 +18,45 @@ type SignupPhase = 'auth' | 'transition' | 'onboarding';
 const WELCOME_TITLE = 'Welcome.';
 const WELCOME_SUBTITLE = "We're glad you're here.";
 
+const LOGIN_ART = [
+  '/auth/bird.jpg',
+  '/auth/portrait.jpg',
+  '/auth/fruit.jpg',
+  '/auth/houses.jpg',
+] as const;
+const SIGNUP_ART = [
+  '/auth/orange.jpg',
+  '/auth/sunset.jpg',
+  '/auth/still-life.jpg',
+  '/auth/tagine.jpg',
+] as const;
+const LOGIN_ART_KEY = 'qhrt-login-art';
+const SIGNUP_ART_KEY = 'qhrt-signup-art';
+
+const ART_CREDIT: Record<string, string> = {
+  '/auth/bird.jpg': 'Janmesh Shah',
+  '/auth/portrait.jpg': 'Fabian Kunzel-Zeller',
+  '/auth/fruit.jpg': 'the iop',
+  '/auth/houses.jpg': 'Daisy D',
+  '/auth/orange.jpg': 'Mila Okta Safitri',
+  '/auth/sunset.jpg': 'Anna Magenta',
+  '/auth/still-life.jpg': 'the iop',
+  '/auth/tagine.jpg': 'Bilqis Nur Amalia',
+};
+
+function pickCachedArt(pool: readonly string[], key: string): string {
+  const fallback = pool[0] ?? '';
+  try {
+    const cached = sessionStorage.getItem(key);
+    if (cached && pool.includes(cached)) return cached;
+    const next = pool[Math.floor(Math.random() * pool.length)] ?? fallback;
+    sessionStorage.setItem(key, next);
+    return next;
+  } catch {
+    return fallback;
+  }
+}
+
 function prefersReducedMotion() {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
@@ -135,6 +174,7 @@ export default function AuthScreen({ mode }: AuthScreenProps) {
   const [fromWelcome, setFromWelcome] = useState(false);
   const leaveTimer = useRef<number | null>(null);
   const isLogin = mode === 'login';
+  const [panelArt, setPanelArt] = useState<string | null>(null);
   const illustrationVisible = isLogin || phase === 'auth';
   const showWelcome = !isLogin && (phase === 'transition' || welcomeLeaving);
   const showOnboarding = !isLogin && (phase === 'onboarding' || welcomeLeaving);
@@ -171,6 +211,12 @@ export default function AuthScreen({ mode }: AuthScreenProps) {
       if (leaveTimer.current) window.clearTimeout(leaveTimer.current);
     };
   }, [mode, router]);
+
+  useEffect(() => {
+    setPanelArt(
+      isLogin ? pickCachedArt(LOGIN_ART, LOGIN_ART_KEY) : pickCachedArt(SIGNUP_ART, SIGNUP_ART_KEY)
+    );
+  }, [isLogin]);
 
   const goHome = () => {
     clearSessionCache();
@@ -283,16 +329,23 @@ export default function AuthScreen({ mode }: AuthScreenProps) {
         aria-hidden={!illustrationVisible}
         className={`auth-illustration-panel hidden lg:block ${illustrationVisible ? '' : 'is-away'}`}
       >
-        <div className="relative h-full overflow-hidden rounded-lg">
-          <Image
-            src="/auth-illustration.jpg"
-            alt=""
-            fill
-            priority
-            sizes="50vw"
-            className="object-cover"
-          />
+        <div className="relative h-full overflow-hidden rounded-lg bg-default/30">
+          {panelArt ? (
+            <Image
+              src={panelArt}
+              alt=""
+              fill
+              priority
+              sizes="50vw"
+              className="object-cover object-center"
+            />
+          ) : null}
           <div className="surface-grain-overlay" aria-hidden />
+          {panelArt && ART_CREDIT[panelArt] ? (
+            <p className="pointer-events-none absolute right-4 bottom-4 m-0 rounded-full border border-white/20 bg-black/25 px-3 py-1 text-xs text-white backdrop-blur-md">
+              by {ART_CREDIT[panelArt]}
+            </p>
+          ) : null}
         </div>
       </aside>
     </div>

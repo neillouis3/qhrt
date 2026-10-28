@@ -104,6 +104,13 @@ body {
     --button-fg: var(--brand-foreground);
   }
 
+  .button.button--primary.auth-submit {
+    --button-bg: var(--foreground);
+    --button-bg-hover: color-mix(in oklab, var(--foreground) 88%, var(--background));
+    --button-bg-pressed: color-mix(in oklab, var(--foreground) 82%, var(--background));
+    --button-fg: var(--background);
+  }
+
   .select__popover,
   .popover,
   .dropdown__popover,
@@ -168,6 +175,10 @@ body {
     opacity 500ms ease,
     padding 700ms cubic-bezier(0.4, 0, 0.2, 1),
     transform 700ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.auth-illustration-panel img {
+  object-fit: cover;
 }
 
 .auth-illustration-panel.is-away {
@@ -934,6 +945,12 @@ body {
   overflow: hidden;
   mask-image: linear-gradient(to bottom, black 42%, transparent);
   -webkit-mask-image: linear-gradient(to bottom, black 42%, transparent);
+}
+
+.focus-card-wash--fill {
+  height: 100%;
+  mask-image: linear-gradient(to bottom, black 58%, transparent);
+  -webkit-mask-image: linear-gradient(to bottom, black 58%, transparent);
 }
 
 .focus-card-wash__blob {
