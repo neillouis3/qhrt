@@ -12,8 +12,8 @@ import {
 } from '@hugeicons/core-free-icons';
 import { LandingIcon } from '@/components/marketing/LandingIcons';
 import HowItWorks from '@/components/marketing/HowItWorks';
-import LandingFaq from '@/components/marketing/LandingFaq';
 import { LandingCta } from '@/components/marketing/MarketingCtas';
+import { SproutAid } from '@/components/marketing/PublicAids';
 import SiteFooter from '@/components/layout/SiteFooter';
 
 const features = [
@@ -72,15 +72,8 @@ export default function LandingPage() {
             <LandingCta />
           </div>
 
-          <div className="relative min-h-64 w-full overflow-hidden rounded-lg lg:min-h-[380px]">
-            <Image
-              src="/hero-gradient.jpg"
-              alt=""
-              fill
-              priority
-              sizes="(min-width: 1024px) 28vw, 90vw"
-              className="object-cover object-center"
-            />
+          <div className="flex min-h-64 w-full items-center justify-center lg:min-h-[380px]">
+            <SproutAid className="h-56 w-56 lg:h-80 lg:w-80" />
           </div>
         </section>
 
@@ -108,8 +101,6 @@ export default function LandingPage() {
             ))}
           </ul>
         </section>
-
-        <LandingFaq />
 
         <section className="py-24">
           <div className="relative min-h-72 overflow-hidden rounded-lg lg:min-h-80">

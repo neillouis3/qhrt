@@ -7,6 +7,8 @@ import Logo from '@/components/ui/Logo';
 
 const footerLinks = [
   { name: 'About', path: '/about' },
+  { name: 'FAQ', path: '/faq' },
+  { name: 'Testimonials', path: '/testimonials' },
   { name: 'Privacy', path: '/privacy' },
   { name: 'Terms', path: '/terms' },
   { name: 'Contact', path: '/contact' },

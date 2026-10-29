@@ -56,6 +56,8 @@ supabase/010_learning_modules.sql
 supabase/011_user_avatars.sql
 supabase/012_module_lesson_completions.sql
 supabase/013_body_composition_module.sql
+supabase/014_testimonials.sql
+supabase/015_faq_questions.sql
 ```
 
 ### 4. Run the development server

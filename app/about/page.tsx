@@ -1,28 +1,22 @@
 import type { Metadata } from 'next';
 import { Card, Typography } from '@heroui/react';
-import { UserIcon } from '@hugeicons/core-free-icons';
 import { surfaceClass } from '@/components/ui/AppCard';
-import { IllustrationPlaceholder } from '@/components/marketing/LandingIcons';
 import SiteFooter from '@/components/layout/SiteFooter';
 
 export const metadata: Metadata = {
   title: 'About',
 };
 
-const cardClass = surfaceClass;
-
 const team = [
   {
     name: 'Jack Ryan',
     role: 'First intern',
     bio: 'The first person to start this project. Neil is succeeding him on the web app.',
-    icon: UserIcon,
   },
   {
     name: 'Neil Louise Castillon',
-    role: 'Intern & lead developer',
-    bio: 'Succeeding Jack on the product — designing and building the QHRT web app from here.',
-    icon: UserIcon,
+    role: 'Intern and lead developer',
+    bio: 'Succeeding Jack on the product, designing and building the QHRT web app from here.',
   },
 ];
 
@@ -74,22 +68,15 @@ export default function AboutPage() {
             Team
           </Typography>
           <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {team.map((person, index) => (
+            {team.map((person) => (
               <li key={person.name}>
-                <Card variant="transparent" className={cardClass}>
-                  <IllustrationPlaceholder
-                    icon={person.icon}
-                    label={`Placeholder illustration: ${person.name}`}
-                    iconSize={36}
-                    grainTone={index === 0 ? 'mist' : 'dusk'}
-                    className="min-h-28 rounded-md"
-                  />
-                  <Card.Header>
-                    <Card.Title className="font-normal tracking-tight">{person.name}</Card.Title>
+                <Card variant="transparent" className={`${surfaceClass} flex h-full flex-col gap-4 p-5 sm:p-6`}>
+                  <div className="flex flex-col gap-1">
                     <Typography type="body-xs" color="muted">
                       {person.role}
                     </Typography>
-                  </Card.Header>
+                    <Card.Title className="font-normal tracking-tight">{person.name}</Card.Title>
+                  </div>
                   <Card.Description>{person.bio}</Card.Description>
                 </Card>
               </li>

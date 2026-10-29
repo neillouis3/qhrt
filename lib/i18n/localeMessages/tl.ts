@@ -8,6 +8,8 @@ export const tl: MessageTree = {
     diary: 'Talaarawan',
     assessments: 'Mga module',
     about: 'Tungkol sa amin',
+    faq: 'FAQ',
+    testimonials: 'Mga patotoo',
     privacy: 'Pribasiya',
     contact: 'Makipag-ugnayan',
     login: 'Mag-log in',

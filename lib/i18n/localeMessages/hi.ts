@@ -8,6 +8,8 @@ export const hi: MessageTree = {
     diary: 'डायरी',
     assessments: 'मॉड्यूल',
     about: 'हमारे बारे में',
+    faq: 'सामान्य प्रश्न',
+    testimonials: 'प्रशंसापत्र',
     privacy: 'गोपनीयता',
     contact: 'संपर्क',
     login: 'लॉग इन',

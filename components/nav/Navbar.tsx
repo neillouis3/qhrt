@@ -49,7 +49,9 @@ export default function Navbar({
         </Link>
         <nav className="hidden lg:flex items-center gap-1">
           {links.map((link) => {
-            const isActive = pathname === link.path || pathname.startsWith(`${link.path}/`);
+            const isActive = link.path.includes('#')
+              ? false
+              : pathname === link.path || pathname.startsWith(`${link.path}/`);
             return (
               <Link
                 key={link.path}
@@ -111,7 +113,9 @@ export default function Navbar({
                 className="absolute right-0 mt-2 w-48 rounded-lg border border-border bg-background py-1 shadow-lg z-50"
               >
                 {links.map((link) => {
-                  const isActive = pathname === link.path || pathname.startsWith(`${link.path}/`);
+                  const isActive = link.path.includes('#')
+              ? false
+              : pathname === link.path || pathname.startsWith(`${link.path}/`);
                   return (
                     <Link
                       key={link.path}
