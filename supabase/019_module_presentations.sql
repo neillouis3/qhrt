@@ -20,7 +20,7 @@ ALTER TABLE public.lesson_voice_cache ENABLE ROW LEVEL SECURITY;
 
 UPDATE public.learning_modules
 SET
-  description = 'A short introduction, then a look at falling asleep, staying asleep, and waking.',
+  description = 'An opening, then why sleep matters and practical steps to restore it.',
   updated_at = now()
 WHERE id = 'b0000000-0000-4000-8000-000000000002';
 
@@ -36,7 +36,7 @@ VALUES (
   'b0000000-0000-4000-8000-000000000002',
   1,
   'The Foundations of Sleep',
-  E'Sleep Better, Live Better\nWhy sleep matters and practical steps to restore it',
+  'A short opening: what this lesson is, and how to move through it.',
   'presentation',
   $slides$[
     {
@@ -44,8 +44,8 @@ VALUES (
       "section": "Welcome",
       "title": "The Foundations of Sleep",
       "paragraphs": [
-        "Sleep Better, Live Better",
-        "Why sleep matters and practical steps to restore it."
+        "A short opening to the Sleep lesson.",
+        "What this work is, and how to move through it at a pace that feels manageable."
       ],
       "points": [],
       "voiceover": "Welcome to the Sleep module. This introduction is the same kind of opening every QHRT module will have. For now, we start with sleep. It takes a few minutes. You can pause or leave whenever you need to."
@@ -121,14 +121,14 @@ VALUES (
       "section": "The path",
       "title": "What comes after this introduction",
       "paragraphs": [
-        "The sleep self-check is next. Later pieces can wait."
+        "Sleep Better, Live Better is next. It covers why sleep matters and practical steps to restore it."
       ],
       "points": [
-        "A sleep self-check",
-        "Matching suggestions",
-        "Breath, wind-down, and diary when you want them"
+        "How a night of sleep is structured",
+        "What short sleep costs",
+        "Everyday habits you can try"
       ],
-      "voiceover": "When you continue, the sleep self-check is next. It asks about falling asleep, staying asleep, waking, and how rest has felt lately. After that, you can use matching suggestions and simple practices. You do not have to do all of it today."
+      "voiceover": "When you continue, Sleep Better, Live Better is next. It looks at why sleep matters, what short sleep costs, and simple changes you can try. You do not have to do all of it today."
     },
     {
       "key": "how_to_move",
@@ -177,10 +177,10 @@ VALUES (
       "section": "Ready",
       "title": "Ready to begin",
       "paragraphs": [
-        "When you continue, the sleep self-check is next. You can return to this introduction any time."
+        "When you continue, Sleep Better, Live Better is next. You can return to this introduction any time."
       ],
       "points": [],
-      "voiceover": "When you continue, the sleep self-check is next. You can leave this introduction and return any time. Take a breath, and begin when you are ready."
+      "voiceover": "When you continue, Sleep Better, Live Better is next. You can leave this introduction and return any time. Take a breath, and begin when you are ready."
     }
   ]$slides$::jsonb
 )
@@ -194,7 +194,6 @@ ON CONFLICT (id) DO UPDATE SET
 
 UPDATE public.module_lessons
 SET
-  position = 2,
   title = 'Observe, Choose, and Experiment',
   description = 'Sleep, Daily Functioning & Quality of Life',
   updated_at = now()
