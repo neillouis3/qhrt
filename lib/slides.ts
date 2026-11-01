@@ -115,3 +115,98 @@ export function imageBlock(partial: Partial<SlideBlock> & { src: string }): Slid
     arrow: false,
   };
 }
+
+export function parseSlideBlocks(raw: unknown): SlideBlock[] {
+  if (!Array.isArray(raw)) return [];
+  const blocks: SlideBlock[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const record = item as Record<string, unknown>;
+    const type = record.type === 'image' || record.type === 'shape' || record.type === 'text' ? record.type : null;
+    if (!type) continue;
+    const align: SlideAlign = record.align === 'center' || record.align === 'right' ? record.align : 'left';
+    const shape: SlideShape =
+      record.shape === 'ellipse' || record.shape === 'line' || record.shape === 'rect' || record.shape === 'round'
+        ? record.shape
+        : 'round';
+    blocks.push({
+      id: typeof record.id === 'string' && record.id.trim() ? record.id.trim() : newBlockId(),
+      type,
+      x: num(record.x, 40),
+      y: num(record.y, 40),
+      w: Math.max(20, num(record.w, 200)),
+      h: Math.max(12, num(record.h, 80)),
+      text: typeof record.text === 'string' ? record.text : '',
+      fontFamily: typeof record.fontFamily === 'string' ? record.fontFamily : 'inherit',
+      fontSize: Math.min(120, Math.max(8, num(record.fontSize, 24))),
+      fontWeight: num(record.fontWeight, 400) >= 600 ? 600 : 400,
+      color: typeof record.color === 'string' ? record.color : '#1c1917',
+      align,
+      src: typeof record.src === 'string' ? safeSrc(record.src) : '',
+      shape,
+      fill: typeof record.fill === 'string' ? record.fill : '#ffffff',
+      stroke: typeof record.stroke === 'string' ? record.stroke : '#d6d3d1',
+      radius: num(record.radius, 18),
+      arrow: record.arrow === true,
+    });
+  }
+  return blocks;
+}
+
+export function blocksFromLegacy(title: string, paragraphs: string[], points: string[]): SlideBlock[] {
+  const blocks: SlideBlock[] = [];
+  let y = 48;
+  if (title.trim()) {
+    blocks.push(textBlock({ x: 56, y, w: 848, h: 88, text: title.trim(), fontSize: 40, fontWeight: 600 }));
+    y += 100;
+  }
+  if (paragraphs.length > 0) {
+    const height = Math.min(220, 36 + paragraphs.length * 40);
+    blocks.push(
+      textBlock({
+        x: 56,
+        y,
+        w: 848,
+        h: height,
+        text: paragraphs.join('\n\n'),
+        fontSize: 20,
+        color: '#57534e',
+      })
+    );
+    y += height + 20;
+  }
+  if (points.length > 0) {
+    blocks.push(
+      textBlock({
+        x: 56,
+        y,
+        w: 848,
+        h: Math.min(280, 24 + points.length * 32),
+        text: points.map((point) => `• ${point}`).join('\n'),
+        fontSize: 18,
+      })
+    );
+  }
+  if (blocks.length === 0) {
+    blocks.push(textBlock({ text: 'Title', fontSize: 42, fontWeight: 600, w: 800, h: 90 }));
+  }
+  return blocks;
+}
+
+export function starterBlocks(): SlideBlock[] {
+  return [
+    textBlock({ x: 56, y: 46, w: 820, h: 78, text: 'Slide title', fontSize: 42, fontWeight: 600 }),
+    textBlock({
+      x: 56,
+      y: 140,
+      w: 620,
+      h: 72,
+      text: 'A short line under the title.',
+      fontSize: 22,
+      color: '#57534e',
+    }),
+    shapeBlock({ shape: 'round', x: 56, y: 240, w: 260, h: 220, fill: '#ffffff', stroke: '#e7e5e4' }),
+    shapeBlock({ shape: 'round', x: 340, y: 240, w: 260, h: 220, fill: '#ffffff', stroke: '#e7e5e4' }),
+    shapeBlock({ shape: 'round', x: 624, y: 240, w: 260, h: 220, fill: '#ffffff', stroke: '#e7e5e4' }),
+  ];
+}
