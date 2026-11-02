@@ -1,5 +1,6 @@
 import { supabaseServer } from '@/lib/supabaseClient';
 import { missingRelation } from '@/lib/apiError';
+import { parseSlideBlocks, type SlideBlock } from '@/lib/slides';
 
 export type LessonKind = 'guide' | 'assessment' | 'presentation';
 
@@ -12,6 +13,12 @@ export interface GuideStep {
   points: string[];
   section: string | null;
   voiceover: string;
+  /** Theme library for a Guided QHRT Reflection lesson, such as SLEEP. */
+  domain: string | null;
+  /** Slide canvas color. Used when the slide has placed blocks. */
+  background?: string | null;
+  /** Placed text, pictures, and shapes. Empty means the older title-and-points layout. */
+  blocks?: SlideBlock[];
 }
 
 export interface ModuleLesson {
@@ -71,9 +78,9 @@ export function parseLessonKind(value: unknown): LessonKind {
 }
 
 export function lessonKindLabel(kind: LessonKind): string {
-  if (kind === 'assessment') return 'Assessment';
-  if (kind === 'presentation') return 'Introduction';
-  return 'Guide';
+  if (kind === 'assessment') return 'Questionnaire';
+  if (kind === 'presentation') return 'Presentation';
+  return 'Practice';
 }
 
 export function isPlayableLesson(kind: LessonKind): boolean {
@@ -82,12 +89,21 @@ export function isPlayableLesson(kind: LessonKind): boolean {
 
 /** Intro decks store spoken text on the step JSON. Works even when kind is still `guide`. */
 export function looksLikePresentation(steps: GuideStep[]): boolean {
-  return steps.some((step) => Boolean(step.voiceover) || Boolean(step.section));
+  return steps.some(
+    (step) => Boolean(step.voiceover) || Boolean(step.section) || (step.blocks?.length ?? 0) > 0
+  );
 }
 
-export function speechFromSlide(step: Pick<GuideStep, 'title' | 'paragraphs' | 'points' | 'voiceover'>): string {
+export function speechFromSlide(step: Pick<GuideStep, 'title' | 'paragraphs' | 'points' | 'voiceover' | 'blocks'>): string {
   if (step.voiceover.trim()) return step.voiceover.trim();
-  return [step.title, ...step.paragraphs, ...step.points].map((part) => part.trim()).filter(Boolean).join('. ');
+  const placed = (step.blocks ?? []).filter((block) => block.type === 'text').map((block) => block.text);
+  if (placed.length > 0) {
+    return placed.map((part) => part.trim()).filter(Boolean).join('. ');
+  }
+  return [step.title, ...step.paragraphs, ...step.points]
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .join('. ');
 }
 
 export function slugify(value: string): string {
@@ -106,24 +122,32 @@ export function parseGuideSteps(raw: unknown): GuideStep[] {
     if (!item || typeof item !== 'object') continue;
     const record = item as Record<string, unknown>;
     const title = typeof record.title === 'string' ? record.title.trim() : '';
-    if (!title) continue;
     const paragraphs = Array.isArray(record.paragraphs)
       ? record.paragraphs.filter((line): line is string => typeof line === 'string' && line.trim() !== '').map((line) => line.trim())
       : [];
     const points = Array.isArray(record.points)
       ? record.points.filter((line): line is string => typeof line === 'string' && line.trim() !== '').map((line) => line.trim())
       : [];
+    const domain = typeof record.domain === 'string' ? record.domain.trim() : '';
+    const blocks = parseSlideBlocks(record.blocks);
+    const background = typeof record.background === 'string' && record.background.trim() ? record.background.trim() : null;
+    const fallbackTitle =
+      title || blocks.find((block) => block.type === 'text' && block.text.trim())?.text.trim() || '';
+    if (!fallbackTitle && blocks.length === 0) continue;
     steps.push({
       key:
         typeof record.key === 'string' && record.key.trim()
           ? record.key.trim()
           : `slide_${steps.length + 1}`,
-      title,
+      title: fallbackTitle || `Slide ${steps.length + 1}`,
       paragraphs,
       points,
       section:
         typeof record.section === 'string' && record.section.trim() ? record.section.trim() : null,
       voiceover: typeof record.voiceover === 'string' ? record.voiceover.trim() : '',
+      domain: domain || null,
+      background,
+      blocks,
     });
   }
   return steps;
@@ -155,9 +179,22 @@ export function minutesLabel(minutes: number): string {
   return minutes === 1 ? '1 min' : `${minutes} min`;
 }
 
-export function lessonHref(moduleSlug: string, lesson: { position: number; kind: LessonKind; assessmentSlug: string | null }): string {
+/** A Guided QHRT Reflection lesson is stored like any other lesson. Its screen keys mark it. */
+export function isReflectionLesson(steps: GuideStep[]): boolean {
+  return steps.some((step) => step.key.startsWith('reflection-'));
+}
+
+export function reflectionDomainFromSteps(steps: GuideStep[]): string {
+  const domain = steps.find((step) => step.domain)?.domain?.trim() ?? '';
+  return /^[A-Z0-9_]+$/.test(domain) ? domain : 'SLEEP';
+}
+
+export function lessonHref(moduleSlug: string, lesson: { position: number; kind: LessonKind; assessmentSlug: string | null; steps?: GuideStep[] }): string {
   if (lesson.kind === 'assessment' && lesson.assessmentSlug) {
     return `/assessments/${lesson.assessmentSlug}`;
+  }
+  if (lesson.steps && isReflectionLesson(lesson.steps)) {
+    return `/modules/${moduleSlug}/themes`;
   }
   return `/modules/${moduleSlug}/${lesson.position}`;
 }
@@ -178,6 +215,7 @@ function lessonFromRow(moduleSlug: string, row: LessonRow): ModuleLesson {
     position: row.position,
     kind,
     assessmentSlug,
+    steps,
   };
   return {
     id: row.id,
