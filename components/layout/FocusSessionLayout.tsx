@@ -38,14 +38,16 @@ function SidebarBody({
 }) {
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <Link
-        href="/home"
-        aria-label="QHRT home"
-        className="flex w-fit shrink-0 items-center text-foreground transition-opacity hover:opacity-70"
-      >
-        <Logo decorative />
-      </Link>
-      <nav aria-label={progressLabel} className="flex min-h-0 flex-1 flex-col justify-center">
+      <div className="flex h-[var(--app-navbar-height)] shrink-0 items-center px-6">
+        <Link
+          href="/home"
+          aria-label="QHRT home"
+          className="flex items-center text-foreground transition-opacity hover:opacity-70"
+        >
+          <Logo decorative />
+        </Link>
+      </div>
+      <nav aria-label={progressLabel} className="flex min-h-0 flex-1 flex-col justify-center px-5">
         <div className="flex h-[75%] min-h-0 flex-col gap-3">
           <Typography type="body-xs" color="muted" className="shrink-0">
             {progressLabel}
@@ -54,7 +56,7 @@ function SidebarBody({
         </div>
       </nav>
       {onPause || showTheme ? (
-        <div className="flex shrink-0 items-center gap-1 pt-6">
+        <div className="flex shrink-0 items-center gap-1 px-5 pb-6 pt-6">
           {onPause ? <PauseButton onPause={onPause} /> : null}
           {showTheme ? (
             <div className="ml-auto">
@@ -92,7 +94,7 @@ export default function FocusSessionLayout({
 
   return (
     <div className="flex h-svh overflow-hidden bg-background">
-      <aside className="hidden h-full w-72 shrink-0 flex-col px-5 py-6 lg:flex">
+      <aside className="hidden h-full w-72 shrink-0 flex-col lg:flex">
         <SidebarBody progressLabel={progressLabel} progress={progress} showTheme onPause={onPause} />
       </aside>
 
@@ -104,7 +106,7 @@ export default function FocusSessionLayout({
             className="absolute inset-0 bg-foreground/20"
             onClick={() => setProgressOpen(false)}
           />
-          <aside className="relative flex h-full w-72 flex-col bg-background px-5 py-6">
+          <aside className="relative flex h-full w-72 flex-col bg-background">
             <div className="mb-4 flex justify-end">
               <Button size="sm" variant="ghost" onPress={() => setProgressOpen(false)}>
                 Close
