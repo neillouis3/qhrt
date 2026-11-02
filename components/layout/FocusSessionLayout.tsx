@@ -78,6 +78,9 @@ export default function FocusSessionLayout({
   leadingActions,
   onPause,
   contentAlign = 'center',
+  wide = false,
+  immersive = false,
+  showTheme = true,
   children,
 }: {
   progressLabel?: string;
@@ -88,17 +91,23 @@ export default function FocusSessionLayout({
   leadingActions?: ReactNode;
   onPause?: () => void;
   contentAlign?: 'center' | 'start';
+  wide?: boolean;
+  /** Hides the progress rail and floats the actions over a full-screen slide. */
+  immersive?: boolean;
+  showTheme?: boolean;
   children: ReactNode;
 }) {
   const [progressOpen, setProgressOpen] = useState(false);
 
   return (
-    <div className="flex h-svh overflow-hidden bg-background">
+    <div className={`relative flex h-svh overflow-hidden bg-background ${immersive ? 'w-full' : ''}`}>
+      {immersive ? null : (
       <aside className="hidden h-full w-72 shrink-0 flex-col lg:flex">
-        <SidebarBody progressLabel={progressLabel} progress={progress} showTheme onPause={onPause} />
+        <SidebarBody progressLabel={progressLabel} progress={progress} showTheme={showTheme} onPause={onPause} />
       </aside>
+      )}
 
-      {progressOpen ? (
+      {progressOpen && !immersive ? (
         <div className="fixed inset-0 z-50 lg:hidden">
           <button
             type="button"
@@ -107,7 +116,7 @@ export default function FocusSessionLayout({
             onClick={() => setProgressOpen(false)}
           />
           <aside className="relative flex h-full w-72 flex-col bg-background">
-            <div className="mb-4 flex justify-end">
+            <div className="flex h-[var(--app-navbar-height)] items-center justify-end px-6">
               <Button size="sm" variant="ghost" onPress={() => setProgressOpen(false)}>
                 Close
               </Button>
@@ -118,7 +127,7 @@ export default function FocusSessionLayout({
       ) : null}
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <header className="flex shrink-0 items-center justify-between gap-3 px-4 py-3 lg:hidden">
+        <header className={`flex h-[var(--app-navbar-height)] shrink-0 items-center justify-between gap-3 px-6 lg:hidden ${immersive ? 'hidden' : ''}`}>
           <Link href="/home" aria-label="QHRT home" className="flex items-center">
             <Logo decorative />
           </Link>
@@ -127,19 +136,27 @@ export default function FocusSessionLayout({
               Progress
             </Button>
             {onPause ? <PauseButton onPause={onPause} /> : null}
-            <ThemeSwitcher />
+            {showTheme ? <ThemeSwitcher /> : null}
           </div>
         </header>
 
         <main
-          className={`flex min-h-0 flex-1 flex-col overflow-y-auto px-4 sm:px-8 lg:px-12 ${
-            contentAlign === 'start' ? 'pt-28 pb-12 lg:pt-40 lg:pb-16' : 'py-8 lg:py-10'
-          }`}
+          className={
+            immersive
+              ? 'grid min-h-0 flex-1 place-items-center overflow-hidden px-8 py-24'
+              : `flex min-h-0 flex-1 flex-col overflow-y-auto px-4 sm:px-8 lg:px-12 ${
+                  contentAlign === 'start' ? 'pt-28 pb-12 lg:pt-40 lg:pb-16' : 'py-8 lg:py-10'
+                }`
+          }
         >
           <div
-            className={`mx-auto flex w-full max-w-2xl flex-col gap-8 ${
-              contentAlign === 'start' ? 'justify-start' : 'min-h-full justify-center'
-            }`}
+            className={
+              immersive
+                ? 'w-[min(88vw,calc((100svh_-_12rem)*16/9))] shrink-0'
+                : `mx-auto flex w-full flex-col gap-8 ${wide ? 'max-w-5xl' : 'max-w-2xl'} ${
+                    contentAlign === 'start' ? 'justify-start' : 'min-h-full justify-center'
+                  }`
+            }
           >
             {title ? (
               <div className="flex flex-col gap-1">
@@ -154,7 +171,7 @@ export default function FocusSessionLayout({
               </div>
             ) : null}
             <div className="flex flex-col gap-6">{children}</div>
-            {leadingActions || actions ? (
+            {!immersive && (leadingActions || actions) ? (
               <div className="flex w-full flex-wrap items-center gap-2">
                 {leadingActions ? (
                   <div className="flex items-center gap-2">{leadingActions}</div>
@@ -169,6 +186,14 @@ export default function FocusSessionLayout({
           </div>
         </main>
       </div>
+      {immersive && (leadingActions || actions) ? (
+        <div className="pointer-events-none absolute inset-x-0 bottom-6 z-10 flex justify-center px-4">
+          <div className="pointer-events-auto flex max-w-full flex-wrap items-center justify-center gap-2 rounded-full border border-border bg-background/95 px-3 py-2 shadow-[0_16px_40px_-18px_rgba(15,23,42,0.45)] backdrop-blur">
+            {leadingActions}
+            {actions}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
