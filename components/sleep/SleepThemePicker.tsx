@@ -3,7 +3,9 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Button, Typography } from '@heroui/react';
+import { Button, Typography, buttonVariants } from '@heroui/react';
+import FocusSessionLayout from '@/components/layout/FocusSessionLayout';
+import ProgressNav from '@/components/session/ProgressNav';
 type Clarifier = {
   id: string;
   body: string;
@@ -24,7 +26,19 @@ type SessionSummary = {
   createdAt: string;
 };
 
-export default function SleepThemePicker() {
+export default function SleepThemePicker({
+  domain = 'SLEEP',
+  lessonPath = '/modules/sleep',
+  eyebrow = 'Sleep Education & Self-Observation',
+  heading = 'Choose one reflection theme',
+  intro = 'Select one theme and one clarifying statement. This stays in Sleep Education. The guided breathing reflection starts only after you launch it, and each launch is stored as its own session.',
+}: {
+  domain?: string;
+  lessonPath?: string;
+  eyebrow?: string;
+  heading?: string;
+  intro?: string;
+}) {
   const router = useRouter();
   const [themes, setThemes] = useState<Theme[]>([]);
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
@@ -40,7 +54,7 @@ export default function SleepThemePicker() {
     void (async () => {
       try {
         const [themeResponse, sessionResponse] = await Promise.all([
-          fetch('/api/reflection/themes?locale=en', { credentials: 'same-origin' }),
+          fetch(`/api/reflection/themes?locale=en&domain=${encodeURIComponent(domain)}`, { credentials: 'same-origin' }),
           fetch('/api/reflection/sessions', { credentials: 'same-origin' }),
         ]);
         const themeBody = (await themeResponse.json()) as { themes?: Theme[]; error?: string };
@@ -61,11 +75,11 @@ export default function SleepThemePicker() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [domain]);
 
   const theme = themes.find((item) => item.id === themeId) ?? null;
   const clarifier = theme?.clarifiers.find((item) => item.id === clarifierId) ?? null;
-  const needsCustom = Boolean(clarifier?.allowsCustom || theme?.themeKey === 'OTHER');
+  const needsCustom = Boolean(clarifier?.allowsCustom || theme?.themeKey === 'OTHER' || theme?.themeKey === 'LT_OTHER');
   const ready = Boolean(theme && clarifier && (!needsCustom || custom.trim()));
 
   const begin = async () => {
@@ -82,10 +96,31 @@ export default function SleepThemePicker() {
           clarifierId: clarifier.id,
           customClarifierText: needsCustom ? custom.trim() : '',
           locale: 'en',
-          sourceModuleProgressId: 'sleep',
+          sourceModuleProgressId: lessonPath,
         }),
       });
-      const body = (await response.json()) as { session?: { id: string }; error?: string };
+      const body = (await response.json()) as { session?: { id: string }; error?: string; code?: string };
+      if (response.status === 503 || body.code === 'SCHEMA_MISSING') {
+        const local = {
+          id: 'local',
+          status: 'ACTIVE',
+          state: 'THEME_INTRO',
+          sourceDomain: domain,
+          themeKey: theme.themeKey,
+          themeSnapshot: theme.label,
+          clarifierSnapshot: needsCustom ? custom.trim() : clarifier.body,
+          customClarifierText: needsCustom ? custom.trim() : '',
+          breathPhase: 'ask',
+          ratings: [],
+          perspectiveText: '',
+          observationChoice: '',
+          observationNote: '',
+          nextStep: '',
+        };
+        sessionStorage.setItem('qhrt.reflection.local', JSON.stringify(local));
+        router.push('/reflection?session=local');
+        return;
+      }
       if (!response.ok || !body.session) {
         setMessage(body.error || 'The reflection could not be started.');
         return;
@@ -98,17 +133,73 @@ export default function SleepThemePicker() {
     }
   };
 
+  const progress = (
+    <ProgressNav
+      items={[
+        {
+          id: 'theme',
+          index: '1',
+          label: 'Choose a theme',
+          status: theme ? 'complete' : 'current',
+        },
+        {
+          id: 'statement',
+          index: '2',
+          label: 'Clarifying statement',
+          status: theme ? 'current' : 'upcoming',
+        },
+      ]}
+      onSelect={(id) => {
+        if (id === 'theme') {
+          setThemeId('');
+          setClarifierId('');
+          setCustom('');
+        }
+      }}
+    />
+  );
+
   return (
-    <div className="mx-auto flex w-full max-w-lg flex-col gap-8 px-6 py-12">
+    <FocusSessionLayout
+      progressLabel={eyebrow}
+      progress={progress}
+      leadingActions={
+        theme ? (
+          <Button
+            size="sm"
+            variant="tertiary"
+            onPress={() => {
+              setThemeId('');
+              setClarifierId('');
+              setCustom('');
+            }}
+          >
+            Back
+          </Button>
+        ) : (
+          <Link href={lessonPath} className={buttonVariants({ size: 'sm', variant: 'tertiary' })}>
+            Leave
+          </Link>
+        )
+      }
+      actions={
+        theme ? (
+          <Button size="sm" variant="primary" isDisabled={!ready || saving} onPress={() => void begin()}>
+            Begin Guided QHRT Reflection
+          </Button>
+        ) : null
+      }
+    >
+      <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-3">
         <Typography type="body-xs" color="muted">
-          Sleep Education & Self-Observation
+          {eyebrow}
         </Typography>
         <Typography type="h1" weight="normal">
-          Choose one reflection theme
+          {heading}
         </Typography>
         <Typography type="body-sm" color="muted">
-          Select one theme and one clarifying statement. This stays in Sleep Education. The guided breathing reflection starts only after you launch it, and each launch is stored as its own session.
+          {intro}
         </Typography>
       </div>
 
@@ -168,15 +259,9 @@ export default function SleepThemePicker() {
               placeholder="Write the statement that fits"
             />
           ) : null}
-          <Button variant="primary" isDisabled={!ready || saving} onPress={() => void begin()}>
-            Begin Guided Reflection
-          </Button>
         </div>
       ) : null}
-
-      <Link href="/modules/sleep" className="text-sm text-muted">
-        Back to Sleep
-      </Link>
-    </div>
+      </div>
+    </FocusSessionLayout>
   );
 }
