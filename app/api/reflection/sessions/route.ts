@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
       sourceModuleProgressId?: string;
     };
     if (!body.themeId) {
-      return NextResponse.json({ error: 'Choose a theme from Sleep Education.' }, { status: 400 });
+      return NextResponse.json({ error: 'Choose a theme from this lesson.' }, { status: 400 });
     }
     const result = await createReflectionSession({
       userId: userResult.user.id,
