@@ -3,12 +3,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Button, Typography } from '@heroui/react';
+import { Button, Typography, buttonVariants } from '@heroui/react';
+import FocusSessionLayout from '@/components/layout/FocusSessionLayout';
+import ProgressNav from '@/components/session/ProgressNav';
+import { isReflectionLesson, type GuideStep } from '@/lib/modules';
 import {
   NEXT_STEPS,
   OBSERVATION_OUTCOMES,
   PERSONAL_TIME_STATEMENTS,
-  SLEEP_THEME_PATH,
+  reflectionLessonPath,
+  reflectionThemePath,
   cleanReflectionField,
   cleanReflectionNote,
   reflectionCue,
@@ -22,11 +26,67 @@ import {
 
 type BreathPhase = 'ask' | 'breathe' | 'zero';
 
+const REFLECTION_NAV = [
+  ['reflection-selected', 'Guided QHRT Reflection'],
+  ['reflection-evening', 'Picture One Specific Evening'],
+  ['reflection-morning', 'Picture the Following Morning'],
+  ['reflection-frustration', 'Hold Only the Morning Picture'],
+  ['reflection-breathing', 'Keep the Morning Picture in Mind'],
+  ['reflection-rerate', 'What Do You Notice Now?'],
+  ['reflection-evening-return', 'Look at the Evening Picture Again'],
+  ['reflection-morning-return', 'Look at the Morning Picture Again'],
+  ['reflection-perspective', 'What Fits the Pictures Now?'],
+  ['reflection-daily-life', 'Notice What Happens Naturally'],
+  ['reflection-noticed', 'What Did You Notice?'],
+  ['reflection-next', 'Your QHRT Reflection Is Complete'],
+] as const;
+
+type ContinueAction = { label: string; onPress: () => void; disabled?: boolean };
+
+function ReflectionText({
+  step,
+  title,
+  fallback,
+  hidePoints = false,
+}: {
+  step?: GuideStep;
+  title: string;
+  fallback: string[];
+  hidePoints?: boolean;
+}) {
+  const paragraphs = step && step.paragraphs.length > 0 ? step.paragraphs : fallback;
+  const points = hidePoints ? [] : (step?.points ?? []);
+  return (
+    <>
+      <Typography type="h1" weight="normal">{step?.title || title}</Typography>
+      {paragraphs.map((line) => (
+        <Typography key={line} type="body-sm" color="muted">{line}</Typography>
+      ))}
+      {points.length > 0 ? (
+        <ul className="flex list-disc flex-col gap-1 pl-5">
+          {points.map((item) => (
+            <li key={item}>
+              <Typography type="body-sm" color="muted">{item}</Typography>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </>
+  );
+}
+
+function labeledPoint(point: string, fallbackTitle: string, fallbackBody: string) {
+  const split = point.indexOf(':');
+  if (split < 1) return { title: fallbackTitle, body: point || fallbackBody };
+  return { title: point.slice(0, split).trim(), body: point.slice(split + 1).trim() || fallbackBody };
+}
+
 type SessionPayload = {
   id: string;
   status: 'ACTIVE' | 'COMPLETED';
   state: string;
   themeKey: string;
+  sourceDomain?: string;
   themeSnapshot: string;
   clarifierSnapshot: string;
   customClarifierText: string;
@@ -138,9 +198,11 @@ export default function ReflectionExperience({ sessionId }: { sessionId: string 
   const [missing, setMissing] = useState('');
   const [locked, setLocked] = useState(false);
   const [themeKey, setThemeKey] = useState('');
+  const [sourceDomain, setSourceDomain] = useState('SLEEP');
   const [theme, setTheme] = useState('');
   const [statement, setStatement] = useState('');
   const [screen, setScreen] = useState(1);
+  const [script, setScript] = useState<GuideStep[]>([]);
   const [breathPhase, setBreathPhase] = useState<BreathPhase>('ask');
   const [rating, setRating] = useState<number | null>(null);
   const [ratings, setRatings] = useState<number[]>([]);
@@ -157,11 +219,44 @@ export default function ReflectionExperience({ sessionId }: { sessionId: string 
   const playToken = useRef(0);
   const pausedRef = useRef(false);
   const saving = useRef(false);
+  const lessonSlug = reflectionLessonPath(sourceDomain).split('/').filter(Boolean)[1] ?? '';
+
+  useEffect(() => {
+    if (!lessonSlug) return;
+    const controller = new AbortController();
+    void fetch(`/api/modules/${encodeURIComponent(lessonSlug)}`, { signal: controller.signal })
+      .then(async (response) => {
+        const body = (await response.json().catch(() => ({}))) as { module?: { lessons?: { steps?: GuideStep[] }[] } };
+        const lesson = body.module?.lessons?.find((item) => isReflectionLesson(item.steps ?? []));
+        if (!controller.signal.aborted) setScript(lesson?.steps ?? []);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setScript([]);
+      });
+    return () => controller.abort();
+  }, [lessonSlug]);
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       try {
+        if (sessionId === 'local') {
+          const raw = sessionStorage.getItem('qhrt.reflection.local');
+          const session = raw ? (JSON.parse(raw) as SessionPayload) : null;
+          if (cancelled) return;
+          if (!session) {
+            setMissing('Choose a perspective in Life Transitions before starting a reflection.');
+            return;
+          }
+          const spoken = cleanReflectionField(session.customClarifierText || session.clarifierSnapshot);
+          setThemeKey(session.themeKey);
+          setSourceDomain(session.sourceDomain || 'LIFE_TRANSITIONS');
+          setTheme(session.themeSnapshot);
+          setStatement(spoken);
+          setScreen(1);
+          setLoaded(true);
+          return;
+        }
         const response = await fetch(`/api/reflection/sessions/${sessionId}`, { credentials: 'same-origin' });
         const body = (await response.json()) as { session?: SessionPayload; error?: string };
         if (cancelled) return;
@@ -172,6 +267,7 @@ export default function ReflectionExperience({ sessionId }: { sessionId: string 
         const session = body.session;
         const spoken = cleanReflectionField(session.customClarifierText || session.clarifierSnapshot);
         setThemeKey(session.themeKey);
+        setSourceDomain(session.sourceDomain || 'SLEEP');
         setTheme(session.themeSnapshot);
         setStatement(spoken);
         setScreen(screenForState(session.state));
@@ -228,7 +324,7 @@ export default function ReflectionExperience({ sessionId }: { sessionId: string 
       playToken.current = token;
       setSpeaking(true);
       setVoiceNote('');
-      const fallback = reflectionSpeech(cue, spokenTheme, spokenStatement);
+      const fallback = reflectionSpeech(cue, spokenTheme, spokenStatement, sourceDomain);
       return new Promise<void>((resolve) => {
         const finish = () => {
           if (playToken.current === token) setSpeaking(false);
@@ -236,7 +332,13 @@ export default function ReflectionExperience({ sessionId }: { sessionId: string 
         };
         void (async () => {
           try {
-            const params = new URLSearchParams({ cue, theme: spokenTheme, statement: spokenStatement });
+            const params = new URLSearchParams({
+              cue,
+              theme: spokenTheme,
+              statement: spokenStatement,
+              domain: sourceDomain,
+              slug: reflectionLessonPath(sourceDomain).split('/').filter(Boolean)[1] ?? '',
+            });
             const response = await fetch(`/api/reflection/voice?${params.toString()}`, { credentials: 'same-origin' });
             if (playToken.current !== token) {
               resolve();
@@ -274,7 +376,7 @@ export default function ReflectionExperience({ sessionId }: { sessionId: string 
         })();
       });
     },
-    [statement, theme]
+    [sourceDomain, statement, theme]
   );
 
   useEffect(() => {
@@ -311,7 +413,7 @@ export default function ReflectionExperience({ sessionId }: { sessionId: string 
       nextStep?: string;
       status?: 'COMPLETED';
     }) => {
-      if (locked) return;
+      if (locked || sessionId === 'local') return;
       const response = await fetch(`/api/reflection/sessions/${sessionId}`, {
         method: 'PATCH',
         credentials: 'same-origin',
@@ -372,59 +474,121 @@ export default function ReflectionExperience({ sessionId }: { sessionId: string 
     }
   };
 
-  const frame = (children: React.ReactNode, key: string) => (
-    <div className="flex min-h-svh w-full flex-col items-center bg-background px-6 py-10">
-      <div key={key} className="readiness-step my-auto flex w-full max-w-lg flex-col gap-6">
-        <Typography type="body-xs" color="muted">
-          Guided QHRT Reflection
-        </Typography>
-        {children}
-        {voiceNote ? (
-          <Typography type="body-xs" color="muted">
-            {voiceNote}
-          </Typography>
-        ) : null}
-      </div>
-    </div>
+  let pending: ContinueAction | null = null;
+  const lessonHref = reflectionLessonPath(sourceDomain);
+  const themesHref = missing.includes('Life Transitions')
+    ? reflectionThemePath('LIFE_TRANSITIONS')
+    : reflectionThemePath(sourceDomain);
+  const place = () => ({
+    state: stateForScreen(screen),
+    breathPhase,
+    ratings,
+    perspectiveText: perspectiveText(),
+    observationChoice: observation,
+    observationNote: cleanReflectionNote(note),
+    nextStep,
+  });
+
+  const progress = (
+    <ProgressNav
+      items={REFLECTION_NAV.map(([key, fallback], index) => ({
+        id: String(index + 1),
+        index: String(index + 1),
+        label: script.find((item) => item.key === key)?.title || fallback,
+        status: !loaded
+          ? index === 0
+            ? 'current'
+            : 'upcoming'
+          : index + 1 < screen
+            ? 'complete'
+            : index + 1 === screen
+              ? 'current'
+              : 'upcoming',
+      }))}
+      onSelect={(id) => {
+        const next = Number(id);
+        if (loaded && next >= 1 && next < screen) go(next);
+      }}
+    />
   );
 
-  const controls = (onContinue: () => void, label = 'Continue', disabled = false) => (
-    <div className="flex flex-wrap gap-2">
-      <Button variant="ghost" onPress={() => setBreathPaused((current) => !current)}>
-        {breathPaused ? 'Resume' : 'Pause'}
-      </Button>
-      <Button
-        variant="ghost"
-        isDisabled={speaking && !breathPaused}
-        onPress={() => {
-          setBreathPaused(false);
-          const cue = reflectionCue(screen, breathPhase);
-          if (cue) void playCue(cue);
-        }}
-      >
-        Replay
-      </Button>
-      <Button variant="primary" isDisabled={disabled || locked} onPress={onContinue}>
-        {label}
-      </Button>
-      <Button
-        variant="ghost"
-        onPress={() =>
-          void leave('/modules/sleep', {
-            state: stateForScreen(screen),
-            breathPhase,
-            ratings,
-            perspectiveText: perspectiveText(),
-            observationChoice: observation,
-            observationNote: cleanReflectionNote(note),
-            nextStep,
-          })
+  const frame = (children: React.ReactNode, key: string) => {
+    const action = pending;
+    pending = null;
+    return (
+      <FocusSessionLayout
+        key={key}
+        progressLabel="Guided QHRT Reflection"
+        progress={progress}
+        leadingActions={
+          missing ? (
+            <Link href={themesHref} className={buttonVariants({ size: 'sm', variant: 'tertiary' })}>
+              Leave
+            </Link>
+          ) : loaded && screen <= 1 ? (
+            <Button size="sm" variant="tertiary" onPress={() => void leave(lessonHref, place())}>
+              Leave
+            </Button>
+          ) : loaded ? (
+            <Button
+              size="sm"
+              variant="tertiary"
+              onPress={() => {
+                if (screen === 6 && breathPhase !== 'ask') {
+                  stopVoice();
+                  setRating(null);
+                  setBreathPhase('ask');
+                  void persist({ ...place(), state: 'RERATE', breathPhase: 'ask' });
+                  return;
+                }
+                go(Math.max(1, screen - 1));
+              }}
+            >
+              Back
+            </Button>
+          ) : null
+        }
+        actions={
+          loaded && action ? (
+            <>
+              <Button size="sm" variant="ghost" onPress={() => setBreathPaused((current) => !current)}>
+                {breathPaused ? 'Resume' : 'Pause'}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                isDisabled={speaking && !breathPaused}
+                onPress={() => {
+                  setBreathPaused(false);
+                  const cue = reflectionCue(screen, breathPhase);
+                  if (cue) void playCue(cue);
+                }}
+              >
+                Replay
+              </Button>
+              <Button size="sm" variant="primary" isDisabled={action.disabled || locked} onPress={action.onPress}>
+                {action.label}
+              </Button>
+            </>
+          ) : null
         }
       >
-        Exit and Return Later
-      </Button>
-    </div>
-  );
+        <div key={key} className="flex flex-col gap-6">
+          {children}
+          {voiceNote ? (
+            <Typography type="body-xs" color="muted">
+              {voiceNote}
+            </Typography>
+          ) : null}
+        </div>
+      </FocusSessionLayout>
+    );
+  };
+
+  const controls = (onContinue: () => void, label = 'Continue', disabled = false) => {
+    pending = { onPress: onContinue, label, disabled };
+    return null;
+  };
 
   if (missing) {
     return frame(
@@ -435,9 +599,6 @@ export default function ReflectionExperience({ sessionId }: { sessionId: string 
         <Typography type="body-sm" color="muted">
           {missing} The guided reflection does not choose a theme for you.
         </Typography>
-        <Link href={SLEEP_THEME_PATH} className="text-sm underline-offset-4 hover:underline">
-          Return to the Sleep theme selector
-        </Link>
       </>,
       'missing'
     );
@@ -447,14 +608,24 @@ export default function ReflectionExperience({ sessionId }: { sessionId: string 
     return frame(<Typography type="body-sm" color="muted">Loading this reflection…</Typography>, 'loading');
   }
 
+  const step = (key: string) => script.find((item) => item.key === key);
+  const button = (key: string, fallback: string) => step(key)?.section || fallback;
+
   if (screen === 1) {
     return frame(
       <>
-        <Typography type="h1" weight="normal">Your Selected QHRT Reflection</Typography>
-        <Typography type="body">You chose: {theme}</Typography>
-        <Typography type="body-sm" color="muted">You previously selected: {statement}</Typography>
-        <Typography type="body-sm" color="muted">Take a moment to read the statement again.</Typography>
-        {controls(() => go(2))}
+        <ReflectionText
+          step={step('reflection-selected')}
+          title="Guided QHRT Reflection"
+          fallback={[
+            'You chose this because it feels relevant to something you have noticed in your own experience.',
+            'You are not trying to determine why anything is happening.',
+            'You are simply exploring something you have noticed.',
+          ]}
+        />
+        <Typography type="body">Your selected theme: {theme}</Typography>
+        <Typography type="body-sm" color="muted">You selected: {statement}</Typography>
+        {controls(() => go(2), button('reflection-selected', 'Begin Guided Reflection'))}
       </>,
       'screen-1'
     );
@@ -463,14 +634,15 @@ export default function ReflectionExperience({ sessionId }: { sessionId: string 
   if (screen === 2) {
     return frame(
       <>
-        <Typography type="h1" weight="normal">Picture One Specific Evening</Typography>
-        <Typography type="body-sm" color="muted">
-          Bring to mind one real evening that represents the theme you selected. Create a single still-frame picture of one specific moment.
-        </Typography>
-        <Typography type="body-sm" color="muted">
-          For example, with the theme Personal Time, the picture might be sitting comfortably watching a recorded show, enjoying an alcoholic drink, and deciding to continue watching rather than ending the evening. Your picture may be completely different.
-        </Typography>
-        {controls(() => go(3), 'I Have My Evening Picture')}
+        <ReflectionText
+          step={step('reflection-evening')}
+          title="Picture One Specific Evening"
+          fallback={[
+            'Bring to mind one real evening that represents the theme you selected.',
+            'Create a single still-frame picture of that moment.',
+          ]}
+        />
+        {controls(() => go(3), button('reflection-evening', 'I Have My Evening Picture'))}
       </>,
       'screen-2'
     );
@@ -479,11 +651,12 @@ export default function ReflectionExperience({ sessionId }: { sessionId: string 
   if (screen === 3) {
     return frame(
       <>
-        <Typography type="h1" weight="normal">Picture the Following Morning</Typography>
-        <Typography type="body-sm" color="muted">
-          Create a second still-frame picture of yourself the following morning. You may picture waking tired, wanting to stay in bed, moving more slowly than you would prefer, wishing you felt more refreshed, or noticing frustration about the choice you made the evening before.
-        </Typography>
-        {controls(() => go(4), 'I Have My Morning Picture')}
+        <ReflectionText
+          step={step('reflection-morning')}
+          title="Picture the Following Morning"
+          fallback={['Now create a second still-frame picture.', 'Picture yourself the following morning.']}
+        />
+        {controls(() => go(4), button('reflection-morning', 'I Have My Morning Picture'))}
       </>,
       'screen-3'
     );
@@ -492,12 +665,17 @@ export default function ReflectionExperience({ sessionId }: { sessionId: string 
   if (screen === 4) {
     return frame(
       <>
-        <Typography type="h1" weight="normal">Hold Only the Morning Picture</Typography>
-        <Typography type="body-sm" color="muted">
-          Let the evening picture go for now. Notice any frustration you feel about having made the evening choice you now associate with this next-morning experience.
-        </Typography>
+        <ReflectionText
+          step={step('reflection-frustration')}
+          title="Hold Only the Morning Picture"
+          fallback={[
+            'Let the evening picture go for now.',
+            'Keep only the next-morning still-frame picture in mind.',
+            'How strong does this frustration feel right now?',
+          ]}
+        />
         <RatingControl value={rating} onChange={setRating} />
-        {controls(saveRating, 'Continue', rating === null)}
+        {controls(saveRating, button('reflection-frustration', 'Continue'), rating === null)}
       </>,
       'screen-4'
     );
@@ -506,10 +684,17 @@ export default function ReflectionExperience({ sessionId }: { sessionId: string 
   if (screen === 5) {
     return frame(
       <>
-        <Typography type="h1" weight="normal">Keep the Morning Picture in Mind</Typography>
-        <Typography type="body-sm" color="muted">Continue holding only the morning still-frame picture.</Typography>
+        <ReflectionText
+          step={step('reflection-breathing')}
+          title="Keep the Morning Picture in Mind"
+          fallback={[
+            'Continue holding only the morning still-frame picture.',
+            'Inhale gently through your nose for 3. Exhale gently through your mouth for 5.',
+            'As you exhale, gently engage your lower abdominal muscles.',
+          ]}
+        />
         <BreathRhythm paused={breathPaused} />
-        {controls(() => go(6), 'Continue When Ready')}
+        {controls(() => go(6), button('reflection-breathing', 'Continue When Ready'))}
       </>,
       'screen-5'
     );
@@ -519,12 +704,12 @@ export default function ReflectionExperience({ sessionId }: { sessionId: string 
     return frame(
       <>
         <Typography type="h1" weight="normal">
-          {breathPhase === 'zero' ? 'Your frustration rating is now zero' : 'What Do You Notice Now?'}
+          {breathPhase === 'zero' ? 'Your frustration rating is now zero' : step('reflection-rerate')?.title || 'What Do You Notice Now?'}
         </Typography>
         {breathPhase === 'breathe' ? (
           <>
             <Typography type="body-sm" color="muted">
-              Return to the breathing sequence. Keep the same morning picture gently in mind.
+              {step('reflection-rerate')?.paragraphs[2] || 'If the number is above 0, return to the QHRT breathing sequence and repeat.'}
             </Typography>
             <BreathRhythm paused={breathPaused} />
             {controls(() => {
@@ -542,7 +727,12 @@ export default function ReflectionExperience({ sessionId }: { sessionId: string 
           </>
         ) : (
           <>
-            <Typography type="body-sm" color="muted">Continue holding the same morning still-frame picture.</Typography>
+            <Typography type="body-sm" color="muted">
+              {step('reflection-rerate')?.paragraphs[0] || 'Keep the same morning picture in mind.'}
+            </Typography>
+            <Typography type="body">
+              {step('reflection-rerate')?.paragraphs[1] || 'How strong does the frustration feel now?'}
+            </Typography>
             <RatingControl value={rating} onChange={setRating} prompt="How strong does it feel now?" />
             {ratings.length > 0 ? (
               <Typography type="body-xs" color="muted">Earlier ratings: {ratings.join(', ')}</Typography>
@@ -558,24 +748,16 @@ export default function ReflectionExperience({ sessionId }: { sessionId: string 
   if (screen === 7) {
     return frame(
       <>
-        <Typography type="h1" weight="normal">Look at the Evening Picture Again</Typography>
-        <Typography type="body-sm" color="muted">
-          Bring the original evening still-frame picture back to mind. Do not try to make anything happen. Simply notice it.
-        </Typography>
-        <Typography type="body">What do I notice now when I picture this evening?</Typography>
-        <ul className="flex list-disc flex-col gap-1 pl-5">
-          {[
-            'your choice in the picture has shifted',
-            'the timing has shifted',
-            'what you are doing has shifted',
-            'the amount of time you continue has shifted',
-            'something else about the picture feels different',
-            'the picture remains similar',
-          ].map((item) => (
-            <li key={item}><Typography type="body-sm" color="muted">{item}</Typography></li>
-          ))}
-        </ul>
-        {controls(() => go(8))}
+        <ReflectionText
+          step={step('reflection-evening-return')}
+          title="Look at the Evening Picture Again"
+          fallback={[
+            'Bring the original evening still-frame picture back to mind.',
+            'Notice it without trying to make anything happen.',
+            'Do not choose a new perspective yet. Simply notice the picture.',
+          ]}
+        />
+        {controls(() => go(8), button('reflection-evening-return', 'Continue'))}
       </>,
       'screen-7'
     );
@@ -584,15 +766,16 @@ export default function ReflectionExperience({ sessionId }: { sessionId: string 
   if (screen === 8) {
     return frame(
       <>
-        <Typography type="h1" weight="normal">Look at the Morning Picture Again</Typography>
-        <Typography type="body-sm" color="muted">
-          Bring the original morning still-frame picture back to mind. Notice it without trying to force anything. Notice how the evening and morning pictures have shifted.
-        </Typography>
-        <Typography type="body">What do I notice now when I picture this morning?</Typography>
-        <Typography type="body-sm" color="muted">
-          In the evening picture, you may now see yourself making a different choice. In the morning picture, you may now see yourself waking without the tiredness that was present in the original picture.
-        </Typography>
-        {controls(() => go(9))}
+        <ReflectionText
+          step={step('reflection-morning-return')}
+          title="Look at the Morning Picture Again"
+          fallback={[
+            'Bring the original morning still-frame picture back to mind.',
+            'Notice it without trying to make anything happen.',
+            'There is no need to force either picture to change. Simply notice what is different, similar, or new.',
+          ]}
+        />
+        {controls(() => go(9), button('reflection-morning-return', 'Continue'))}
       </>,
       'screen-8'
     );
@@ -603,10 +786,12 @@ export default function ReflectionExperience({ sessionId }: { sessionId: string 
     const ready = statements.length === 0 ? Boolean(cleanReflectionField(custom)) : choice === 'custom' ? Boolean(cleanReflectionField(custom)) : Boolean(choice);
     return frame(
       <>
-        <Typography type="h1" weight="normal">What Fits the Pictures Now?</Typography>
-        <Typography type="body-sm" color="muted">
-          Consider the change you noticed between the original pictures and the pictures you see now. Choose the statement that feels most accurate, or write your own.
-        </Typography>
+        <ReflectionText
+          step={step('reflection-perspective')}
+          title="What Fits the Pictures Now?"
+          fallback={['Consider the change you noticed in the evening and morning pictures.', 'Which statement best reflects what you noticed?']}
+          hidePoints
+        />
         <div className="flex flex-col gap-2">
           {statements.map((item) => (
             <label key={item} className="flex items-start gap-3 text-sm">
@@ -635,25 +820,18 @@ export default function ReflectionExperience({ sessionId }: { sessionId: string 
   if (screen === 10) {
     return frame(
       <>
-        <Typography type="h1" weight="normal">Notice What Happens Naturally</Typography>
-        <Typography type="body-sm" color="muted">
-          There is nothing you need to force. Over the next several evenings, simply notice your actual choices and experience.
-        </Typography>
-        <ul className="flex list-disc flex-col gap-1 pl-5">
-          {[
-            'what you choose to do',
-            'when you choose to stop',
-            'whether your evening activities feel different',
-            'whether the perspective you selected feels relevant',
-            'what you notice the following morning',
-            'anything new that becomes noticeable',
-          ].map((item) => (
-            <li key={item}><Typography type="body-sm" color="muted">{item}</Typography></li>
-          ))}
-        </ul>
+        <ReflectionText
+          step={step('reflection-daily-life')}
+          title="Notice What Happens Naturally"
+          fallback={[
+            'You have completed this Guided QHRT Reflection.',
+            'There is nothing you need to force yourself to do differently.',
+            'Let your everyday experience provide the information.',
+          ]}
+        />
         {controls(
           () => void leave('/home', { state: 'OBSERVATION', breathPhase: 'ask', ratings, perspectiveText: perspectiveText() }),
-          'Begin Observation'
+          button('reflection-daily-life', 'Begin Observation')
         )}
       </>,
       'screen-10'
@@ -663,8 +841,12 @@ export default function ReflectionExperience({ sessionId }: { sessionId: string 
   if (screen === 11) {
     return frame(
       <>
-        <Typography type="h1" weight="normal">What Happened in Everyday Life?</Typography>
-        <Typography type="body-sm" color="muted">When you return, choose the description that fits best.</Typography>
+        <ReflectionText
+          step={step('reflection-noticed')}
+          title="What Did You Notice?"
+          fallback={['When you return, choose the description that fits your experience best.']}
+          hidePoints
+        />
         <div className="flex flex-col gap-3">
           {OBSERVATION_OUTCOMES.map((item) => (
             <label key={item.id} className="flex items-start gap-3 text-sm">
@@ -717,12 +899,19 @@ export default function ReflectionExperience({ sessionId }: { sessionId: string 
 
   return frame(
     <>
-      <Typography type="h1" weight="normal">What Would You Like to Do Next?</Typography>
-      <Typography type="body-sm" color="muted">
-        You have completed this Guided QHRT Reflection for: {theme}
-      </Typography>
+      <ReflectionText
+        step={step('reflection-next')}
+        title="Your QHRT Reflection Is Complete"
+        fallback={['You can now choose what you would like to do next.', `You explored: ${theme}`]}
+        hidePoints
+      />
       <div className="flex flex-col gap-3">
-        {NEXT_STEPS.map((item) => (
+        {NEXT_STEPS.map((item, index) => {
+          const fromLesson = step('reflection-next')?.points[index];
+          const labeled = fromLesson ? labeledPoint(fromLesson, item.title, item.body) : { title: item.title, body: item.body };
+          const title = labeled.title;
+          const body = labeled.body;
+          return (
           <label key={item.id} className="flex items-start gap-3 text-sm">
             <input
               type="radio"
@@ -731,18 +920,19 @@ export default function ReflectionExperience({ sessionId }: { sessionId: string 
               onChange={() => setNextStep(item.id)}
             />
             <span>
-              <span className="block">{item.title}</span>
-              <span className="block text-muted">{item.body}</span>
+              <span className="block">{title}</span>
+              <span className="block text-muted">{body}</span>
             </span>
           </label>
-        ))}
+          );
+        })}
       </div>
       <Typography type="body-sm" color="muted">
-        Work with one theme at a time. Observe what you notice in real life. Return whenever another aspect of your sleep experience feels worth exploring.
+        Work with one theme at a time. Observe what you notice in real life. Return whenever another aspect feels worth exploring.
       </Typography>
       {controls(() => {
         if (!nextStep) return;
-        const href = nextStep === 'another' ? SLEEP_THEME_PATH : nextStep === 'sleep' ? '/modules/sleep' : '/home';
+        const href = nextStep === 'another' ? reflectionThemePath(sourceDomain) : nextStep === 'sleep' ? reflectionLessonPath(sourceDomain) : '/home';
         void leave(href, {
           state: 'NEXT_STEP',
           status: 'COMPLETED',
