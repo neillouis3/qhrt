@@ -2,8 +2,91 @@
 
 export const REFLECTION_PATH = '/reflection';
 export const SLEEP_THEME_PATH = '/modules/sleep/themes';
+export const LIFE_TRANSITIONS_PATH = '/modules/life-transitions';
+export const LIFE_TRANSITIONS_THEME_PATH = '/modules/life-transitions/themes';
 export const REFLECTION_CONTENT_VERSION = '1.0';
 export const REFLECTION_SOURCE_DOMAIN = 'SLEEP';
+export const REFLECTION_DOMAINS = ['SLEEP', 'LIFE_TRANSITIONS'] as const;
+
+export function isReflectionDomain(value: string): boolean {
+  return (REFLECTION_DOMAINS as readonly string[]).includes(value);
+}
+
+export function reflectionLessonPath(domain: string): string {
+  return domain === 'LIFE_TRANSITIONS' ? LIFE_TRANSITIONS_PATH : '/modules/sleep';
+}
+
+export function reflectionThemePath(domain: string): string {
+  return `${reflectionLessonPath(domain)}/themes`;
+}
+
+export const LIFE_TRANSITION_THEMES = [
+  {
+    id: 'c1000000-0000-4000-8000-000000000101',
+    themeKey: 'LT_PREVIOUS_CHAPTER',
+    label: 'Valuing the Previous Chapter',
+    clarifiers: [
+      'That chapter of my life mattered, even though it ended.',
+      'I can value what happened without needing to recreate it.',
+      'What belonged to that chapter can remain part of my story.',
+      'I can remember something important without requiring my future to reproduce it.',
+      'The importance of an experience is not determined by whether it continued.',
+    ],
+  },
+  {
+    id: 'c1000000-0000-4000-8000-000000000102',
+    themeKey: 'LT_CONTINUITY',
+    label: 'Continuity',
+    clarifiers: [
+      'I can carry forward what belongs to me.',
+      'Some circumstances changed, but not everything meaningful about me changed.',
+      'What I learned and developed remains available to me.',
+      'My capacity for connection, meaning, enjoyment, and belonging is not limited to one chapter of my life.',
+      'I can keep what is meaningful without keeping life exactly as it was.',
+    ],
+  },
+  {
+    id: 'c1000000-0000-4000-8000-000000000103',
+    themeKey: 'LT_WHAT_COMES_NEXT',
+    label: 'What Comes Next',
+    clarifiers: [
+      'A different future is not automatically a lesser future.',
+      'My future does not have to replace my past.',
+      'Something new can be meaningful in its own way.',
+      'I do not need to know exactly what comes next in order to participate in my life now.',
+      'A future relationship or experience can be valuable without being responsible for recreating a previous one.',
+      'My life can develop in ways I have not yet imagined.',
+    ],
+  },
+  {
+    id: 'c1000000-0000-4000-8000-000000000104',
+    themeKey: 'LT_OTHER',
+    label: 'Something else',
+    clarifiers: [] as string[],
+  },
+] as const;
+
+export function lifeTransitionThemeRows() {
+  return LIFE_TRANSITION_THEMES.map((theme) => ({
+    id: theme.id,
+    themeKey: theme.themeKey,
+    label: theme.label,
+    clarifiers: [
+      ...theme.clarifiers.map((body, index) => ({
+        id: `${theme.id}-${index + 1}`,
+        body,
+        allowsCustom: false,
+      })),
+      {
+        id: `${theme.id}-custom`,
+        body: theme.themeKey === 'LT_OTHER'
+          ? 'A perspective I would like to experiment with is:'
+          : 'Something different feels more accurate for me.',
+        allowsCustom: true,
+      },
+    ],
+  }));
+}
 
 export const REFLECTION_STATES = [
   'THEME_INTRO',
@@ -64,6 +147,29 @@ export const REFLECTION_CUES = [
 
 export type ReflectionCue = (typeof REFLECTION_CUES)[number];
 
+/** Screen key stored on the reflection lesson. Admins edit that lesson; the player keeps the sequence. */
+export const REFLECTION_STEP_KEYS: Record<ReflectionCue, string> = {
+  selected: 'reflection-selected',
+  evening: 'reflection-evening',
+  morning: 'reflection-morning',
+  frustration: 'reflection-frustration',
+  'after-rating': 'reflection-frustration',
+  breathing: 'reflection-breathing',
+  rerate: 'reflection-rerate',
+  'still-above': 'reflection-breathing',
+  'reached-zero': 'reflection-rerate',
+  'evening-return': 'reflection-evening-return',
+  'morning-return': 'reflection-morning-return',
+  perspective: 'reflection-perspective',
+  'daily-life': 'reflection-daily-life',
+  noticed: 'reflection-noticed',
+  next: 'reflection-next',
+};
+
+export function fillReflectionScript(template: string, theme: string, statement: string): string {
+  return template.replaceAll('{theme}', theme).replaceAll('{statement}', statement);
+}
+
 export const OBSERVATION_OUTCOMES = [
   {
     id: 'noticeably-different',
@@ -106,14 +212,14 @@ export const NEXT_STEPS = [
     body: 'Keep noticing this experience in everyday life.',
   },
   {
-    id: 'sleep',
-    title: 'Return to Sleep Education & Self-Observation',
-    body: 'Review what you have noticed and choose another QHRT Reflection Theme if something else feels relevant.',
-  },
-  {
     id: 'another',
     title: 'Explore Another Theme',
-    body: 'Return to your previously identified themes and select another one.',
+    body: 'Return and choose another theme that feels relevant.',
+  },
+  {
+    id: 'sleep',
+    title: 'Return to Sleep Education',
+    body: 'Return to the Sleep Education & Self-Observation module.',
   },
 ] as const;
 
@@ -168,12 +274,20 @@ export function isPersonalTimeTheme(theme: string): boolean {
   return cleanReflectionField(theme).toLowerCase() === PERSONAL_TIME_THEME.toLowerCase();
 }
 
-export function reflectionSpeech(cue: ReflectionCue, theme: string, statement: string): string {
+function experienceName(domain?: string): string {
+  return domain === 'LIFE_TRANSITIONS' ? 'life transition' : 'sleep experience';
+}
+
+function lessonName(domain?: string): string {
+  return domain === 'LIFE_TRANSITIONS' ? 'Life Transitions & Continuity' : 'Sleep Education and Self-Observation';
+}
+
+export function reflectionSpeech(cue: ReflectionCue, theme: string, statement: string, domain?: string): string {
   const selectedTheme = cleanReflectionField(theme);
   const selectedStatement = cleanReflectionField(statement);
   switch (cue) {
     case 'selected':
-      return `You selected ${selectedTheme} as something that feels relevant to your own sleep experience. You also selected the statement: ${selectedStatement}. You are not trying to determine why anything is happening. You are simply exploring something you have already noticed in your own experience. When you are ready, continue.`;
+      return `You selected ${selectedTheme} as something that feels relevant to your own ${experienceName(domain)}. You also selected the statement: ${selectedStatement}. You are not trying to determine why anything is happening. You are simply exploring something you have already noticed in your own experience. When you are ready, continue.`;
     case 'evening':
       return 'Bring to mind one evening that represents the theme you selected. Find one specific moment. Now imagine that moment as a still-frame photograph. Notice where you are. Notice what you are doing. Notice the choice you are making. You do not need to analyze the picture. Simply see the moment clearly. When you have your evening picture, continue.';
     case 'morning':
@@ -201,6 +315,6 @@ export function reflectionSpeech(cue: ReflectionCue, theme: string, statement: s
     case 'noticed':
       return 'When you return, choose the description that fits best. Noticeably different. Some differences. Similar to before. Variable. Something new became noticeable. Or not enough information yet. What did you notice about your evening choices and your next-morning experience? You may write a note, or leave it blank. When you are ready, continue.';
     case 'next':
-      return `You have completed this Guided QHRT Reflection for ${selectedTheme}. You may continue observing. You may return to Sleep Education and Self-Observation. Or you may explore another theme. Work with one theme at a time. Observe what you notice in real life. Return whenever another aspect of your sleep experience feels worth exploring.`;
+      return `You have completed this Guided QHRT Reflection for ${selectedTheme}. You may continue observing. You may return to ${lessonName(domain)}. Or you may explore another theme. Work with one theme at a time. Observe what you notice in real life. Return whenever another aspect of your ${experienceName(domain)} feels worth exploring.`;
   }
 }
