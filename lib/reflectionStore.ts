@@ -2,6 +2,7 @@ import { missingRelation } from '@/lib/apiError';
 import {
   REFLECTION_CONTENT_VERSION,
   REFLECTION_SOURCE_DOMAIN,
+  isReflectionDomain,
   cleanReflectionField,
   cleanReflectionNote,
   isReflectionState,
@@ -227,8 +228,8 @@ export async function createReflectionSession(input: {
     if (isMissing(themeError)) return { missing: true };
     throw themeError;
   }
-  if (!theme || !theme.enabled || theme.domain !== REFLECTION_SOURCE_DOMAIN || theme.locale !== locale) {
-    return { error: 'Choose a theme from Sleep Education.', status: 400 };
+  if (!theme || !theme.enabled || !isReflectionDomain(theme.domain) || theme.locale !== locale) {
+    return { error: 'Choose a theme from this lesson.', status: 400 };
   }
 
   const custom = cleanReflectionField(input.customClarifierText ?? '', 400);
@@ -265,7 +266,7 @@ export async function createReflectionSession(input: {
       user_id: input.userId,
       status: 'ACTIVE',
       current_state: 'THEME_INTRO',
-      source_domain: REFLECTION_SOURCE_DOMAIN,
+      source_domain: theme.domain,
       theme_id: theme.id,
       theme_key: theme.theme_key,
       theme_snapshot: theme.label,
