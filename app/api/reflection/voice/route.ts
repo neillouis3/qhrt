@@ -3,9 +3,13 @@ import type { NextRequest } from 'next/server';
 import { requireUser } from '@/lib/adminAuth';
 import { apiError } from '@/lib/apiError';
 import { rateLimit } from '@/lib/rateLimiter';
+import { isReflectionLesson, loadModule } from '@/lib/modules';
 import {
   REFLECTION_CUES,
+  REFLECTION_STEP_KEYS,
   cleanReflectionField,
+  fillReflectionScript,
+  isReflectionDomain,
   reflectionSpeech,
   type ReflectionCue,
 } from '@/lib/reflection';
@@ -29,11 +33,23 @@ export async function GET(request: NextRequest) {
     const cue = request.nextUrl.searchParams.get('cue')?.trim() ?? '';
     const theme = cleanReflectionField(request.nextUrl.searchParams.get('theme') ?? '');
     const statement = cleanReflectionField(request.nextUrl.searchParams.get('statement') ?? '');
-    if (!isCue(cue) || !theme || !statement) {
+    const domain = request.nextUrl.searchParams.get('domain')?.trim() || 'SLEEP';
+    if (!isCue(cue) || !theme || !statement || !isReflectionDomain(domain)) {
       return NextResponse.json({ error: 'That guidance line is not available.' }, { status: 400 });
     }
 
-    const audio = await synthesizeSpeech(reflectionSpeech(cue, theme, statement), { pace: 'slow' });
+    const slug = request.nextUrl.searchParams.get('slug')?.trim() ?? '';
+    const key = REFLECTION_STEP_KEYS[cue];
+    let spoken = reflectionSpeech(cue, theme, statement, domain);
+    if (slug) {
+      const result = await loadModule(slug);
+      if (!('missing' in result) && result.module) {
+        const lesson = result.module.lessons.find((item) => isReflectionLesson(item.steps));
+        const step = lesson?.steps.find((item) => item.key === key);
+        if (step?.voiceover) spoken = fillReflectionScript(step.voiceover, theme, statement);
+      }
+    }
+    const audio = await synthesizeSpeech(spoken, { pace: 'slow' });
     if ('error' in audio) {
       if (audio.status === 204 || audio.error === VOICE_BUCKET_UNAVAILABLE) {
         return new NextResponse(null, { status: 204 });
