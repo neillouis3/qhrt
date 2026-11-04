@@ -82,34 +82,30 @@ export default function AssessmentsPage() {
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {modules.map((module) => (
-            <div key={module.id} className="relative aspect-square w-full">
-              <AppCard className="absolute inset-0 overflow-hidden p-0">
-                <div className="relative flex h-full flex-col">
-                  <CoverWash seed={module.slug} />
-                  <div className="relative z-10 flex min-h-0 flex-1 flex-col gap-2 overflow-hidden p-4 pt-[46%]">
-                    <AppCard.Header>
-                      <AppCard.Title className="font-normal tracking-tight">{module.title}</AppCard.Title>
-                    </AppCard.Header>
-                    {module.description ? (
-                      <AppCard.Description className="min-h-0 flex-1 overflow-y-auto">
-                        {module.description}
-                      </AppCard.Description>
-                    ) : null}
-                    <AppCard.Footer className="mt-auto flex-wrap items-center justify-between gap-2">
-                      <Typography type="body-xs" color="muted">
-                        {lessonLabel(module)}
-                      </Typography>
-                      <Link
-                        href={`/modules/${module.slug}`}
-                        className={buttonVariants({ size: 'sm', variant: 'primary' })}
-                      >
-                        Open
-                      </Link>
-                    </AppCard.Footer>
-                  </div>
+            <AppCard key={module.id} className="flex h-full flex-col overflow-hidden p-0">
+              <CoverWash seed={module.slug} band />
+              <div className="flex flex-1 flex-col gap-3 p-4">
+                <Typography type="body" className="font-medium tracking-tight">
+                  {module.title}
+                </Typography>
+                {module.description ? (
+                  <Typography type="body-sm" color="muted" className="line-clamp-3">
+                    {module.description}
+                  </Typography>
+                ) : null}
+                <div className="mt-auto flex items-center justify-between gap-3 pt-1">
+                  <Typography type="body-xs" color="muted">
+                    {lessonLabel(module)}
+                  </Typography>
+                  <Link
+                    href={`/modules/${module.slug}`}
+                    className={buttonVariants({ size: 'sm', variant: 'primary' })}
+                  >
+                    Open
+                  </Link>
                 </div>
-              </AppCard>
-            </div>
+              </div>
+            </AppCard>
           ))}
         </div>
       )}
