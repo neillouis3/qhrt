@@ -12,11 +12,9 @@ import type { LearningModule } from '@/lib/modules';
 
 function lessonLabel(module: LearningModule) {
   const count = module.lessons.length;
-  if (count <= 0) return 'No lessons yet';
+  if (count <= 0) return 'No modules yet';
   const done = module.lessons.filter((lesson) => lesson.completedAt).length;
-  if (done > 0) return `${done} of ${count} complete`;
-  if (count === 1) return 'Module 1';
-  return `${count} lessons`;
+  return `${done} of ${count} complete`;
 }
 
 export default function AssessmentsPage() {
@@ -43,7 +41,7 @@ export default function AssessmentsPage() {
         const res = await fetch('/api/modules', { signal: controller.signal });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-          throw new Error(typeof data.error === 'string' ? data.error : 'Could not load modules.');
+          throw new Error(typeof data.error === 'string' ? data.error : 'Could not load lessons.');
         }
         setModules(data.modules ?? []);
       } catch (err) {
@@ -65,8 +63,8 @@ export default function AssessmentsPage() {
   return (
     <UserPageShell wide="75">
       <PageHeader
-        title="Modules"
-        subtitle="Take one topic at a time, and follow the lessons inside that module as the steps."
+        title="Lessons"
+        subtitle="Take one lesson at a time, and follow the modules inside that lesson as the steps."
       />
 
       {error ? (
@@ -78,7 +76,7 @@ export default function AssessmentsPage() {
       {modules.length === 0 ? (
         <AppCard className="p-6">
           <Typography type="body-sm" color="muted">
-            No modules yet.
+            No lessons yet.
           </Typography>
         </AppCard>
       ) : (
