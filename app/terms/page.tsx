@@ -9,11 +9,11 @@ export const metadata: Metadata = {
 const sections = [
   {
     title: 'Using QHRT',
-    body: 'QHRT is a free, self-paced wellness and coaching platform. You may create an account, pause, and come back when you are ready. You are responsible for keeping your sign-in details private.',
+    body: 'QHRT is a free, self-paced wellness and coaching platform for use in the United States. You may create an account, pause, and come back when you are ready. You are responsible for keeping your sign-in details private.',
   },
   {
     title: 'Coaching and education only',
-    body: 'QHRT provides life-coaching concepts and educational resources for self-improvement. It is not therapy, counseling, psychotherapy, or medical care. We do not diagnose conditions, assess symptom severity for clinical purposes, or create individualized treatment plans. Questionnaires route you to standard educational modules — they are not clinical assessments. For mental or physical health concerns, consult a licensed professional.',
+    body: 'QHRT provides life-coaching concepts and educational resources for self-improvement. It is not therapy, counseling, psychotherapy, psychology, or medical care, and it does not create a clinician–patient relationship. Who may practice those professions is set separately by each state. QHRT does not provide a service that requires a professional license in any state. We do not diagnose conditions, assess symptom severity for clinical purposes, or create individualized treatment plans. Questionnaires route you to standard educational modules — they are not clinical assessments. For a mental or physical health concern, consult a professional licensed in your state.',
   },
   {
     title: 'Your content',
@@ -28,8 +28,12 @@ const sections = [
     body: 'We work to keep QHRT running, but we do not guarantee it will always be available or error-free. Features may change as the product grows.',
   },
   {
+    title: 'Which law applies',
+    body: 'These terms cover use of QHRT in the United States. Professional licensing and consumer privacy both follow the state where you live. If a state law gives you a right that a contract cannot waive, that state law controls for you.',
+  },
+  {
     title: 'This is not emergency care',
-    body: 'If you need urgent help, contact local emergency services. Do not rely on QHRT in a crisis.',
+    body: 'If you are in immediate danger in the United States, call 911. That number is the same in every state and territory. For suicidal crisis or emotional distress, call or text 988. 988 is national, and the crisis center that answers is local, so the response you reach can differ by state or territory. Do not rely on QHRT in a crisis.',
   },
 ];
 
@@ -51,7 +55,7 @@ export default function TermsPage() {
           </div>
         ))}
         <Typography type="body-xs" color="muted">
-          Last updated August 29, 2026.
+          Last updated November 2, 2026.
         </Typography>
       </section>
     </PublicPage>

@@ -35,7 +35,7 @@ VALUES (
   'Body composition check-in',
   'How it feels to live in your body lately — image, energy, and the stories you carry.',
   'There are no right answers. Pause for the practices when they appear. Skip any prompt that does not fit.',
-  'Educational self-check only. This is not a diet, a body-mass program, or medical advice, and it does not replace professional care.',
+  'Educational self-check only. This is not a diet, a body-mass program, or medical advice, and it does not replace care from a professional licensed in your state.',
   'top_category',
   5,
   $json$[

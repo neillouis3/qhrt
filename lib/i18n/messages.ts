@@ -158,16 +158,17 @@ const en: MessageTree = {
   },
   crisis: {
     compactStart:
-      'QHRT is coaching and education, not therapy or crisis care. In the US and Canada, call or text ',
+      'QHRT is coaching and education, not therapy or crisis care. In the United States, call or text ',
     compactMiddle: ' for the Suicide & Crisis Lifeline, or ',
     compactEnd: ' in an emergency.',
     intro:
-      'QHRT is self-paced wellness coaching, not therapy or emergency care. If you are in danger or need urgent help, use the resources below.',
-    line988: '988 Suicide & Crisis Lifeline (US & Canada)',
-    line988Detail: 'Call or text 988, 24/7.',
+      'QHRT is self-paced wellness coaching, not therapy or emergency care. If you are in danger or need urgent help, use the United States resources below.',
+    line988: '988 Suicide & Crisis Lifeline',
+    line988Detail:
+      'Call or text 988, 24/7. You are routed to a crisis center for your area, so the center differs by state and territory. Veterans and service members can press 1. For Spanish, press 2, or text AYUDA to 988.',
     emergency: 'Emergency services',
     emergencyDetail:
-      'If you are in immediate danger, call 911 (US/Canada) or your local emergency number.',
+      'If you are in immediate danger, call 911. That number is the same in every US state and territory.',
   },
 };
 
@@ -326,16 +327,17 @@ const fr: MessageTree = {
   },
   crisis: {
     compactStart:
-      'QHRT est du coaching éducatif, pas une thérapie ni un service de crise. Aux É.-U. et au Canada, composez le ',
+      'QHRT est du coaching éducatif, pas une thérapie ni un service de crise. Aux États-Unis, composez le ',
     compactMiddle: ' (ligne de crise) ou le ',
     compactEnd: ' en urgence.',
     intro:
-      'QHRT est du coaching bien-être autoguidé, pas une thérapie ni un service d’urgence. Si vous êtes en danger, utilisez les ressources ci-dessous.',
-    line988: 'Ligne 988 — suicide et crise (É.-U. et Canada)',
-    line988Detail: 'Appelez ou textez le 988, 24 h/24.',
+      'QHRT est du coaching bien-être autoguidé, pas une thérapie ni un service d’urgence. En danger, utilisez les ressources des États-Unis ci-dessous.',
+    line988: 'Ligne 988 — suicide et crise',
+    line988Detail:
+      'Appelez ou textez le 988, 24 h/24. L’appel est orienté vers un centre de crise local : le centre dépend de l’État ou du territoire. Anciens combattants : appuyez sur 1. En espagnol : appuyez sur 2, ou textez AYUDA au 988.',
     emergency: 'Services d’urgence',
     emergencyDetail:
-      'En danger immédiat, composez le 911 (É.-U./Canada) ou le numéro d’urgence local.',
+      'En danger immédiat, composez le 911. Ce numéro est le même dans chaque État et territoire des États-Unis.',
   },
 };
 

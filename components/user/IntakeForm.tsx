@@ -150,8 +150,8 @@ export default function IntakeForm({ onComplete, onCancel }: IntakeFormProps) {
         {step === 1 && (
           <>
             <p className="text-sm text-muted">
-              Optional habit check-in (1 = low, 10 = high). This curates content — not a clinical
-              score.
+              Optional habit check-in (1 = low, 10 = high). This curates content. It is not a clinical
+              score or a diagnosis.
             </p>
             <div className="space-y-4">
               {[

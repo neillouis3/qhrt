@@ -135,7 +135,7 @@ VALUES (
   'Sleep habits check-in',
   'How falling asleep, staying asleep, and waking up have been going lately.',
   'Answer based on a typical night over the past few weeks. Some questions only appear when they apply.',
-  'Educational self-check only. This is not a sleep study or a diagnosis, and it does not replace professional care.',
+  'Educational self-check only. This is not a sleep study or a diagnosis, and it does not replace care from a professional licensed in your state.',
   '/sleep-assessment.jpg',
   'top_category',
   1,
@@ -207,7 +207,7 @@ VALUES (
   'Perceived Stress Scale (PSS-10)',
   'How stressful the past month has felt to you.',
   'For each question, choose how often you felt this way in the last month.',
-  'Educational self-check only. This is not a medical or mental health diagnosis and does not replace professional care.',
+  'Educational self-check only. This is not a medical or mental health diagnosis, it does not create a provider relationship, and it does not replace care from a professional licensed in your state.',
   'sum',
   2,
   $json$[
@@ -237,7 +237,7 @@ VALUES (
   'Brief Resilience Scale (BRS)',
   'How easily you bounce back after hard times.',
   'Rate how much you agree with each statement.',
-  'Educational self-check only. This measures self-reported resilience for content routing — not a clinical assessment.',
+  'Educational self-check only. This measures self-reported resilience for content routing. It is not a clinical assessment under any state licensing rule.',
   'mean',
   3,
   $json$[
@@ -263,7 +263,7 @@ VALUES (
   'Lifestyle & Energy Audit',
   'Habit patterns in a typical week that drain your energy.',
   'Rate how often each of these happens in your typical week.',
-  'This audit routes you to a standard workbook by topic. It does not diagnose burnout or any medical condition.',
+  'This audit routes you to a standard workbook by topic. It does not diagnose burnout or any medical condition, and it does not replace care from a professional licensed in your state.',
   'top_category',
   4,
   $json$[

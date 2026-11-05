@@ -157,15 +157,16 @@ export const hi: MessageTree = {
   },
   crisis: {
     compactStart:
-      'QHRT coaching और शिक्षा है, therapy या crisis care नहीं। US और Canada में कॉल या टेक्स्ट ',
+      'QHRT coaching और शिक्षा है, therapy या crisis care नहीं। United States में कॉल या टेक्स्ट ',
     compactMiddle: ' Suicide & Crisis Lifeline के लिए, या emergency में ',
     compactEnd: '।',
     intro:
-      'QHRT self-paced wellness coaching है, therapy या emergency सेवा नहीं। खतरे में हों तो नीचे दिए संसाधनों का उपयोग करें।',
-    line988: '988 Suicide & Crisis Lifeline (US और Canada)',
-    line988Detail: '988 पर कॉल या टेक्स्ट, 24/7।',
+      'QHRT self-paced wellness coaching है, therapy या emergency सेवा नहीं। खतरे में हों तो नीचे दिए United States संसाधनों का उपयोग करें।',
+    line988: '988 Suicide & Crisis Lifeline',
+    line988Detail:
+      '988 पर कॉल या टेक्स्ट, 24/7। आपको अपने इलाके के crisis center से जोड़ा जाता है, इसलिए center राज्य या territory के हिसाब से अलग हो सकता है। Veterans के लिए 1 दबाएँ। Spanish के लिए 2 दबाएँ, या 988 पर AYUDA टेक्स्ट करें।',
     emergency: 'आपातकालीन सेवाएँ',
     emergencyDetail:
-      'तत्काल खतरे में 911 (US/Canada) या स्थानीय emergency नंबर पर कॉल करें।',
+      'तत्काल खतरे में 911 पर कॉल करें। यह नंबर हर US राज्य और territory में एक ही है।',
   },
 };

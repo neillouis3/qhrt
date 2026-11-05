@@ -2,7 +2,7 @@
 
 Quantum Healing Therapy is a free, self-paced web app. It gives people a private place to notice how mind, body, and emotion show up together — through guided sessions, short practices, and a diary — without a waiting room or someone else’s timetable.
 
-QHRT is educational and supportive. It is not a clinic, a diagnosis, a medical device, or a crisis line. If someone is in danger they should use local emergency services.
+QHRT is educational and supportive. It is not a clinic, a diagnosis, a medical device, or a crisis line. In the United States, immediate danger is 911 in every state and territory. Suicidal crisis or emotional distress is 988, which routes to a local crisis center and can differ by state.
 
 ---
 
@@ -17,7 +17,7 @@ QHRT’s job is to meet them where they are:
 - No pressure to finish on a schedule
 - Information kept private and used only to run the product for them
 
-The public mission is the same as the internal one: keep the sessions clear, the product quiet, and the data protected under Canadian privacy law (including PIPEDA).
+The public mission is the same as the internal one: keep the sessions clear, the product quiet, and the data protected under United States privacy law. State privacy and licensing rules differ, and public copy follows the law of the state where the person lives.
 
 ---
 

@@ -54,8 +54,9 @@ export default function ContactPage() {
           ))}
         </ul>
         <Typography type="body" color="muted" className="max-w-xl">
-          If you are in danger or need urgent help, contact local emergency services. QHRT is not a
-          crisis line.
+          If you are in immediate danger in the United States, call 911. If you need to talk with
+          someone, call or text 988. 911 is the same in every state and territory. 988 connects you
+          to a local crisis center, which can differ by state. QHRT is not a crisis line.
         </Typography>
       </section>
     </PublicPage>

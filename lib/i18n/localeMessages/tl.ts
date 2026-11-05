@@ -157,15 +157,16 @@ export const tl: MessageTree = {
   },
   crisis: {
     compactStart:
-      'Ang QHRT ay coaching at edukasyon, hindi therapy o crisis care. Sa US at Canada, tumawag o mag-text sa ',
+      'Ang QHRT ay coaching at edukasyon, hindi therapy o crisis care. Sa United States, tumawag o mag-text sa ',
     compactMiddle: ' para sa Suicide & Crisis Lifeline, o ',
     compactEnd: ' sa emergency.',
     intro:
-      'Ang QHRT ay self-paced na wellness coaching, hindi therapy o emergency care. Kung may panganib ka o kailangan mo ng agarang tulong, gamitin ang mga mapagkukunan sa ibaba.',
-    line988: '988 Suicide & Crisis Lifeline (US at Canada)',
-    line988Detail: 'Tumawag o mag-text sa 988, 24/7.',
+      'Ang QHRT ay self-paced na wellness coaching, hindi therapy o emergency care. Kung may panganib ka o kailangan mo ng agarang tulong, gamitin ang mga mapagkukunan ng United States sa ibaba.',
+    line988: '988 Suicide & Crisis Lifeline',
+    line988Detail:
+      'Tumawag o mag-text sa 988, 24/7. Iko-connect ka sa crisis center sa inyong lugar, kaya iba-iba ito ayon sa state o territory. Para sa veterans, pindutin ang 1. Para sa Spanish, pindutin ang 2, o i-text ang AYUDA sa 988.',
     emergency: 'Emergency services',
     emergencyDetail:
-      'Kung agarang panganib, tumawag sa 911 (US/Canada) o sa lokal na emergency number.',
+      'Kung agarang panganib, tumawag sa 911. Pareho ang numerong ito sa bawat state at territory ng US.',
   },
 };

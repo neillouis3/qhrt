@@ -58,7 +58,7 @@ export default function AboutPage() {
             </Typography>
             <Typography type="body" color="muted">
               QHRT is free to use. The work is to keep the sessions clear, the product calm, and
-              your information protected under Canadian privacy law.
+              your information protected under United States privacy law, including the law of your state.
             </Typography>
           </div>
         </section>
