@@ -61,7 +61,9 @@ function pathFromModule(module: LearningModule): PathItem[] {
     completed: Boolean(lesson.completedAt),
     seed: `${module.slug}-${lesson.position}`,
   }));
-  const extras = module.slug === 'sleep' ? 0 : Math.max(0, PATH_SLOTS - items.length);
+  const extras = module.lessons.some((lesson) => lesson.href.endsWith('/themes'))
+    ? 0
+    : Math.max(0, PATH_SLOTS - items.length);
   for (let index = 0; index < extras; index += 1) {
     const position = items.length + 1;
     items.push({
@@ -74,7 +76,7 @@ function pathFromModule(module: LearningModule): PathItem[] {
       seed: `${module.slug}-soon-${position}`,
     });
   }
-  return items;
+  return items.map((item, index) => ({ ...item, position: index + 1 }));
 }
 
 function LessonCard({ item, upNext }: { item: PathItem; upNext?: boolean }) {
@@ -133,7 +135,7 @@ export default function ModuleDetailPage({ slug }: { slug: string }) {
         className="flex w-fit items-center gap-1 text-sm text-muted transition-opacity hover:opacity-60"
       >
         <HugeiconsIcon icon={ArrowLeft01Icon} size={18} strokeWidth={1.5} />
-        Modules
+        Lessons
       </Link>
       {error ? <Typography type="body-sm">{error}</Typography> : null}
       {module ? (
@@ -227,11 +229,6 @@ export default function ModuleDetailPage({ slug }: { slug: string }) {
               </div>
             </AppCard>
 
-            {module.slug === 'sleep' ? (
-              <Link href="/modules/sleep/themes" className="text-sm text-muted transition-opacity hover:opacity-60">
-                Choose a QHRT Reflection Theme
-              </Link>
-            ) : null}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {path.map((item) => (
                 <LessonCard
