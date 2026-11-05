@@ -1,12 +1,17 @@
 import { supabaseServer } from '@/lib/supabaseClient';
 import { missingRelation } from '@/lib/apiError';
 
-export type LessonKind = 'guide' | 'assessment';
+export type LessonKind = 'guide' | 'assessment' | 'presentation';
+
+export const LESSON_KINDS: LessonKind[] = ['guide', 'assessment', 'presentation'];
 
 export interface GuideStep {
+  key: string;
   title: string;
   paragraphs: string[];
   points: string[];
+  section: string | null;
+  voiceover: string;
 }
 
 export interface ModuleLesson {
@@ -61,6 +66,30 @@ interface ModuleRow {
   module_lessons?: LessonRow[] | null;
 }
 
+export function parseLessonKind(value: unknown): LessonKind {
+  return value === 'assessment' || value === 'presentation' ? value : 'guide';
+}
+
+export function lessonKindLabel(kind: LessonKind): string {
+  if (kind === 'assessment') return 'Assessment';
+  if (kind === 'presentation') return 'Introduction';
+  return 'Guide';
+}
+
+export function isPlayableLesson(kind: LessonKind): boolean {
+  return kind === 'guide' || kind === 'presentation';
+}
+
+/** Intro decks store spoken text on the step JSON. Works even when kind is still `guide`. */
+export function looksLikePresentation(steps: GuideStep[]): boolean {
+  return steps.some((step) => Boolean(step.voiceover) || Boolean(step.section));
+}
+
+export function speechFromSlide(step: Pick<GuideStep, 'title' | 'paragraphs' | 'points' | 'voiceover'>): string {
+  if (step.voiceover.trim()) return step.voiceover.trim();
+  return [step.title, ...step.paragraphs, ...step.points].map((part) => part.trim()).filter(Boolean).join('. ');
+}
+
 export function slugify(value: string): string {
   return value
     .toLowerCase()
@@ -84,7 +113,18 @@ export function parseGuideSteps(raw: unknown): GuideStep[] {
     const points = Array.isArray(record.points)
       ? record.points.filter((line): line is string => typeof line === 'string' && line.trim() !== '').map((line) => line.trim())
       : [];
-    steps.push({ title, paragraphs, points });
+    steps.push({
+      key:
+        typeof record.key === 'string' && record.key.trim()
+          ? record.key.trim()
+          : `slide_${steps.length + 1}`,
+      title,
+      paragraphs,
+      points,
+      section:
+        typeof record.section === 'string' && record.section.trim() ? record.section.trim() : null,
+      voiceover: typeof record.voiceover === 'string' ? record.voiceover.trim() : '',
+    });
   }
   return steps;
 }
@@ -98,6 +138,13 @@ export function estimateLessonMinutes(input: {
   if (input.kind === 'assessment') {
     const questions = input.questionCount ?? 0;
     return Math.max(4, Math.round(questions * 0.5) || 6);
+  }
+  if (input.kind === 'presentation') {
+    const words = input.steps.reduce(
+      (count, step) => count + speechFromSlide(step).split(/\s+/).filter(Boolean).length,
+      0
+    );
+    return Math.max(4, Math.round(words / 130) || 5);
   }
   const steps = input.steps.length;
   if (steps === 0) return 5;
@@ -118,9 +165,14 @@ export function lessonHref(moduleSlug: string, lesson: { position: number; kind:
 function lessonFromRow(moduleSlug: string, row: LessonRow): ModuleLesson {
   const nested = row.assessments;
   const assessment = Array.isArray(nested) ? nested[0] : nested;
-  const kind: LessonKind = row.kind === 'assessment' ? 'assessment' : 'guide';
   const assessmentSlug = assessment?.slug || null;
   const steps = parseGuideSteps(row.steps);
+  const kind =
+    parseLessonKind(row.kind) === 'assessment'
+      ? 'assessment'
+      : looksLikePresentation(steps)
+        ? 'presentation'
+        : parseLessonKind(row.kind);
   const questionCount = Array.isArray(assessment?.questions) ? assessment.questions.length : 0;
   const lesson = {
     position: row.position,

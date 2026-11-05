@@ -7,12 +7,13 @@ import { Button, Typography, buttonVariants } from '@heroui/react';
 import FocusSessionLayout from '@/components/layout/FocusSessionLayout';
 import ProgressNav from '@/components/session/ProgressNav';
 import { useSession } from '@/hooks/useSession';
-import type { GuideStep } from '@/lib/modules';
+import type { GuideStep, LessonKind } from '@/lib/modules';
 import { writeStartingOutDone } from '@/lib/startingOut';
+import PresentationDeck from '@/components/user/PresentationDeck';
 
 interface GuidePayload {
   module: { id: string; slug: string; title: string };
-  lesson: { id: string; position: number; title: string; steps: GuideStep[] };
+  lesson: { id: string; position: number; title: string; kind?: LessonKind; steps: GuideStep[] };
 }
 
 export default function ModuleGuidePage({ slug, position }: { slug: string; position: number }) {
@@ -83,6 +84,10 @@ export default function ModuleGuidePage({ slug, position }: { slug: string; posi
         <Typography type="body-sm">{error}</Typography>
       </FocusSessionLayout>
     );
+  }
+
+  if (payload?.lesson.kind === 'presentation') {
+    return <PresentationDeck payload={payload} />;
   }
 
   if (!payload || !step) {

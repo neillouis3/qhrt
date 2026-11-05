@@ -55,7 +55,8 @@ export function ModulesTab({
       <div>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-muted">
-            A module is a path. Each lesson inside it is either a guide or an assessment.
+            A module is a path. Lessons can be an introduction (slides and voice), a guide, or an
+            assessment.
           </p>
           <div className="flex flex-wrap items-center gap-3">
             <SearchBox placeholder="Search modules" onSearch={setSearch} />

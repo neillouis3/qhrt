@@ -8,7 +8,7 @@ import { ArrowLeft01Icon } from '@hugeicons/core-free-icons';
 import AppCard from '@/components/ui/AppCard';
 import CoverWash from '@/components/ui/CoverWash';
 import UserPageShell from '@/components/layout/UserPageShell';
-import { minutesLabel, type LearningModule, type ModuleLesson } from '@/lib/modules';
+import { lessonKindLabel, minutesLabel, type LearningModule, type ModuleLesson } from '@/lib/modules';
 
 const PATH_SLOTS = 4;
 
@@ -34,7 +34,7 @@ function metaLine(item: Pick<PathItem, 'position' | 'kindLabel' | 'minutes' | 'c
 }
 
 function kindLabel(kind: ModuleLesson['kind']) {
-  return kind === 'guide' ? 'Guide' : 'Assessment';
+  return lessonKindLabel(kind);
 }
 
 function pathFromModule(module: LearningModule): PathItem[] {
@@ -45,7 +45,7 @@ function pathFromModule(module: LearningModule): PathItem[] {
     kindLabel: kindLabel(lesson.kind),
     minutes: lesson.minutes,
     href: lesson.href,
-    action: lesson.completedAt ? 'Review' : lesson.kind === 'guide' ? 'Start' : 'Go',
+    action: lesson.completedAt ? 'Review' : lesson.kind === 'assessment' ? 'Go' : 'Start',
     ready: true,
     completed: Boolean(lesson.completedAt),
     seed: `${module.slug}-${lesson.position}`,

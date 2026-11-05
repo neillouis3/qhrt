@@ -25,6 +25,8 @@ const AUTH_WINDOW_MS = 60_000; // 1 minute
 const AUTH_LIMIT = 10; // 10 auth attempts / minute / identifier
 const API_WINDOW_MS = 60_000; // 1 minute
 const API_LIMIT = 300; // 300 requests / minute / identifier
+const VOICE_WINDOW_MS = 60_000;
+const VOICE_LIMIT = 40;
 
 // ---- Upstash (preferred) -------------------------------------------------
 const upstashRedis =
@@ -69,7 +71,7 @@ function memoryLimit(
 }
 
 // Periodically prune expired buckets so the Map does not grow unbounded.
-const MAX_WINDOW = Math.max(AUTH_WINDOW_MS, API_WINDOW_MS);
+const MAX_WINDOW = Math.max(AUTH_WINDOW_MS, API_WINDOW_MS, VOICE_WINDOW_MS);
 setInterval(() => {
   const now = Date.now();
   for (const [key, bucket] of memoryStore) {
@@ -87,11 +89,14 @@ setInterval(() => {
  */
 export async function rateLimit(
   identifier: string,
-  scope: 'auth' | 'api' = 'api'
+  scope: 'auth' | 'api' | 'voice' = 'api'
 ): Promise<RateLimitResult> {
   if (scope === 'auth' && upstashAuth) {
     const res = await upstashAuth.limit(identifier);
     return { success: res.success, reset: res.success ? undefined : res.reset };
+  }
+  if (scope === 'voice') {
+    return memoryLimit(`voice:${identifier}`, VOICE_LIMIT, VOICE_WINDOW_MS);
   }
   if (upstashApi) {
     const res = await upstashApi.limit(identifier);

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { AssessmentDefinition } from '@/lib/assessments';
 import type { GuideStep, LearningModule, LessonKind } from '@/lib/modules';
+import { parseLessonKind } from '@/lib/modules';
 import { BuilderShell } from '../BuilderShell';
 import { Toast } from '../shared/Toast';
 import { Button } from '@heroui/react';
@@ -19,13 +20,22 @@ type LessonDraft = {
   steps: GuideStep[];
 };
 
+const emptyStep = (): GuideStep => ({
+  key: '',
+  title: '',
+  paragraphs: [],
+  points: [],
+  section: null,
+  voiceover: '',
+});
+
 const emptyLesson = (): LessonDraft => ({
   title: '',
   description: '',
   kind: 'guide',
   assessmentId: '',
   isActive: true,
-  steps: [{ title: '', paragraphs: [], points: [] }],
+  steps: [emptyStep()],
 });
 
 export function LessonEditor({ moduleId, lessonId }: { moduleId: string; lessonId: string }) {
@@ -65,7 +75,7 @@ export function LessonEditor({ moduleId, lessonId }: { moduleId: string; lessonI
             kind: item.kind,
             assessmentId: item.assessmentId ?? '',
             isActive: item.isActive,
-            steps: item.steps.length > 0 ? item.steps : [{ title: '', paragraphs: [], points: [] }],
+            steps: item.steps.length > 0 ? item.steps : [emptyStep()],
           });
         }
         setLoading(false);
@@ -79,10 +89,13 @@ export function LessonEditor({ moduleId, lessonId }: { moduleId: string; lessonI
   const save = async () => {
     setSaving(true);
     const steps = lesson.steps
-      .map((step) => ({
+      .map((step, index) => ({
+        key: step.key.trim() || `slide_${index + 1}`,
         title: step.title.trim(),
         paragraphs: step.paragraphs.map((line) => line.trim()).filter(Boolean),
         points: step.points.map((line) => line.trim()).filter(Boolean),
+        section: step.section?.trim() || null,
+        voiceover: step.voiceover.trim(),
       }))
       .filter((step) => step.title);
     const res = await fetch('/api/admin/modules/lessons', {
@@ -114,9 +127,11 @@ export function LessonEditor({ moduleId, lessonId }: { moduleId: string; lessonI
       backLabel={moduleTitle}
       title={isNew ? 'New lesson' : lesson.title || 'Edit lesson'}
       subtitle={
-        lesson.kind === 'guide'
-          ? 'A guide is a short sequence of steps people read in the module.'
-          : 'This lesson opens an assessment you already built.'
+        lesson.kind === 'presentation'
+          ? 'An introduction is a slide deck with optional voiceover. Every module can have one. Sleep is the first.'
+          : lesson.kind === 'guide'
+            ? 'A guide is a short sequence of steps people read in the module.'
+            : 'This lesson opens an assessment you already built.'
       }
     >
       {loading ? (
@@ -141,11 +156,10 @@ export function LessonEditor({ moduleId, lessonId }: { moduleId: string; lessonI
             <select
               className={inputClass}
               value={lesson.kind}
-              onChange={(event) =>
-                setLesson({ ...lesson, kind: event.target.value === 'guide' ? 'guide' : 'assessment' })
-              }
+              onChange={(event) => setLesson({ ...lesson, kind: parseLessonKind(event.target.value) })}
             >
               <option value="guide">Step-by-step guide</option>
+              <option value="presentation">Introduction (slides and voice)</option>
               <option value="assessment">Assessment</option>
             </select>
           </Field>
@@ -168,7 +182,20 @@ export function LessonEditor({ moduleId, lessonId }: { moduleId: string; lessonI
             <div className="flex flex-col gap-3">
               {lesson.steps.map((step, index) => (
                 <div key={index} className="flex flex-col gap-2 rounded-lg border border-border p-3">
-                  <Field label={`Step ${index + 1}`}>
+                  {lesson.kind === 'presentation' ? (
+                    <Field label="Section" hint="Shown as a small label above the slide title.">
+                      <input
+                        className={inputClass}
+                        value={step.section ?? ''}
+                        onChange={(event) => {
+                          const steps = lesson.steps.slice();
+                          steps[index] = { ...step, section: event.target.value || null };
+                          setLesson({ ...lesson, steps });
+                        }}
+                      />
+                    </Field>
+                  ) : null}
+                  <Field label={lesson.kind === 'presentation' ? `Slide ${index + 1} title` : `Step ${index + 1}`}>
                     <input
                       className={inputClass}
                       value={step.title}
@@ -179,7 +206,7 @@ export function LessonEditor({ moduleId, lessonId }: { moduleId: string; lessonI
                       }}
                     />
                   </Field>
-                  <Field label="Paragraphs" hint="One paragraph per line.">
+                  <Field label="On-screen text" hint="One paragraph per line. Keep this short, like a slide.">
                     <textarea
                       className={inputClass}
                       rows={3}
@@ -203,16 +230,31 @@ export function LessonEditor({ moduleId, lessonId }: { moduleId: string; lessonI
                       }}
                     />
                   </Field>
+                  {lesson.kind === 'presentation' ? (
+                    <Field
+                      label="Voiceover"
+                      hint="Spoken script. Leave empty to speak the title, text, and points."
+                    >
+                      <textarea
+                        className={inputClass}
+                        rows={4}
+                        value={step.voiceover}
+                        onChange={(event) => {
+                          const steps = lesson.steps.slice();
+                          steps[index] = { ...step, voiceover: event.target.value };
+                          setLesson({ ...lesson, steps });
+                        }}
+                      />
+                    </Field>
+                  ) : null}
                 </div>
               ))}
               <button
                 type="button"
                 className={smallButtonClass}
-                onClick={() =>
-                  setLesson({ ...lesson, steps: [...lesson.steps, { title: '', paragraphs: [], points: [] }] })
-                }
+                onClick={() => setLesson({ ...lesson, steps: [...lesson.steps, emptyStep()] })}
               >
-                Add step
+                {lesson.kind === 'presentation' ? 'Add slide' : 'Add step'}
               </button>
             </div>
           )}

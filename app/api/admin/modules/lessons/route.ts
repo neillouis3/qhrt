@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseClient';
 import { requireAdmin } from '@/lib/adminAuth';
 import { apiError } from '@/lib/apiError';
-import { parseGuideSteps, type LessonKind } from '@/lib/modules';
+import { isPlayableLesson, parseGuideSteps, parseLessonKind, type LessonKind } from '@/lib/modules';
 
 const TAG = '[api/admin/modules/lessons]';
 
@@ -11,8 +11,14 @@ function lessonPayload(body: Record<string, unknown>, kind: LessonKind) {
   const title = typeof body.title === 'string' ? body.title.trim() : '';
   const description = typeof body.description === 'string' ? body.description.trim() : '';
   const assessmentId = typeof body.assessmentId === 'string' && body.assessmentId ? body.assessmentId : null;
-  const steps = kind === 'guide' ? parseGuideSteps(body.steps) : [];
+  const steps = isPlayableLesson(kind) ? parseGuideSteps(body.steps) : [];
   return { title, description: description || null, assessmentId, steps };
+}
+
+function kindRejected(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false;
+  const message = (error.message ?? '').toLowerCase();
+  return error.code === '23514' || message.includes('module_lessons_kind_check');
 }
 
 export async function POST(request: NextRequest) {
@@ -22,14 +28,14 @@ export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as Record<string, unknown>;
     const moduleId = typeof body.moduleId === 'string' ? body.moduleId : '';
-    const kind: LessonKind = body.kind === 'assessment' ? 'assessment' : 'guide';
+    const kind: LessonKind = parseLessonKind(body.kind);
     const fields = lessonPayload(body, kind);
     if (!moduleId || !fields.title) return NextResponse.json({ error: 'Title is required.' }, { status: 400 });
     if (kind === 'assessment' && !fields.assessmentId) {
       return NextResponse.json({ error: 'Choose an assessment for this lesson.' }, { status: 400 });
     }
-    if (kind === 'guide' && fields.steps.length === 0) {
-      return NextResponse.json({ error: 'Add at least one step.' }, { status: 400 });
+    if (isPlayableLesson(kind) && fields.steps.length === 0) {
+      return NextResponse.json({ error: 'Add at least one slide.' }, { status: 400 });
     }
 
     const { data: existing } = await supabaseServer
@@ -38,7 +44,7 @@ export async function POST(request: NextRequest) {
       .eq('module_id', moduleId);
     const position = (existing ?? []).reduce((max, row) => Math.max(max, Number(row.position) || 0), 0) + 1;
 
-    const { error } = await supabaseServer.from('module_lessons').insert({
+    const row = {
       module_id: moduleId,
       position,
       title: fields.title,
@@ -47,7 +53,12 @@ export async function POST(request: NextRequest) {
       assessment_id: kind === 'assessment' ? fields.assessmentId : null,
       steps: fields.steps,
       is_active: body.isActive !== false,
-    });
+    };
+    let { error } = await supabaseServer.from('module_lessons').insert(row);
+    if (error && kind === 'presentation' && kindRejected(error)) {
+      const retry = await supabaseServer.from('module_lessons').insert({ ...row, kind: 'guide' });
+      error = retry.error;
+    }
     if (error) return apiError(error, `${TAG} POST`);
     return NextResponse.json({ success: true }, { status: 201 });
   } catch (err) {
@@ -62,28 +73,30 @@ export async function PUT(request: NextRequest) {
   try {
     const body = (await request.json()) as Record<string, unknown>;
     const id = typeof body.id === 'string' ? body.id : '';
-    const kind: LessonKind = body.kind === 'assessment' ? 'assessment' : 'guide';
+    const kind: LessonKind = parseLessonKind(body.kind);
     const fields = lessonPayload(body, kind);
     if (!id || !fields.title) return NextResponse.json({ error: 'Title is required.' }, { status: 400 });
     if (kind === 'assessment' && !fields.assessmentId) {
       return NextResponse.json({ error: 'Choose an assessment for this lesson.' }, { status: 400 });
     }
-    if (kind === 'guide' && fields.steps.length === 0) {
-      return NextResponse.json({ error: 'Add at least one step.' }, { status: 400 });
+    if (isPlayableLesson(kind) && fields.steps.length === 0) {
+      return NextResponse.json({ error: 'Add at least one slide.' }, { status: 400 });
     }
 
-    const { error } = await supabaseServer
-      .from('module_lessons')
-      .update({
-        title: fields.title,
-        description: fields.description,
-        kind,
-        assessment_id: kind === 'assessment' ? fields.assessmentId : null,
-        steps: fields.steps,
-        is_active: body.isActive !== false,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', id);
+    const patch = {
+      title: fields.title,
+      description: fields.description,
+      kind,
+      assessment_id: kind === 'assessment' ? fields.assessmentId : null,
+      steps: fields.steps,
+      is_active: body.isActive !== false,
+      updated_at: new Date().toISOString(),
+    };
+    let { error } = await supabaseServer.from('module_lessons').update(patch).eq('id', id);
+    if (error && kind === 'presentation' && kindRejected(error)) {
+      const retry = await supabaseServer.from('module_lessons').update({ ...patch, kind: 'guide' }).eq('id', id);
+      error = retry.error;
+    }
     if (error) return apiError(error, `${TAG} PUT`);
     return NextResponse.json({ success: true });
   } catch (err) {

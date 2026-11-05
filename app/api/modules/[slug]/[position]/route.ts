@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { requireUser } from '@/lib/adminAuth';
 import { apiError, schemaMissingResponse } from '@/lib/apiError';
-import { completeGuideLesson, loadModule } from '@/lib/modules';
+import { completeGuideLesson, isPlayableLesson, loadModule } from '@/lib/modules';
 
 export async function GET(
   request: NextRequest,
@@ -17,7 +17,9 @@ export async function GET(
     const result = await loadModule(slug);
     if ('missing' in result) return schemaMissingResponse('Module', 'supabase/010_learning_modules.sql');
     if (!result.module) return NextResponse.json({ error: 'Module not found.' }, { status: 404 });
-    const lesson = result.module.lessons.find((item) => item.position === Number(position) && item.kind === 'guide');
+    const lesson = result.module.lessons.find(
+      (item) => item.position === Number(position) && isPlayableLesson(item.kind)
+    );
     if (!lesson) return NextResponse.json({ error: 'Lesson not found.' }, { status: 404 });
     return NextResponse.json({
       module: { id: result.module.id, slug: result.module.slug, title: result.module.title },
@@ -41,7 +43,9 @@ export async function POST(
     const result = await loadModule(slug);
     if ('missing' in result) return schemaMissingResponse('Module', 'supabase/010_learning_modules.sql');
     if (!result.module) return NextResponse.json({ error: 'Module not found.' }, { status: 404 });
-    const lesson = result.module.lessons.find((item) => item.position === Number(position) && item.kind === 'guide');
+    const lesson = result.module.lessons.find(
+      (item) => item.position === Number(position) && isPlayableLesson(item.kind)
+    );
     if (!lesson) return NextResponse.json({ error: 'Lesson not found.' }, { status: 404 });
 
     const saved = await completeGuideLesson(userResult.user.id, lesson.id);

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Table } from '@heroui/react';
 import type { LearningModule, ModuleLesson } from '@/lib/modules';
+import { lessonKindLabel } from '@/lib/modules';
 import { slugify } from '@/lib/modules';
 import { BuilderShell } from '../BuilderShell';
 import { ConfirmModal } from '../shared/ConfirmModal';
@@ -204,7 +205,7 @@ export function ModuleEditor({ moduleId }: { moduleId: string }) {
                                 ) : null}
                               </div>
                             </Table.Cell>
-                            <Table.Cell>{item.kind === 'guide' ? 'Guide' : 'Assessment'}</Table.Cell>
+                            <Table.Cell>{lessonKindLabel(item.kind)}</Table.Cell>
                             <Table.Cell>
                               <div className="flex flex-wrap justify-end gap-1">
                                 <button
