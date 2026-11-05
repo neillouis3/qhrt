@@ -6,7 +6,7 @@ export const hi: MessageTree = {
     home: 'होम',
     practice: 'अभ्यास',
     diary: 'डायरी',
-    assessments: 'मॉड्यूल',
+    assessments: 'पाठ',
     about: 'हमारे बारे में',
     faq: 'सामान्य प्रश्न',
     testimonials: 'प्रशंसापत्र',
@@ -89,7 +89,7 @@ export const hi: MessageTree = {
     browse: {
       title: 'या ब्राउज़ करें',
       diary: 'डायरी',
-      assessments: 'मॉड्यूल',
+      assessments: 'पाठ',
       breathe: 'साँस',
       windDown: 'अभ्यास',
       practice: 'अभ्यास',
@@ -115,9 +115,9 @@ export const hi: MessageTree = {
       go: 'जाएँ',
       again: 'फिर कोशिश करें',
     },
-    modules: 'मॉड्यूल',
+    modules: 'पाठ',
     shortcuts: {
-      focusTitle: 'मॉड्यूल',
+      focusTitle: 'पाठ',
       focusDescription:
         'आपके चुने लक्ष्यों से मेल खाने वाली guided workbook, clinical assessment नहीं।',
       focusCta: 'Workbook देखें',
