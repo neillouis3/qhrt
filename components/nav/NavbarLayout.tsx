@@ -9,7 +9,7 @@ import { useNavbarLinks } from '@/components/nav/NavbarProvider';
 import { useLocale } from '@/context/LocaleContext';
 import { usePublicNavLinks, useUserNavLinks } from '@/hooks/useAppNavLinks';
 import { logoutOnClient, useSession } from '@/hooks/useSession';
-import { isFocusSessionPath } from '@/lib/sessionUi';
+import { isFocusSessionPath, isGeoGatePath, isReadinessPath } from '@/lib/sessionUi';
 
 interface NavbarLayoutProps {
   children: React.ReactNode;
@@ -56,6 +56,8 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
       pathname?.startsWith('/pause') ||
       pathname?.startsWith('/practice') ||
       pathname?.startsWith('/wind-down') ||
+      pathname?.startsWith('/starting-out') ||
+      pathname?.startsWith('/starting-point') ||
       pathname?.startsWith('/settings')) ??
     false;
   const isAdminRoute =
@@ -71,8 +73,10 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
     (pathname?.startsWith('/auth') ?? false);
   const isFocusSession = isFocusSessionPath(pathname);
   const isOnboarding = pathname === '/onboarding';
+  const isGeoGate = isGeoGatePath(pathname);
+  const isReadiness = isReadinessPath(pathname);
 
-  if (isAuthRoute || isFocusSession || isOnboarding) return <>{children}</>;
+  if (isAuthRoute || isFocusSession || isOnboarding || isGeoGate || isReadiness) return <>{children}</>;
 
   let links: NavItem[] = publicLinks;
   if (isAdminRoute && user?.role === 'admin') {
@@ -108,7 +112,7 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
           <Link href="/login" className={buttonVariants({ size: 'sm', variant: 'ghost' })}>
             {t('nav.login')}
           </Link>
-          <Link href="/signup" className={buttonVariants({ size: 'sm', variant: 'primary' })}>
+          <Link href="/readiness" className={buttonVariants({ size: 'sm', variant: 'primary' })}>
             {t('nav.signup')}
           </Link>
         </>

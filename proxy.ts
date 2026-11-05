@@ -1,20 +1,91 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import {
+  canadaGateMessage,
+  isCanadaBlocked,
+  isGeoExemptPath,
+  safeNextPath,
+  UNAVAILABLE_PATH,
+} from '@/lib/geo';
+import {
+  isProgramSessionApi,
+  isProgramSessionPath,
+  loadPathwayProgress,
+  pathwayHoldResponse,
+  programSessionsOpen,
+  STARTING_POINT_PATH,
+} from '@/lib/pathway';
+import { readReadinessPass } from '@/lib/readiness';
+import {
   createRequestClient,
   hasSupabaseAuthCookie,
   supabaseServer,
 } from '@/lib/supabaseClient';
 
+async function sessionsHeldForUser(userId: string, role: string | null): Promise<boolean> {
+  if (role === 'admin') return false;
+  const progress = await loadPathwayProgress(userId);
+  return !programSessionsOpen(progress);
+}
+
+function canadaUnavailableRedirect(request: NextRequest) {
+  const dest = request.nextUrl.clone();
+  dest.pathname = UNAVAILABLE_PATH;
+  dest.search = '';
+  const next = safeNextPath(`${request.nextUrl.pathname}${request.nextUrl.search}`);
+  if (next !== '/') dest.searchParams.set('next', next);
+  const response = NextResponse.redirect(dest);
+  response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+  return response;
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const blockedInCanada = await isCanadaBlocked(request);
 
-  // Skip API routes and static files — they don't need session checks.
+  if (pathname === '/robots.txt') {
+    if (blockedInCanada) {
+      return new NextResponse('User-agent: *\nDisallow: /\n', {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/plain; charset=utf-8',
+          'X-Robots-Tag': 'noindex, nofollow',
+        },
+      });
+    }
+    return NextResponse.next();
+  }
+
   if (
-    pathname.startsWith('/api/') ||
     pathname.startsWith('/_next/') ||
     /\.(?:ico|png|jpg|jpeg|svg|webp|gif|txt|woff2?)$/.test(pathname)
   ) {
+    return NextResponse.next();
+  }
+
+  if (blockedInCanada && !isGeoExemptPath(pathname)) {
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: canadaGateMessage() }, { status: 403 });
+    }
+    return canadaUnavailableRedirect(request);
+  }
+
+  // Skip API routes and static files — they don't need session checks.
+  if (pathname.startsWith('/api/')) {
+    if (isProgramSessionApi(pathname) && hasSupabaseAuthCookie(request)) {
+      const apiClient = createRequestClient(request);
+      const apiUser = (await apiClient.auth.getUser()).data.user;
+      if (apiUser) {
+        const { data: roleData } = await supabaseServer
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', apiUser.id)
+          .maybeSingle();
+        if (await sessionsHeldForUser(apiUser.id, roleData?.role ?? null)) {
+          return pathwayHoldResponse();
+        }
+      }
+    }
     return NextResponse.next();
   }
 
@@ -33,7 +104,8 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith('/breathe') ||
     pathname.startsWith('/wind-down') ||
     pathname.startsWith('/pause') ||
-    pathname.startsWith('/practice');
+    pathname.startsWith('/practice') ||
+    pathname.startsWith('/starting-point');
   const isSettingsRoute = pathname.startsWith('/settings');
   const isAuthRoute =
     pathname === '/login' || pathname === '/signup' || pathname === '/reset-password';
@@ -93,10 +165,20 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
 
+    if (isProgramSessionPath(pathname) && user && (await sessionsHeldForUser(user.id, role))) {
+      return NextResponse.redirect(new URL(STARTING_POINT_PATH, request.url));
+    }
   }
 
   if (isSettingsRoute && !isAuthenticated) {
     return NextResponse.redirect(new URL('/login', request.url));
+  }
+
+  if (pathname === '/signup' && !isAuthenticated) {
+    const pass = await readReadinessPass(request);
+    if (!pass) {
+      return NextResponse.redirect(new URL('/readiness', request.url));
+    }
   }
 
   // Redirect authenticated users away from auth pages
@@ -126,32 +208,7 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    '/home/:path*',
-    '/dashboard/:path*',
-    '/content/:path*',
-    '/users/:path*',
-    '/analytics/:path*',
-    '/assessments/:path*',
-    '/diary/:path*',
-    '/breathe',
-    '/breathe/:path*',
-    '/pause',
-    '/pause/:path*',
-    '/practice',
-    '/practice/:path*',
-    '/wind-down',
-    '/wind-down/:path*',
-    '/onboarding',
-    '/starting-out',
-    '/starting-out/:path*',
-    '/modules',
-    '/modules/:path*',
-    '/settings/:path*',
-    '/login',
-    '/signup',
-    '/reset-password',
-  ],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 };
 
 // Alias for backwards compatibility just in case because middleware convention is now deprecated.

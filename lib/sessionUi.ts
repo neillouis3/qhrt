@@ -45,6 +45,14 @@ export function statusLabel(status: string): string {
   return status;
 }
 
+export function isGeoGatePath(pathname: string | null | undefined): boolean {
+  return pathname === '/unavailable';
+}
+
+export function isReadinessPath(pathname: string | null | undefined): boolean {
+  return pathname === '/readiness' || pathname === '/readiness/';
+}
+
 /** Full-screen check-in or breathing — no top navbar. */
 export function isFocusSessionPath(pathname: string | null | undefined): boolean {
   if (!pathname) return false;
