@@ -58,6 +58,10 @@ supabase/012_module_lesson_completions.sql
 supabase/013_body_composition_module.sql
 supabase/014_testimonials.sql
 supabase/015_faq_questions.sql
+supabase/016_us_disclaimers.sql
+supabase/017_assessment_kind_and_readiness.sql
+supabase/018_readiness_session_gate.sql
+supabase/019_module_presentations.sql
 ```
 
 ### 4. Run the development server
