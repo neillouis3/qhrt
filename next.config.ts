@@ -25,6 +25,10 @@ const nextConfig: NextConfig = {
           { key: "X-DNS-Prefetch-Control", value: "on" },
         ],
       },
+      {
+        source: "/unavailable",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+      },
     ];
   },
 };
