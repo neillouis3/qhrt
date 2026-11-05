@@ -43,6 +43,69 @@ export function BreatheFlower() {
   );
 }
 
+function FieldFlower({ fill }: { fill: string }) {
+  return (
+    <svg viewBox="0 0 80 80" className="size-full" aria-hidden>
+      {[0, 72, 144, 216, 288].map((deg) => (
+        <ellipse
+          key={deg}
+          cx="40"
+          cy="22"
+          rx="9"
+          ry="18"
+          fill={fill}
+          transform={`rotate(${deg} 40 40)`}
+        />
+      ))}
+      <circle cx="40" cy="40" r="7" fill="var(--aid-sun)" />
+    </svg>
+  );
+}
+
+function FieldLeaf({ flip }: { flip?: boolean }) {
+  return (
+    <svg viewBox="0 0 48 72" className={`size-full ${flip ? '-scale-x-100' : ''}`} aria-hidden>
+      <path d="M24 6c16 14 18 36 0 60C6 42 8 20 24 6z" fill="var(--aid-mint)" />
+      <path d="M24 14v44" fill="none" stroke="currentColor" strokeWidth="1.4" opacity="0.28" />
+    </svg>
+  );
+}
+
+export function BreatheFlowerField() {
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden text-foreground" aria-hidden>
+      <span className="breathe-bloom breathe-bloom--a">
+        <FieldFlower fill="var(--aid-lavender)" />
+      </span>
+      <span className="breathe-bloom breathe-bloom--b">
+        <FieldFlower fill="var(--aid-peach)" />
+      </span>
+      <span className="breathe-bloom breathe-bloom--c">
+        <FieldFlower fill="var(--aid-rose)" />
+      </span>
+      <span className="breathe-bloom breathe-bloom--d">
+        <FieldFlower fill="var(--aid-pink)" />
+      </span>
+      <span className="breathe-bloom breathe-bloom--e">
+        <FieldFlower fill="var(--aid-sky)" />
+      </span>
+      <span className="breathe-leaf breathe-leaf--a">
+        <FieldLeaf />
+      </span>
+      <span className="breathe-leaf breathe-leaf--b">
+        <FieldLeaf flip />
+      </span>
+      <span className="breathe-leaf breathe-leaf--c">
+        <FieldLeaf />
+      </span>
+      <span className="breathe-petal breathe-petal--a" />
+      <span className="breathe-petal breathe-petal--b" />
+      <span className="breathe-petal breathe-petal--c" />
+      <span className="breathe-petal breathe-petal--d" />
+    </div>
+  );
+}
+
 export function BreatheBalloon() {
   return (
     <svg

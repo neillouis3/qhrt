@@ -1,22 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { useTheme } from 'next-themes';
 import { Button, Typography } from '@heroui/react';
-import { HugeiconsIcon } from '@hugeicons/react';
-import { Bookmark02Icon } from '@hugeicons/core-free-icons';
-import Logo from '@/components/ui/Logo';
-import { usePinnedPractices } from '@/hooks/usePinnedPractices';
 import SiriOrb from '@/components/user/SiriOrb';
-import ThemeSwitcher from '@/components/nav/ThemeSwitcher';
 import {
   BREATHE_SCENES,
   BreatheBalloon,
   BreatheBirds,
   BreatheClouds,
   BreatheFlower,
+  BreatheFlowerField,
   type BreatheSceneId,
 } from '@/components/user/BreatheScenes';
 
@@ -49,13 +43,6 @@ function cueFor(phase: Phase): string {
   return "whenever you're ready";
 }
 
-const BREATHE_PIN = {
-  kind: 'breathe' as const,
-  id: 'breathe',
-  title: 'Breathing',
-  href: '/breathe',
-};
-
 export default function BreathingPage({
   embedded = false,
   title,
@@ -65,29 +52,17 @@ export default function BreathingPage({
   title?: string;
   onFinished?: () => void;
 } = {}) {
-  const router = useRouter();
   const { resolvedTheme } = useTheme();
   const reduceMotion = usePrefersReducedMotion();
   const [phase, setPhase] = useState<Phase>('idle');
   const [scale, setScale] = useState(REST_SCALE);
   const [scene, setScene] = useState<BreatheSceneId>('orb');
   const [cycles, setCycles] = useState(0);
-  const [pinPending, setPinPending] = useState(false);
-  const { syncPins, isPinned, togglePin } = usePinnedPractices();
 
   useEffect(() => {
     const saved = window.localStorage.getItem(SCENE_STORAGE_KEY);
     if (saved === 'orb' || saved === 'flower' || saved === 'balloon') setScene(saved);
   }, []);
-
-  useEffect(() => {
-    fetch('/api/user/pins')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data && Array.isArray(data.pins)) syncPins(data.pins);
-      })
-      .catch(() => {});
-  }, [syncPins]);
 
   useEffect(() => {
     if (phase === 'idle') return;
@@ -135,43 +110,11 @@ export default function BreathingPage({
   const readyToContinue = embedded && cycles >= 3;
 
   return (
-    <div className={`relative flex overflow-hidden bg-background ${embedded ? 'min-h-[28rem] flex-1' : 'h-svh'}`}>
-      {embedded ? null : (
-      <header className="absolute inset-x-0 top-0 z-10 flex items-center justify-between px-4 py-4 sm:px-6">
-        <Link href="/home" aria-label="QHRT home" className="flex items-center">
-          <Logo decorative />
-        </Link>
-        <div className="flex items-center gap-1">
-          <Button
-            isIconOnly
-            size="sm"
-            variant="ghost"
-            aria-label={isPinned('breathe', 'breathe') ? 'Unpin breathing' : 'Pin breathing'}
-            aria-pressed={isPinned('breathe', 'breathe')}
-            isPending={pinPending}
-            isDisabled={pinPending}
-            onPress={() => {
-              setPinPending(true);
-              void togglePin(BREATHE_PIN)
-                .catch((err) => console.error('[Breathe] Pin failed:', err))
-                .finally(() => setPinPending(false));
-            }}
-          >
-            <HugeiconsIcon
-              icon={Bookmark02Icon}
-              size={18}
-              strokeWidth={1.5}
-              className={isPinned('breathe', 'breathe') ? 'text-primary' : 'text-muted'}
-            />
-          </Button>
-          <ThemeSwitcher />
-          <Button size="sm" variant="ghost" onPress={() => router.push('/home')}>
-            Close
-          </Button>
-        </div>
-      </header>
-      )}
-
+    <div
+      className={`relative flex min-h-0 flex-1 flex-col overflow-hidden bg-background ${
+        embedded ? 'min-h-[28rem]' : ''
+      }`}
+    >
       <main className="relative flex min-h-0 flex-1 flex-col items-center justify-center gap-8 px-4 pb-8">
         {embedded && title ? (
           <Typography type="h4" weight="normal">
@@ -184,6 +127,7 @@ export default function BreathingPage({
             <BreatheBirds />
           </>
         ) : null}
+        {scene === 'flower' ? <BreatheFlowerField /> : null}
         <button
           type="button"
           onClick={start}

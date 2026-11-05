@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { PracticeFocusShell } from '@/components/user/PracticeFocusShell';
 import BreathingPage from '@/components/user/BreathingPage';
 
 export const metadata: Metadata = {
@@ -6,5 +7,9 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <BreathingPage />;
+  return (
+    <PracticeFocusShell backHref="/practice" backLabel="Practice">
+      <BreathingPage />
+    </PracticeFocusShell>
+  );
 }

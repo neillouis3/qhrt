@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button, Typography } from '@heroui/react';
 import { usePhaseTimer } from '@/components/user/usePhaseTimer';
 
 const STEP_MS = 5000;
+const PAUSE_MS = 1600;
 const STEPS = [
   'soften your gaze',
   'drop your shoulders',
@@ -87,16 +88,27 @@ function Ring({ fill }: { fill: number }) {
 export default function WindSettle({ onFinished }: { onFinished?: () => void } = {}) {
   const [started, setStarted] = useState(false);
   const [step, setStep] = useState(0);
-  const [waiting, setWaiting] = useState(false);
-  const running = started && step < STEPS.length;
+  const [pausing, setPausing] = useState(false);
+  const running = started && !pausing && step < STEPS.length;
   const rest = started && step >= STEPS.length;
-  const { fill, remaining } = usePhaseTimer(running, STEP_MS, () => setWaiting(true), step);
+  const { fill, remaining } = usePhaseTimer(running, STEP_MS, () => setPausing(true), step);
+  const visualFill = rest || pausing ? 1 : running ? fill : 0;
+
+  useEffect(() => {
+    if (!pausing) return;
+    const id = window.setTimeout(() => {
+      setPausing(false);
+      setStep((value) => value + 1);
+    }, PAUSE_MS);
+    return () => window.clearTimeout(id);
+  }, [pausing]);
+
   const depth = rest ? 1 : Math.min(step, STEPS.length) / STEPS.length;
-  const night = rest ? 0.55 : 0.08 + depth * 0.35 + (waiting ? 0.12 : fill * 0.12);
+  const night = rest ? 0.55 : 0.08 + depth * 0.35 + (pausing ? 0.12 : fill * 0.12);
   const cue = rest
     ? 'stay here as long as you like'
-    : running
-      ? STEPS[step]
+    : started
+      ? STEPS[Math.min(step, STEPS.length - 1)]
       : 'click to start';
 
   return (
@@ -121,7 +133,7 @@ export default function WindSettle({ onFinished }: { onFinished?: () => void } =
           />
         ))}
       </div>
-      <main className="relative z-10 flex min-h-0 flex-1 flex-col items-center justify-center gap-8 px-4 pb-8">
+      <main className="relative flex min-h-0 flex-1 flex-col items-center justify-center gap-8 px-4 pb-8">
         <button
           type="button"
           disabled={started}
@@ -130,24 +142,24 @@ export default function WindSettle({ onFinished }: { onFinished?: () => void } =
           className="relative flex flex-col items-center gap-10 outline-none disabled:cursor-default"
         >
           <span className="relative flex size-[min(72vmin,30rem)] items-center justify-center text-foreground">
-            <Ring fill={running ? fill : rest ? 1 : 0} />
+            <Ring fill={visualFill} />
             <span
               className={!started ? 'wind-moon--idle' : ''}
               style={
                 started
                   ? {
-                      transform: `scale(${1 - depth * 0.12 - fill * 0.06})`,
+                      transform: `scale(${1 - depth * 0.12 - visualFill * 0.06})`,
                       opacity: 1 - depth * 0.15,
                       transition: 'transform 400ms ease, opacity 400ms ease',
                     }
                   : undefined
               }
             >
-              <WindMoon fill={running ? fill : 0} depth={depth} />
+              <WindMoon fill={visualFill} depth={depth} />
             </span>
             {running ? (
               <span className="pointer-events-none absolute text-3xl tabular-nums text-foreground">
-                {waiting ? 0 : remaining}
+                {remaining}
               </span>
             ) : null}
           </span>
@@ -155,17 +167,6 @@ export default function WindSettle({ onFinished }: { onFinished?: () => void } =
             {cue}
           </Typography>
         </button>
-        {waiting && !rest ? (
-          <Button
-            variant="primary"
-            onPress={() => {
-              setWaiting(false);
-              setStep((value) => value + 1);
-            }}
-          >
-            {step === STEPS.length - 1 ? 'Finish' : 'Continue'}
-          </Button>
-        ) : null}
         {rest && onFinished ? (
           <Button variant="primary" onPress={onFinished}>
             Continue

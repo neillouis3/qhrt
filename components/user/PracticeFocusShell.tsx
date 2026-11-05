@@ -2,10 +2,8 @@
 
 import type { ReactNode } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Button } from '@heroui/react';
 import Logo from '@/components/ui/Logo';
-import ThemeSwitcher from '@/components/nav/ThemeSwitcher';
+import { AccountMenu } from '@/components/nav/UserMenu';
 
 function ChevronLeftIcon() {
   return (
@@ -24,19 +22,15 @@ function ChevronLeftIcon() {
 export function PracticeFocusShell({
   backHref,
   backLabel,
-  extras,
   children,
 }: {
   backHref?: string;
   backLabel?: string;
-  extras?: ReactNode;
   children: ReactNode;
 }) {
-  const router = useRouter();
-
   return (
-    <div className="relative flex h-svh overflow-hidden bg-background">
-      <header className="absolute inset-x-0 top-0 z-10 flex items-center justify-between px-4 py-4 sm:px-6">
+    <div className="relative flex h-svh flex-col overflow-hidden bg-background">
+      <header className="pointer-events-auto absolute inset-x-0 top-0 z-20 flex h-[var(--app-navbar-height)] items-center justify-between px-6">
         {backHref && backLabel ? (
           <Link
             href={backHref}
@@ -50,15 +44,9 @@ export function PracticeFocusShell({
             <Logo decorative />
           </Link>
         )}
-        <div className="flex items-center gap-1">
-          {extras}
-          <ThemeSwitcher />
-          <Button size="sm" variant="ghost" onPress={() => router.push('/home')}>
-            Close
-          </Button>
-        </div>
+        <AccountMenu />
       </header>
-      <div className="relative flex min-h-0 flex-1 flex-col">{children}</div>
+      <div className="relative z-0 flex min-h-0 flex-1 flex-col">{children}</div>
     </div>
   );
 }

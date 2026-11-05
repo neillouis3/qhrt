@@ -39,29 +39,24 @@ export function FaqAid({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 160 160" className={`${FRAME} ${className ?? ''}`} aria-hidden>
       <path
-        d="M28 28h76a12 12 0 0 1 12 12v40a12 12 0 0 1-12 12H64l-18 18v-18H28a12 12 0 0 1-12-12V40a12 12 0 0 1 12-12z"
+        d="M28 30h72a20 20 0 0 1 20 20v28a20 20 0 0 1-20 20H48l-22 16 6-16H28a20 20 0 0 1-20-20V50a20 20 0 0 1 20-20z"
         fill="var(--aid-sky)"
         stroke="currentColor"
         strokeWidth="2.5"
         strokeLinejoin="round"
       />
-      <circle cx="52" cy="62" r="5" fill="currentColor" opacity="0.35" />
-      <circle cx="72" cy="62" r="5" fill="currentColor" opacity="0.35" />
-      <circle cx="92" cy="62" r="5" fill="currentColor" opacity="0.35" />
+      <circle cx="50" cy="64" r="5" fill="currentColor" />
+      <circle cx="66" cy="64" r="5" fill="currentColor" />
+      <circle cx="82" cy="64" r="5" fill="currentColor" />
       <path
-        d="M56 78h88a12 12 0 0 1 12 12v40a12 12 0 0 1-12 12h-28v18l-18-18H56a12 12 0 0 1-12-12V90a12 12 0 0 1 12-12z"
+        d="M60 62h72a20 20 0 0 1 20 20v28a20 20 0 0 1-20 20h-28l6 16-22-16H60a20 20 0 0 1-20-20V82a20 20 0 0 1 20-20z"
         fill="var(--aid-mint)"
         stroke="currentColor"
         strokeWidth="2.5"
         strokeLinejoin="round"
       />
-      <circle cx="100" cy="108" r="8" fill="currentColor" />
-      <path
-        d="M100 122v6"
-        stroke="currentColor"
-        strokeWidth="6"
-        strokeLinecap="round"
-      />
+      <path d="M96 80v16" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />
+      <circle cx="96" cy="108" r="3.5" fill="currentColor" />
     </svg>
   );
 }
@@ -70,28 +65,23 @@ export function TestimonyAid({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 160 160" className={`${FRAME} ${className ?? ''}`} aria-hidden>
       <path
-        d="M28 44h52c8 0 14 6 14 14v36c0 8-6 14-14 14H54l-18 16v-16H28c-8 0-14-6-14-14V58c0-8 6-14 14-14z"
+        d="M28 34h72a20 20 0 0 1 20 20v28a20 20 0 0 1-20 20H48l-22 16 6-16H28a20 20 0 0 1-20-20V54a20 20 0 0 1 20-20z"
         fill="var(--aid-peach)"
         stroke="currentColor"
         strokeWidth="2.5"
         strokeLinejoin="round"
       />
       <path
-        d="M44 68c0-10 8-16 16-16v14c-4 0-6 2-6 6h-10zM62 68c0-10 8-16 16-16v14c-4 0-6 2-6 6h-10z"
-        fill="currentColor"
-        opacity="0.28"
-      />
-      <path
-        d="M80 62h52c8 0 14 6 14 14v36c0 8-6 14-14 14h-24l-16 16v-16H80c-8 0-14-6-14-14V76c0-8 6-14 14-14z"
-        fill="var(--aid-sun)"
+        d="M60 62h72a20 20 0 0 1 20 20v28a20 20 0 0 1-20 20h-28l6 16-22-16H60a20 20 0 0 1-20-20V82a20 20 0 0 1 20-20z"
+        fill="var(--aid-paper)"
         stroke="currentColor"
         strokeWidth="2.5"
         strokeLinejoin="round"
       />
       <path
-        d="M96 86c0-10 8-16 16-16v14c-4 0-6 2-6 6H96zM114 86c0-10 8-16 16-16v14c-4 0-6 2-6 6h-10z"
+        d="M90 80c0 0 10-4 12 8-6 2-8 6-8 10h-10c1-8 2-14 6-18zM110 80c0 0 10-4 12 8-6 2-8 6-8 10h-10c1-8 2-14 6-18z"
         fill="currentColor"
-        opacity="0.28"
+        opacity="0.45"
       />
     </svg>
   );

@@ -19,6 +19,7 @@ import type { IconSvgElement } from '@hugeicons/react';
 import { useLocale } from '@/context/LocaleContext';
 import { LOCALE_OPTIONS } from '@/lib/locale';
 import UserAvatar from '@/components/ui/UserAvatar';
+import { logoutOnClient, useSession } from '@/hooks/useSession';
 import { firstNameFromUser, fullNameFromUser, type NameSource } from '@/lib/userName';
 
 export interface UserMenuProps {
@@ -138,5 +139,37 @@ export default function UserMenu({ user, onSettings, onLogout }: UserMenuProps) 
         </Dropdown.Menu>
       </Dropdown.Popover>
     </Dropdown>
+  );
+}
+
+export function AccountMenu() {
+  const router = useRouter();
+  const { session, loading, invalidate } = useSession();
+
+  const handleLogout = async () => {
+    invalidate();
+    try {
+      await logoutOnClient();
+    } catch (err) {
+      console.error('[AccountMenu] Logout request failed:', err);
+    } finally {
+      invalidate();
+      router.push('/');
+      router.refresh();
+    }
+  };
+
+  if (loading) {
+    return <div className="size-8 animate-pulse rounded-lg bg-accent-lighter dark:bg-navy-light" />;
+  }
+
+  if (!session?.user) return null;
+
+  return (
+    <UserMenu
+      user={session.user}
+      onSettings={() => router.push('/settings')}
+      onLogout={handleLogout}
+    />
   );
 }
