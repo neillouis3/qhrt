@@ -12,6 +12,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import { LandingIcon } from '@/components/marketing/LandingIcons';
 import HowItWorks from '@/components/marketing/HowItWorks';
+import FaqList from '@/components/marketing/FaqList';
 import { LandingCta } from '@/components/marketing/MarketingCtas';
 import { SproutAid } from '@/components/marketing/PublicAids';
 import SiteFooter from '@/components/layout/SiteFooter';
@@ -19,7 +20,7 @@ import SiteFooter from '@/components/layout/SiteFooter';
 const features = [
   {
     title: 'Focus-area check-ins',
-    description: 'Sleep, stress, habits, and more — each with its own questions, not one generic quiz.',
+    description: 'Sleep, stress, habits, and more. Each has its own questions, not one generic quiz.',
     icon: BookOpen02Icon,
   },
   {
@@ -29,7 +30,7 @@ const features = [
   },
   {
     title: 'Private & secure',
-    description: 'Your data is protected under Canadian privacy law. Your privacy is our priority.',
+    description: 'Your data stays private under United States law, including the privacy law of your state.',
     icon: ShieldCheckIcon,
   },
   {
@@ -39,7 +40,7 @@ const features = [
   },
   {
     title: 'From anywhere',
-    description: 'Practice from wherever feels comfortable — no commute, no appointment slot.',
+    description: 'Practice from wherever feels comfortable. No commute, no appointment slot.',
     icon: Globe02Icon,
   },
   {
@@ -63,7 +64,7 @@ export default function LandingPage() {
                 Wellness & resilience coaching
               </Typography>
               <Typography type="body" color="muted">
-                Self-guided education for daily stress, habits, and mindset — not therapy or
+                Self-guided education for daily stress, habits, and mindset. Not therapy or
                 medical treatment. Pick a focus, unlock standard workbooks, and build routines that
                 fit your life.
               </Typography>
@@ -102,6 +103,22 @@ export default function LandingPage() {
           </ul>
         </section>
 
+        <section id="faq" className="flex scroll-mt-[var(--app-navbar-height)] flex-col gap-10 py-24">
+          <div className="flex flex-col gap-2">
+            <Typography type="h4" weight="normal">
+              Frequently asked questions
+            </Typography>
+            <Typography type="body-sm" color="muted">
+              Common questions about QHRT. If yours is not here,{' '}
+              <Link href="/faq" className="text-brand hover:opacity-80">
+                ask a question
+              </Link>
+              .
+            </Typography>
+          </div>
+          <FaqList />
+        </section>
+
         <section className="py-24">
           <div className="relative min-h-72 overflow-hidden rounded-lg lg:min-h-80">
             <Image
@@ -120,12 +137,12 @@ export default function LandingPage() {
                 Begin when you are ready
               </Typography>
               <Typography type="body-sm" color="muted">
-                Create an account, pick a focus area, and open a matching workbook. Pause or return
-                whenever you like.
+                Start with a short readiness check, then create an account. Pick a focus area and
+                open a matching workbook. Pause or return whenever you like.
               </Typography>
               <div>
-                <Link href="/signup" className={buttonVariants({ size: 'sm', variant: 'primary' })}>
-                  Create an account
+                <Link href="/readiness" className={buttonVariants({ size: 'sm', variant: 'primary' })}>
+                  Get started
                 </Link>
               </div>
             </div>

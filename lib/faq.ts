@@ -3,7 +3,7 @@ export const FAQ_ITEMS: { id: string; question: string; answer: string }[] = [
     id: 'therapy',
     question: 'Is QHRT therapy or medical care?',
     answer:
-      'No. QHRT is coaching and education only, not therapy, counseling, or a clinical service. Check-ins are not diagnoses, and workbooks are not treatment plans. If you have a health concern, talk to a licensed professional.',
+      'No. QHRT is coaching and education only, not therapy, counseling, or a clinical service. Check-ins are not diagnoses, and workbooks are not treatment plans. Who may provide those services is set by each state. If you have a health concern, talk to a professional licensed in your state.',
   },
   {
     id: 'check-ins',
@@ -27,13 +27,13 @@ export const FAQ_ITEMS: { id: string; question: string; answer: string }[] = [
     id: 'privacy',
     question: 'Who can see my answers?',
     answer:
-      'You need to be signed in. Only you can see your own submissions. Staff with an admin role can manage content. We handle personal information under Canadian privacy law. The Privacy page has the details.',
+      'You need to be signed in. Only you can see your own submissions. Staff with an admin role can manage content. We handle personal information under United States law, including the privacy law of your state. Those state laws differ. The Privacy page has the details.',
   },
   {
     id: 'crisis',
     question: 'What if I need urgent help?',
     answer:
-      'QHRT is not emergency or crisis care. If you are in danger or need urgent help, contact local emergency services. Do not rely on this site in a crisis.',
+      'QHRT is not emergency or crisis care. If you are in immediate danger in the United States, call 911. That number is the same in every state and territory. If you need to talk with someone, call or text 988. Your 988 contact is routed to a local crisis center, which can differ by state. Do not rely on this site in a crisis.',
   },
 ];
 
