@@ -7,8 +7,9 @@ import type { LandingGrainTone } from '@/components/marketing/LandingIcons';
 const steps = [
   {
     step: '01',
-    title: 'Create your account',
-    description: 'Sign up in minutes. Then pick what you want to work on — sleep, stress, habits, or whatever you add next.',
+    title: 'See if QHRT is a fit',
+    description:
+      'A short readiness check, then create your account. Pick what you want to work on: sleep, stress, habits, or whatever you add next.',
     tone: 'bloom' as LandingGrainTone,
   },
   {

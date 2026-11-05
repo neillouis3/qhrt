@@ -9,6 +9,7 @@ export function OutcomeEditor({
   outcome,
   index,
   categories,
+  choiceQuestions,
   workbooks,
   scoreHint,
   onChange,
@@ -17,6 +18,7 @@ export function OutcomeEditor({
   outcome: AssessmentOutcome;
   index: number;
   categories: string[];
+  choiceQuestions: { key: string; text: string; options: { value: string; label: string }[] }[];
   workbooks: Workbook[];
   scoreHint: string;
   onChange: (o: AssessmentOutcome) => void;
@@ -62,6 +64,29 @@ export function OutcomeEditor({
         />
       </Field>
 
+      <label className="flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={outcome.allowSignup}
+          onChange={(e) =>
+            set({
+              allowSignup: e.target.checked,
+              allowSessions: e.target.checked ? outcome.allowSessions : false,
+            })
+          }
+        />
+        Allow creating an account from this result
+      </label>
+      <label className="flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={outcome.allowSignup && outcome.allowSessions}
+          disabled={!outcome.allowSignup}
+          onChange={(e) => set({ allowSessions: e.target.checked })}
+        />
+        Allow program sessions from this result
+      </label>
+
       <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
         <Field label="Show when">
           <select
@@ -72,6 +97,7 @@ export function OutcomeEditor({
             <option value="score_range">Score is in a range</option>
             <option value="top_category">A category scores highest</option>
             <option value="fallback">Nothing else matches</option>
+            <option value="stop">Stop the check (emergency)</option>
           </select>
         </Field>
         {outcome.match === 'top_category' && (
@@ -90,7 +116,7 @@ export function OutcomeEditor({
             </select>
           </Field>
         )}
-        {outcome.match !== 'fallback' && (
+        {outcome.match !== 'fallback' && outcome.match !== 'stop' && (
           <>
             <Field
               label={outcome.match === 'top_category' ? 'Min category score' : 'Min score'}
@@ -115,6 +141,54 @@ export function OutcomeEditor({
             </Field>
           </>
         )}
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        <Field label="Skip this result when" hint="e.g. skip self-directed if a safety follow-up is Yes">
+          <select
+            value={outcome.excludeIf?.questionKey ?? ''}
+            onChange={(e) =>
+              set({
+                excludeIf: e.target.value ? { questionKey: e.target.value, values: [] } : null,
+              })
+            }
+            className={inputClass}
+          >
+            <option value="">Never skip</option>
+            {choiceQuestions.map((question) => (
+              <option key={question.key} value={question.key}>
+                {question.text.slice(0, 60) || question.key}
+              </option>
+            ))}
+          </select>
+        </Field>
+        {outcome.excludeIf ? (
+          <div>
+            <span className="mb-1.5 block text-sm font-medium">…if the answer is</span>
+            <div className="flex flex-wrap gap-3">
+              {(
+                choiceQuestions.find((question) => question.key === outcome.excludeIf?.questionKey)
+                  ?.options ?? []
+              ).map((option) => (
+                <label key={option.value} className="flex items-center gap-1.5 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={outcome.excludeIf!.values.includes(option.value)}
+                    onChange={(e) => {
+                      const values = e.target.checked
+                        ? [...outcome.excludeIf!.values, option.value]
+                        : outcome.excludeIf!.values.filter((value) => value !== option.value);
+                      set({
+                        excludeIf: { questionKey: outcome.excludeIf!.questionKey, values },
+                      });
+                    }}
+                  />
+                  {option.label || option.value}
+                </label>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
 
       <div>

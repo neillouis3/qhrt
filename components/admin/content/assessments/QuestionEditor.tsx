@@ -38,6 +38,26 @@ const SCALE_PRESETS: { id: string; label: string; options: AnswerOption[] }[] = 
       { value: 'no', label: 'No', score: 0 },
     ],
   },
+  {
+    id: 'readiness-independence',
+    label: 'Yes → Not Yet (3–0)',
+    options: [
+      { value: 'yes', label: 'Yes', score: 3 },
+      { value: 'mostly', label: 'Mostly', score: 2 },
+      { value: 'sometimes', label: 'Sometimes', score: 1 },
+      { value: 'not_yet', label: 'Not Yet', score: 0 },
+    ],
+  },
+  {
+    id: 'readiness-suitability',
+    label: 'Yes → Not Right Now (3–0)',
+    options: [
+      { value: 'yes', label: 'Yes', score: 3 },
+      { value: 'mostly', label: 'Mostly', score: 2 },
+      { value: 'unsure', label: 'Unsure', score: 1 },
+      { value: 'not_right_now', label: 'Not Right Now', score: 0 },
+    ],
+  },
 ];
 
 function nextOptionValue(options: AnswerOption[]): string {
@@ -51,6 +71,7 @@ export function QuestionEditor({
   index,
   total,
   earlierChoiceQuestions,
+  outcomes,
   onChange,
   onRemove,
   onMove,
@@ -59,6 +80,7 @@ export function QuestionEditor({
   index: number;
   total: number;
   earlierChoiceQuestions: AssessmentQuestion[];
+  outcomes: { key: string; label: string }[];
   onChange: (q: AssessmentQuestion) => void;
   onRemove: () => void;
   onMove: (direction: -1 | 1) => void;
@@ -76,7 +98,11 @@ export function QuestionEditor({
     <div className="rounded-xl border border-border p-4 space-y-4">
       <div className="flex items-center justify-between gap-2">
         <span className="text-sm font-medium">
-          {question.type === 'practice' ? `Practice ${index + 1}` : `Question ${index + 1}`}
+          {question.type === 'practice'
+            ? `Practice ${index + 1}`
+            : question.type === 'info'
+              ? `Info ${index + 1}`
+              : `Question ${index + 1}`}
         </span>
         <div className="flex gap-1.5">
           <button type="button" className={smallButtonClass} disabled={index === 0} onClick={() => onMove(-1)}>
@@ -156,13 +182,38 @@ export function QuestionEditor({
             value={question.type}
             onChange={(e) => {
               const type = e.target.value as AssessmentQuestion['type'];
-              set({ type, options: type === 'text' ? [] : question.options, reverse: false });
+              set({
+                type,
+                options: type === 'choice' ? question.options : [],
+                reverse: false,
+                required: type !== 'info',
+              });
             }}
             className={inputClass}
           >
             <option value="choice">Multiple choice</option>
             <option value="text">Free text (not scored)</option>
+            <option value="info">Info page (not scored)</option>
           </select>
+        </Field>
+        <Field label="Page / section" hint="Same name groups items onto one screen">
+          <input
+            type="text"
+            value={question.section ?? ''}
+            onChange={(e) =>
+              set({ section: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_') || null })
+            }
+            placeholder="e.g. safety"
+            className={`${inputClass} font-mono`}
+          />
+        </Field>
+        <Field label="Heading" hint="Optional title above the question">
+          <input
+            type="text"
+            value={question.heading ?? ''}
+            onChange={(e) => set({ heading: e.target.value.trim() || null })}
+            className={inputClass}
+          />
         </Field>
         <Field label="Category" hint="Groups scores for category routing">
           <input
@@ -275,6 +326,53 @@ export function QuestionEditor({
           </div>
         </div>
       )}
+
+      {question.type === 'choice' ? (
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <Field label="Stop the check if" hint="Used for emergency / safety answers">
+            <select
+              value={question.stopIf?.outcomeKey ?? ''}
+              onChange={(e) =>
+                set({
+                  stopIf: e.target.value
+                    ? { outcomeKey: e.target.value, values: question.stopIf?.values ?? [] }
+                    : null,
+                })
+              }
+              className={inputClass}
+            >
+              <option value="">Do not stop</option>
+              {outcomes.map((outcome) => (
+                <option key={outcome.key} value={outcome.key}>
+                  {outcome.label || outcome.key}
+                </option>
+              ))}
+            </select>
+          </Field>
+          {question.stopIf ? (
+            <div>
+              <span className="mb-1.5 block text-sm font-medium">…when the answer is</span>
+              <div className="flex flex-wrap gap-3">
+                {question.options.map((option) => (
+                  <label key={option.value} className="flex items-center gap-1.5 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={question.stopIf!.values.includes(option.value)}
+                      onChange={(e) => {
+                        const values = e.target.checked
+                          ? [...question.stopIf!.values, option.value]
+                          : question.stopIf!.values.filter((value) => value !== option.value);
+                        set({ stopIf: { ...question.stopIf!, values } });
+                      }}
+                    />
+                    {option.label || option.value}
+                  </label>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
       </>
       ) : null}
 

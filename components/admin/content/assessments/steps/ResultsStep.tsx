@@ -64,6 +64,7 @@ export function ResultsStep() {
               outcome={outcome}
               index={index}
               categories={categories}
+              choiceQuestions={draft.questions.filter((question) => question.type === 'choice')}
               workbooks={workbooks}
               scoreHint={scoreHint}
               onChange={(next) => updateOutcome(index, next)}

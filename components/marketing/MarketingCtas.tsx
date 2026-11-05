@@ -11,7 +11,7 @@ export function LandingCta() {
 
   return (
     <div className="flex items-center gap-2">
-      <Link href="/signup" className={buttonVariants({ size: 'sm', variant: 'primary' })}>
+      <Link href="/readiness" className={buttonVariants({ size: 'sm', variant: 'primary' })}>
         Get started
       </Link>
       <Link href="/login" className={buttonVariants({ size: 'sm', variant: 'outline' })}>

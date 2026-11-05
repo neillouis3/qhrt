@@ -1,4 +1,4 @@
-import type { AssessmentDefinition } from '@/lib/assessments';
+import type { AssessmentDefinition, AssessmentQuestion } from '@/lib/assessments';
 
 export type AssessmentDraft = Omit<AssessmentDefinition, 'id' | 'created_at' | 'updated_at'> & {
   id?: string;
@@ -23,13 +23,31 @@ export function emptyDraft(displayOrder: number): AssessmentDraft {
     description: null,
     instructions: null,
     disclaimer:
-      'Educational self-check only. This is not a diagnosis and does not replace professional care.',
+      'Educational self-check only. This is not a diagnosis, does not create a provider relationship, and does not replace care from a professional licensed in your state.',
     cover_image: null,
     scoring_method: 'sum',
+    kind: 'check_in',
     questions: [],
     outcomes: [],
     display_order: displayOrder,
     is_active: true,
+  };
+}
+
+export function emptyQuestion(key: string): AssessmentQuestion {
+  return {
+    key,
+    text: '',
+    type: 'choice',
+    options: [],
+    reverse: false,
+    category: null,
+    required: true,
+    showIf: null,
+    practiceId: null,
+    heading: null,
+    section: null,
+    stopIf: null,
   };
 }
 

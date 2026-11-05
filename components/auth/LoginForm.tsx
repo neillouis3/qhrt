@@ -121,6 +121,10 @@ export default function LoginForm({ mode, onSuccess }: LoginFormProps) {
       const data = await response.json();
 
       if (!response.ok) {
+        if (data.code === 'READINESS_REQUIRED') {
+          router.push('/readiness');
+          return;
+        }
         setError(data.error || 'An error occurred');
         return;
       }

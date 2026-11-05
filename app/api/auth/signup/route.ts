@@ -3,6 +3,8 @@ import type { NextRequest } from 'next/server';
 import { createRequestClient, supabaseServer } from '@/lib/supabaseClient';
 import { rateLimit } from '@/lib/rateLimiter';
 import { signupClientMessage, supabaseKeysAreConfigured } from '@/lib/authErrors';
+import { getPathwayCopy, persistReadinessForUser } from '@/lib/pathway';
+import { readReadinessPass } from '@/lib/readiness';
 
 export async function POST(request: NextRequest) {
   // Rate limit signups per IP to mitigate account-enumeration / spam registration.
@@ -21,6 +23,14 @@ export async function POST(request: NextRequest) {
 
     if (!email || !password) {
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
+    }
+
+    const pass = await readReadinessPass(request);
+    if (!pass) {
+      return NextResponse.json(
+        { error: 'Complete the program readiness check first.', code: 'READINESS_REQUIRED' },
+        { status: 403 }
+      );
     }
 
     if (typeof password === 'string' && password.length < 6) {
@@ -109,6 +119,14 @@ export async function POST(request: NextRequest) {
     const userId = created.user.id;
 
     await supabaseServer.from('user_roles').insert({ user_id: userId, role: 'user' });
+    const live = await getPathwayCopy(pass.pathway);
+    await persistReadinessForUser(userId, {
+      assessmentId: pass.assessmentId,
+      pathway: pass.pathway,
+      allowSessions: live?.allowSessions ?? pass.allowSessions,
+      answers: pass.answers,
+      evaluation: pass.evaluation,
+    });
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email,

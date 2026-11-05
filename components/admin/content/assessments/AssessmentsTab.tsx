@@ -128,6 +128,7 @@ export function AssessmentsTab({
               <Table.Content aria-label="Assessments">
                 <Table.Header>
                   <Table.Column isRowHeader>Title</Table.Column>
+                  <Table.Column>Type</Table.Column>
                   <Table.Column>Questions</Table.Column>
                   <Table.Column>Scoring</Table.Column>
                   <Table.Column>Outcomes</Table.Column>
@@ -147,6 +148,9 @@ export function AssessmentsTab({
                             <span>{a.title}</span>
                             <span className="font-mono text-xs text-muted">{a.slug}</span>
                           </div>
+                        </Table.Cell>
+                        <Table.Cell>
+                          {a.kind === 'readiness' ? 'Readiness' : 'Check-in'}
                         </Table.Cell>
                         <Table.Cell>{a.questions.length}</Table.Cell>
                         <Table.Cell>{METHOD_LABELS[a.scoring_method]}</Table.Cell>

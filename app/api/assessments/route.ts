@@ -14,8 +14,9 @@ export async function GET(request: NextRequest) {
   const [assessmentsRes, submissionsRes] = await Promise.all([
     supabaseServer
       .from('assessments')
-      .select('id, slug, title, description, cover_image, questions')
+      .select('id, slug, title, description, cover_image, questions, kind')
       .eq('is_active', true)
+      .neq('kind', 'readiness')
       .order('display_order', { ascending: true })
       .order('created_at', { ascending: true }),
     supabaseServer
@@ -28,6 +29,9 @@ export async function GET(request: NextRequest) {
   if (assessmentsRes.error) {
     if (missingRelation(assessmentsRes.error)) {
       return schemaMissingResponse('Assessment', 'supabase/009_assessment_engine.sql');
+    }
+    if (assessmentsRes.error.code === '42703' || assessmentsRes.error.code === 'PGRST204') {
+      return schemaMissingResponse('Readiness', 'supabase/017_assessment_kind_and_readiness.sql');
     }
     return apiError(assessmentsRes.error, '[api/assessments] GET');
   }

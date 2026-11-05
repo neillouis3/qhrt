@@ -17,6 +17,7 @@ import { BuilderShell } from '../BuilderShell';
 import { Toast } from '../shared/Toast';
 import {
   emptyDraft,
+  emptyQuestion,
   uniqueKey,
   WIZARD_STEPS,
   wizardHref,
@@ -176,18 +177,12 @@ export function AssessmentDraftProvider({
       questions: [
         ...current.questions,
         {
-          key: uniqueKey(
-            'q',
-            current.questions.map((question) => question.key)
+          ...emptyQuestion(
+            uniqueKey(
+              'q',
+              current.questions.map((question) => question.key)
+            )
           ),
-          text: '',
-          type: 'choice',
-          options: [],
-          reverse: false,
-          category: null,
-          required: true,
-          showIf: null,
-          practiceId: null,
         },
       ],
     }));
@@ -213,6 +208,9 @@ export function AssessmentDraftProvider({
           required: true,
           showIf: null,
           practiceId,
+          heading: null,
+          section: null,
+          stopIf: null,
         },
       ],
     }));
@@ -235,6 +233,9 @@ export function AssessmentDraftProvider({
           max: null,
           category: null,
           workbookIds: [],
+          allowSignup: true,
+          allowSessions: true,
+          excludeIf: null,
         },
       ],
     }));

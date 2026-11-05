@@ -48,7 +48,11 @@ function QuestionBlock({
         {question.text}
         {!question.required && <span className="ml-2 text-xs text-muted">(optional)</span>}
       </Typography>
-      {question.type === 'text' ? (
+      {question.type === 'info' ? (
+        <Typography type="body-sm" color="muted">
+          {question.text}
+        </Typography>
+      ) : question.type === 'text' ? (
         <TextArea
           fullWidth
           rows={4}

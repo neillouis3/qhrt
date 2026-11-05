@@ -25,6 +25,7 @@ export function QuestionsStep() {
             index={index}
             total={draft.questions.length}
             earlierChoiceQuestions={draft.questions.slice(0, index).filter((item) => item.type === 'choice')}
+            outcomes={draft.outcomes.map((outcome) => ({ key: outcome.key, label: outcome.label }))}
             onChange={(next) => updateQuestion(index, next)}
             onRemove={() => removeQuestion(index)}
             onMove={(direction) => moveQuestion(index, direction)}
