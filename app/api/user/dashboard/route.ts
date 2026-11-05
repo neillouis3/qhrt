@@ -3,6 +3,12 @@ import type { NextRequest } from 'next/server';
 import { createUserClient } from '@/lib/supabaseClient';
 import { requireUser } from '@/lib/adminAuth';
 import { buildHomeActivity, buildHomeTutorial, pickHomeNext } from '@/lib/home';
+import {
+  firstParagraph,
+  getPathwayCopy,
+  parsePathwayProgress,
+  programSessionsOpen,
+} from '@/lib/pathway';
 import { buildHomeDiaryStats } from '@/lib/diaryStats';
 import { practiceTimeFromUser, homeCheckInFromUser } from '@/lib/userSettings';
 import { buildGentlePresence } from '@/lib/gentlePresence';
@@ -23,11 +29,16 @@ export async function GET(request: NextRequest) {
 
   try {
     const [progressRes, assessmentsRes, submissionsRes, diaryRes] = await Promise.all([
-      db.from('user_progress').select('intake_completed').eq('user_id', userId).maybeSingle(),
+      db
+        .from('user_progress')
+        .select('intake_completed, readiness_pathway, readiness_allow_sessions, readiness_ack_at')
+        .eq('user_id', userId)
+        .maybeSingle(),
       db
         .from('assessments')
-        .select('id, slug, title, description')
+        .select('id, slug, title, description, kind')
         .eq('is_active', true)
+        .neq('kind', 'readiness')
         .order('display_order', { ascending: true }),
       db
         .from('assessment_submissions')
@@ -44,16 +55,48 @@ export async function GET(request: NextRequest) {
 
     const submissions = submissionsRes.error ? [] : (submissionsRes.data ?? []);
     const takenIds = new Set(submissions.map((s: { assessment_id: string }) => s.assessment_id));
+    let assessmentRows: { id: string; slug: string; title: string; description: string | null; kind?: string }[] =
+      assessmentsRes.error ? [] : (assessmentsRes.data ?? []);
+    if (assessmentsRes.error && (assessmentsRes.error.code === '42703' || assessmentsRes.error.code === 'PGRST204')) {
+      const retry = await db
+        .from('assessments')
+        .select('id, slug, title, description')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+      assessmentRows = retry.error ? [] : (retry.data ?? []);
+    }
     const nextAssessment =
-      (assessmentsRes.error ? [] : (assessmentsRes.data ?? [])).find(
-        (a: { id: string }) => !takenIds.has(a.id)
-      ) ?? null;
+      assessmentRows.find((a: { id: string; kind?: string }) => a.kind !== 'readiness' && !takenIds.has(a.id)) ??
+      null;
 
-    const intakeCompleted = Boolean(progressRes.data?.intake_completed);
+    let progressRow: {
+      intake_completed?: boolean | null;
+      readiness_pathway?: string | null;
+      readiness_allow_sessions?: boolean | null;
+      readiness_ack_at?: string | null;
+    } | null = progressRes.error ? null : progressRes.data;
+    if (progressRes.error && (progressRes.error.code === '42703' || progressRes.error.code === 'PGRST204')) {
+      const retry = await db
+        .from('user_progress')
+        .select('intake_completed')
+        .eq('user_id', userId)
+        .maybeSingle();
+      progressRow = retry.error ? null : retry.data;
+    }
+
+    const intakeCompleted = Boolean(progressRow?.intake_completed);
+    const pathwayProgress = parsePathwayProgress(progressRow);
+    const programOpen = programSessionsOpen(pathwayProgress);
+    const pathwayCopy =
+      pathwayProgress.pathway && !programOpen ? await getPathwayCopy(pathwayProgress.pathway) : null;
     const next = pickHomeNext({
       intakeCompleted,
       nextAssessment,
       practiceTime: practiceTimeFromUser(userResult.user) || null,
+      programOpen,
+      pathwayTitle: pathwayCopy?.title ?? null,
+      pathwaySummary: pathwayCopy ? firstParagraph(pathwayCopy.body) : null,
+      allowSessions: pathwayProgress.allowSessions,
     });
 
     const activityRows = submissions.map((row) => {
@@ -127,6 +170,7 @@ export async function GET(request: NextRequest) {
         checkInWeek,
         checkIn,
         modules,
+        programOpen,
       },
       { status: 200 }
     );

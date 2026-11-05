@@ -3,17 +3,23 @@
 import { useMemo } from 'react';
 import type { NavItem } from '@/components/nav/Navbar';
 import { useLocale } from '@/context/LocaleContext';
+import { useSession } from '@/hooks/useSession';
 
 export function useUserNavLinks(): NavItem[] {
   const { t } = useLocale();
+  const { session } = useSession();
+  const programOpen = session?.programOpen !== false;
   return useMemo(
-    () => [
-      { name: t('nav.home'), path: '/home' },
-      { name: t('nav.practice'), path: '/practice' },
-      { name: t('nav.diary'), path: '/diary' },
-      { name: t('nav.assessments'), path: '/assessments' },
-    ],
-    [t]
+    () =>
+      programOpen
+        ? [
+            { name: t('nav.home'), path: '/home' },
+            { name: t('nav.practice'), path: '/practice' },
+            { name: t('nav.diary'), path: '/diary' },
+            { name: t('nav.assessments'), path: '/assessments' },
+          ]
+        : [{ name: t('nav.home'), path: '/home' }],
+    [programOpen, t]
   );
 }
 

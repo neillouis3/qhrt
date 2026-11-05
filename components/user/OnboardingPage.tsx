@@ -16,7 +16,12 @@ export default function OnboardingPage() {
     }
   }, [loading, router, session]);
 
-  const goHome = () => {
+  const finishOnboarding = () => {
+    clearSessionCache();
+    router.push(session?.programOpen === false ? '/starting-point' : '/home');
+  };
+
+  const skipOnboarding = () => {
     clearSessionCache();
     router.push('/home');
   };
@@ -28,7 +33,7 @@ export default function OnboardingPage() {
   return (
     <div className="flex min-h-svh w-full flex-col items-center justify-center bg-background px-6 py-12">
       <div className="flex w-full max-w-md flex-col gap-8">
-        <OnboardingWizard onComplete={goHome} onSkip={goHome} />
+        <OnboardingWizard onComplete={finishOnboarding} onSkip={skipOnboarding} />
       </div>
     </div>
   );

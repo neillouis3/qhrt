@@ -1,4 +1,4 @@
-export type HomeNextKind = 'onboarding' | 'assessment' | 'practice';
+export type HomeNextKind = 'onboarding' | 'pathway' | 'assessment' | 'practice';
 
 export interface HomeNext {
   kind: HomeNextKind;
@@ -52,10 +52,18 @@ export function pickHomeNext({
   intakeCompleted,
   nextAssessment,
   practiceTime,
+  programOpen = true,
+  pathwayTitle = null,
+  pathwaySummary = null,
+  allowSessions = true,
 }: {
   intakeCompleted: boolean;
   nextAssessment: HomeAssessment | null;
   practiceTime?: string | null;
+  programOpen?: boolean;
+  pathwayTitle?: string | null;
+  pathwaySummary?: string | null;
+  allowSessions?: boolean;
 }): HomeNext {
   if (!intakeCompleted) {
     return {
@@ -64,6 +72,17 @@ export function pickHomeNext({
       description: 'Tell us what you want to work on so we can suggest workbooks. You can skip any time.',
       cta: 'Continue',
       href: '/onboarding',
+    };
+  }
+
+  if (!programOpen) {
+    return {
+      kind: 'pathway',
+      title: pathwayTitle || 'Your starting point',
+      description:
+        pathwaySummary || 'Read your recommended starting point before a session.',
+      cta: allowSessions ? 'Continue' : 'View',
+      href: '/starting-point',
     };
   }
 

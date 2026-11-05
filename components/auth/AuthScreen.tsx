@@ -196,7 +196,7 @@ export default function AuthScreen({ mode }: AuthScreenProps) {
             setChecking(false);
             return;
           }
-          router.push('/home');
+          router.push(data.programOpen === false ? '/starting-point' : '/home');
           return;
         }
       } catch {
@@ -221,6 +221,11 @@ export default function AuthScreen({ mode }: AuthScreenProps) {
   const goHome = () => {
     clearSessionCache();
     router.push('/home');
+  };
+
+  const goStartingPoint = () => {
+    clearSessionCache();
+    router.push('/starting-point');
   };
 
   const handleWelcomeDone = () => {
@@ -253,7 +258,9 @@ export default function AuthScreen({ mode }: AuthScreenProps) {
         const data = await response.json();
         if (data.user) {
           const role = data.role ?? 'user';
-          router.push(role === 'admin' ? '/dashboard' : '/home');
+          router.push(
+            role === 'admin' ? '/dashboard' : data.programOpen === false ? '/starting-point' : '/home'
+          );
           return;
         }
       }
@@ -290,7 +297,7 @@ export default function AuthScreen({ mode }: AuthScreenProps) {
                 <Typography type="body-sm" color="muted">
                   {isLogin ? "Don't have an account? " : 'Already have an account? '}
                   <Link
-                    href={isLogin ? '/signup' : '/login'}
+                    href={isLogin ? '/readiness' : '/login'}
                     className="text-brand hover:opacity-80"
                   >
                     {isLogin ? 'Sign up' : 'Sign in'}
@@ -317,7 +324,7 @@ export default function AuthScreen({ mode }: AuthScreenProps) {
                     fromWelcome ? 'is-enter' : ''
                   }`}
                 >
-                  <OnboardingWizard onComplete={goHome} onSkip={goHome} />
+                  <OnboardingWizard onComplete={goStartingPoint} onSkip={goHome} />
                 </div>
               ) : null}
             </div>

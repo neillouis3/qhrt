@@ -39,6 +39,7 @@ export interface HomeDashboardData {
   checkInWeek?: CheckInWeekDay[];
   checkIn?: HomeCheckInValue | null;
   modules?: LearningModule[];
+  programOpen?: boolean;
 }
 
 function withFoundationLesson(steps: TutorialStep[], modules: LearningModule[]): TutorialStep[] {
@@ -76,7 +77,11 @@ function BrowseWash({ tone }: { tone: (typeof BROWSE_HREFS)[number]['tone'] }) {
   );
 }
 
-function fallbackNext(intakeCompleted: boolean, practiceTime?: string | null): HomeNext {
+function fallbackNext(
+  intakeCompleted: boolean,
+  practiceTime?: string | null,
+  programOpen = true
+): HomeNext {
   if (!intakeCompleted) {
     return {
       kind: 'onboarding',
@@ -84,6 +89,15 @@ function fallbackNext(intakeCompleted: boolean, practiceTime?: string | null): H
       description: 'Tell us what you want to work on so we can suggest workbooks. You can skip any time.',
       cta: 'Continue',
       href: '/onboarding',
+    };
+  }
+  if (!programOpen) {
+    return {
+      kind: 'pathway',
+      title: 'Your starting point',
+      description: 'Read your recommended starting point before a session.',
+      cta: 'Continue',
+      href: '/starting-point',
     };
   }
   return idlePracticeNext(practiceTime);
@@ -137,8 +151,11 @@ export default function HomePage({
 }: HomePageProps) {
   const router = useRouter();
   const { t } = useLocale();
+  const [programOpen, setProgramOpen] = useState(() => initialDashboard?.programOpen !== false);
   const [next, setNext] = useState<HomeNext>(
-    () => initialDashboard?.next ?? fallbackNext(intakeCompleted, practiceTimeFromUser(user) || null)
+    () =>
+      initialDashboard?.next ??
+      fallbackNext(intakeCompleted, practiceTimeFromUser(user) || null, initialDashboard?.programOpen !== false)
   );
   const [activity, setActivity] = useState<HomeActivityItem[]>(() => initialDashboard?.activity ?? []);
   const [tutorial, setTutorial] = useState<TutorialStep[]>(() =>
@@ -161,22 +178,15 @@ export default function HomePage({
   const showCheckIn = homeCheckInFromUser(user);
   const currentTutorial = tutorial.find((step) => step.status === 'current');
   const nextStepRepeatsTutorial =
-    !intakeCompleted || (currentTutorial != null && currentTutorial.href === next.href);
+    programOpen &&
+    (!intakeCompleted || (currentTutorial != null && currentTutorial.href === next.href));
 
   const fetchNext = useCallback(async () => {
     try {
       const res = await fetch('/api/user/dashboard');
       if (!res.ok) return;
-      const data = (await res.json()) as {
-        next?: HomeNext;
-        activity?: HomeActivityItem[];
-        tutorial?: TutorialStep[];
-        diaryStats?: HomeDiaryStatsData;
-        gentlePresence?: GentlePresence;
-        pins?: PinnedPractice[];
-        checkInWeek?: CheckInWeekDay[];
-        modules?: LearningModule[];
-      };
+      const data = (await res.json()) as HomeDashboardData;
+      if (typeof data.programOpen === 'boolean') setProgramOpen(data.programOpen);
       if (data.next) setNext(data.next);
       if (data.activity) setActivity(data.activity);
       if (data.tutorial) setTutorial(withStartingOutStatus(data.tutorial, readStartingOutDone(userId)));
@@ -261,13 +271,15 @@ export default function HomePage({
         </div>
       )}
 
-      {tutorial.length > 0 ? <HomeTutorial steps={withFoundationLesson(tutorial, modules)} /> : null}
+      {programOpen && tutorial.length > 0 ? (
+        <HomeTutorial steps={withFoundationLesson(tutorial, modules)} />
+      ) : null}
 
-      {pins.length > 0 ? (
+      {programOpen && pins.length > 0 ? (
         <HomePinned pins={pins} onUnpin={(pin) => void handleUnpin(pin)} unpinningKey={unpinningKey} />
       ) : null}
 
-      {activity.length > 0 ? (
+      {programOpen && activity.length > 0 ? (
           <div className="flex flex-col gap-3">
             <Typography type="body" className="font-normal">
               {t('home.recent')}
@@ -299,12 +311,13 @@ export default function HomePage({
               })}
             </div>
           </div>
-      ) : intakeCompleted ? (
+      ) : programOpen && intakeCompleted ? (
         <HomeShortcuts />
       ) : null}
 
-      {diaryStats ? <HomeDiaryStats stats={diaryStats} /> : null}
+      {programOpen && diaryStats ? <HomeDiaryStats stats={diaryStats} /> : null}
 
+      {programOpen ? (
       <div className="flex flex-col gap-3">
         <Typography type="body-xs" color="muted">
           {t('home.browse.title')}
@@ -328,6 +341,7 @@ export default function HomePage({
           ))}
         </div>
       </div>
+      ) : null}
 
       <CrisisResources variant="compact" />
       </div>
