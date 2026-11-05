@@ -115,7 +115,7 @@ export function idlePracticeNext(practiceTime?: string | null): HomeNext {
       kind: 'practice',
       title: 'Explore a focus area',
       description: 'Choose a topic and work through a standard coaching workbook at your pace.',
-      cta: 'Modules',
+      cta: 'Lessons',
       href: '/assessments',
     };
   }
