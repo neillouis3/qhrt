@@ -38,6 +38,7 @@ export function BuilderShell({
   steps,
   currentStep,
   actions,
+  workspace,
   children,
 }: {
   backHref: string;
@@ -47,14 +48,19 @@ export function BuilderShell({
   steps?: { key: string; label: string; href: string }[];
   currentStep?: string;
   actions?: ReactNode;
+  /** Full-width editor, the same idea as a design canvas. */
+  workspace?: boolean;
   children: ReactNode;
 }) {
   const currentIndex = steps?.findIndex((step) => step.key === currentStep) ?? -1;
+  const frame = workspace
+    ? 'mx-auto flex w-full max-w-none flex-1 flex-col gap-4 px-4 py-4 lg:px-6'
+    : 'mx-auto flex w-full max-w-none flex-1 flex-col gap-8 px-6 py-12';
 
   return (
     <div className="flex min-h-full flex-1 flex-col bg-background">
-      <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-6 py-12">
-        <div className="flex flex-col gap-5">
+        <div className={frame}>
+        <div className={`flex flex-col ${workspace ? 'gap-3' : 'gap-5'}`}>
           <Link
             href={backHref}
             className="inline-flex w-fit items-center gap-1 text-sm text-muted hover:text-foreground"
