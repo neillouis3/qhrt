@@ -1152,6 +1152,14 @@ body {
   -webkit-mask-image: linear-gradient(to bottom, black 58%, transparent);
 }
 
+.focus-card-wash--band {
+  position: relative;
+  inset: auto;
+  height: 7.25rem;
+  mask-image: none;
+  -webkit-mask-image: none;
+}
+
 .focus-card-wash__blob {
   position: absolute;
   border-radius: 9999px;
