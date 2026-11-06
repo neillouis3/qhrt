@@ -9,13 +9,16 @@ export function washTone(seed: string) {
 export default function CoverWash({
   seed,
   fill = false,
+  band = false,
 }: {
   seed: string;
   fill?: boolean;
+  /** A solid picture strip. Text stays off the picture. */
+  band?: boolean;
 }) {
   return (
     <div
-      className={`focus-card-wash focus-card-wash--${washTone(seed)}${fill ? ' focus-card-wash--fill' : ''}`}
+      className={`focus-card-wash focus-card-wash--${washTone(seed)}${fill ? ' focus-card-wash--fill' : ''}${band ? ' focus-card-wash--band' : ''}`}
       aria-hidden
     >
       <span className="focus-card-wash__blob focus-card-wash__blob--a" />
