@@ -6,7 +6,7 @@ export const tl: MessageTree = {
     home: 'Home',
     practice: 'Pagsasanay',
     diary: 'Talaarawan',
-    assessments: 'Mga module',
+    assessments: 'Mga aralin',
     about: 'Tungkol sa amin',
     faq: 'FAQ',
     testimonials: 'Mga patotoo',
@@ -89,7 +89,7 @@ export const tl: MessageTree = {
     browse: {
       title: 'O mag-browse',
       diary: 'Talaarawan',
-      assessments: 'Mga module',
+      assessments: 'Mga aralin',
       breathe: 'Humininga',
       windDown: 'Pagsasanay',
       practice: 'Pagsasanay',
@@ -115,9 +115,9 @@ export const tl: MessageTree = {
       go: 'Pumunta',
       again: 'Subukan muli',
     },
-    modules: 'Mga module',
+    modules: 'Mga aralin',
     shortcuts: {
-      focusTitle: 'Mga module',
+      focusTitle: 'Mga aralin',
       focusDescription:
         'Mga gabay na workbook ayon sa mga layuning pinili mo, hindi clinical na assessment.',
       focusCta: 'Tingnan ang mga workbook',
