@@ -8,6 +8,7 @@ import InfoBody from '@/components/readiness/InfoBody';
 import CrisisResources from '@/components/ui/CrisisResources';
 import UserPageShell from '@/components/layout/UserPageShell';
 import { clearSessionCache } from '@/hooks/useSession';
+import { pathwayCopy } from '@/lib/initialAccess';
 
 type PathwayPayload = {
   pathway: string | null;
@@ -16,6 +17,7 @@ type PathwayPayload = {
   programOpen: boolean;
   nextHref: string;
   copy: { title: string; body: string; allowSignup: boolean; allowSessions: boolean } | null;
+  preparationFocus?: { title: string; items: string[] }[];
 };
 
 export default function StartingPointPage() {
@@ -71,8 +73,9 @@ export default function StartingPointPage() {
     }
   };
 
-  const title = data?.copy?.title || 'Your starting point';
-  const body = data?.copy?.body || '';
+  const spec = data?.pathway ? pathwayCopy(data.pathway) : null;
+  const title = spec?.title || data?.copy?.title || 'Your starting point';
+  const body = spec?.body || data?.copy?.body || '';
 
   return (
     <UserPageShell wide="75">
@@ -87,6 +90,26 @@ export default function StartingPointPage() {
                 {title}
               </Typography>
               {body ? <InfoBody text={body} /> : null}
+              {data?.pathway === 'preparation' && data.preparationFocus && data.preparationFocus.length > 0 ? (
+                <div className="flex flex-col gap-4">
+                  {data.preparationFocus.map((group) => (
+                    <div key={group.title} className="flex flex-col gap-2">
+                      <Typography type="body" weight="medium">
+                        {group.title}
+                      </Typography>
+                      <ul className="flex list-disc flex-col gap-1 pl-5">
+                        {group.items.map((item) => (
+                          <li key={item}>
+                            <Typography type="body-sm" color="muted">
+                              {item}
+                            </Typography>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
             </div>
             {error ? <p className="text-sm text-danger">{error}</p> : null}
             <div className="flex flex-wrap gap-2">
@@ -97,7 +120,9 @@ export default function StartingPointPage() {
               ) : (
                 <>
                   <Link href="/readiness?again=1" className={buttonVariants({ variant: 'primary' })}>
-                    Answer the check again
+                    {data?.pathway === 'preparation'
+                      ? 'Repeat Program Readiness & Suitability Check'
+                      : 'Answer the check again'}
                   </Link>
                   <Link href="/settings" className={buttonVariants({ variant: 'ghost' })}>
                     Settings

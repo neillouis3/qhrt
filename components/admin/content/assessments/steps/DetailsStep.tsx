@@ -33,7 +33,7 @@ export function DetailsStep() {
           label="Type"
           hint={
             draft.kind === 'readiness'
-              ? 'Shown at /readiness before someone can create an account. The first active readiness check is used.'
+              ? 'Shown at /readiness after an account is created. The first active readiness check is used.'
               : `Shown at /assessments/${draft.slug || '…'}`
           }
         >
