@@ -4,7 +4,7 @@ import { missingRelation } from '@/lib/apiError';
 
 export const VOICE_BUCKET_UNAVAILABLE = 'not_configured';
 
-const DEFAULT_VOICE_ID = 'EXAVITQu4vr4xnSDxMaL';
+const DEFAULT_VOICE_ID = 'cgSgspJ2msm6clMCkdW9';
 const DEFAULT_MODEL = 'eleven_multilingual_v2';
 
 function apiKey(): string {
