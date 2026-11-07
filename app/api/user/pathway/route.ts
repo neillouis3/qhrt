@@ -4,8 +4,10 @@ import { requireUser } from '@/lib/adminAuth';
 import { createUserClient } from '@/lib/supabaseClient';
 import {
   acknowledgePathway,
+  chooseReadinessPathway,
   getPathwayCopy,
   loadPathwayProgress,
+  preparationActivitiesForUser,
   programSessionsOpen,
 } from '@/lib/pathway';
 
@@ -41,6 +43,7 @@ async function pathwayPayload(userId: string, request: NextRequest) {
           }
         : null,
     nextHref: intakeCompleted ? '/home' : '/onboarding',
+    preparationFocus: await preparationActivitiesForUser(userId, progress.pathway),
   };
 }
 
@@ -55,6 +58,25 @@ export async function POST(request: NextRequest) {
   const userResult = await requireUser(request);
   if (userResult instanceof NextResponse) return userResult;
   if (!userResult) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  let body: { action?: unknown; pathway?: unknown } = {};
+  try {
+    body = await request.json();
+  } catch {
+    body = {};
+  }
+  if (body.action === 'choose') {
+    const pathway = typeof body.pathway === 'string' ? body.pathway : '';
+    const chosen = await chooseReadinessPathway(userResult.user.id, pathway);
+    if (chosen.error) return NextResponse.json({ error: chosen.error }, { status: 400 });
+    const payload = await pathwayPayload(userResult.user.id, request);
+    return NextResponse.json({
+      ...payload,
+      allowSessions: chosen.progress.allowSessions,
+      acknowledged: chosen.progress.acknowledged,
+      programOpen: programSessionsOpen(chosen.progress),
+    });
+  }
 
   const { error, progress } = await acknowledgePathway(userResult.user.id);
   if (error) {

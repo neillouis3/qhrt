@@ -2,6 +2,9 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import type { AssessmentAnswers, AssessmentEvaluation } from '@/lib/assessments';
 import { getActiveReadinessAssessment } from '@/lib/assessments';
+import { preparationFocus, scoreReadiness, type PreparationActivity } from '@/lib/pathwayScoring';
+import { READINESS_PATH } from '@/lib/readiness';
+import { recordCompletedAttempt } from '@/lib/readinessAttempts';
 import { createRequestClient, hasSupabaseAuthCookie, supabaseServer } from '@/lib/supabaseClient';
 
 export const STARTING_POINT_PATH = '/starting-point';
@@ -99,6 +102,22 @@ export async function getPathwayCopy(pathway: string): Promise<PathwayCopy | nul
   };
 }
 
+export async function preparationActivitiesForUser(userId: string, pathway: string | null): Promise<PreparationActivity[]> {
+  if (pathway !== 'preparation') return [];
+  const { assessment } = await getActiveReadinessAssessment();
+  if (!assessment) return [];
+  const { data, error } = await supabaseServer
+    .from('assessment_submissions')
+    .select('answers')
+    .eq('user_id', userId)
+    .eq('assessment_id', assessment.id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error || !data?.answers || typeof data.answers !== 'object') return [];
+  return preparationFocus(scoreReadiness(data.answers as AssessmentAnswers));
+}
+
 export async function persistReadinessForUser(
   userId: string,
   pass: {
@@ -107,23 +126,44 @@ export async function persistReadinessForUser(
     allowSessions: boolean;
     answers: AssessmentAnswers;
     evaluation: AssessmentEvaluation;
+    attemptId?: string | null;
   }
 ): Promise<void> {
+  const scored = scoreReadiness(pass.answers);
+  const pathway = scored.appPathway ?? pass.pathway;
   const { error: submitError } = await supabaseServer.from('assessment_submissions').insert({
     user_id: userId,
     assessment_id: pass.assessmentId,
     answers: pass.answers,
-    result: pass.evaluation,
+    result: {
+      pathway,
+      questionnaireVersion: scored.questionnaireVersion,
+      scoringRuleVersion: scored.scoringRuleVersion,
+      finalRuleTrigger: scored.trigger,
+      outcomes: pass.evaluation.outcomes.map((outcome) => ({
+        key: outcome.key,
+        label: outcome.label,
+        summary: outcome.summary,
+      })),
+    },
   });
   if (submitError && submitError.code !== '42P01' && submitError.code !== 'PGRST205' && submitError.code !== '23503') {
     console.error('[pathway] assessment_submissions', submitError.message, submitError.code);
   }
 
+  await recordCompletedAttempt({
+    userId,
+    questionnaireId: pass.assessmentId,
+    attemptId: pass.attemptId ?? null,
+    answers: pass.answers,
+    scored,
+  });
+
   const now = new Date().toISOString();
   const full = await supabaseServer.from('user_progress').upsert(
     {
       user_id: userId,
-      readiness_pathway: pass.pathway,
+      readiness_pathway: pathway,
       readiness_at: now,
       readiness_allow_sessions: pass.allowSessions,
       readiness_ack_at: null,
@@ -139,7 +179,7 @@ export async function persistReadinessForUser(
   const fallback = await supabaseServer.from('user_progress').upsert(
     {
       user_id: userId,
-      readiness_pathway: pass.pathway,
+      readiness_pathway: pathway,
       readiness_at: now,
     },
     { onConflict: 'user_id' }
@@ -152,9 +192,6 @@ export async function persistReadinessForUser(
 export async function acknowledgePathway(userId: string): Promise<{ error: string | null; progress: PathwayProgress }> {
   const progress = await loadPathwayProgress(userId);
   if (!progress.pathway) return { error: null, progress };
-  if (!progress.allowSessions) {
-    return { error: 'This starting point does not open program sessions yet.', progress };
-  }
   if (progress.acknowledged) return { error: null, progress };
 
   const { error } = await supabaseServer
@@ -167,6 +204,65 @@ export async function acknowledgePathway(userId: string): Promise<{ error: strin
     return { error: 'Could not continue just now. Try again.', progress };
   }
   return { error: null, progress: { ...progress, acknowledged: true } };
+}
+
+/** Where to send someone who is not ready for a program session. */
+export async function accessHoldTarget(userId: string, role: string | null): Promise<string | null> {
+  if (role === 'admin') return null;
+  const progress = await loadPathwayProgress(userId);
+  if (!progress.pathway) {
+    const { data, error } = await supabaseServer
+      .from('user_progress')
+      .select('intake_completed')
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (error) return null;
+    if (data?.intake_completed) return null;
+    return READINESS_PATH;
+  }
+  if (!programSessionsOpen(progress)) return STARTING_POINT_PATH;
+  return null;
+}
+
+const SWITCHABLE_PATHWAYS = new Set(['preparation']);
+
+export async function chooseReadinessPathway(
+  userId: string,
+  pathway: string
+): Promise<{ error: string | null; progress: PathwayProgress }> {
+  const current = await loadPathwayProgress(userId);
+  if (!SWITCHABLE_PATHWAYS.has(pathway)) {
+    return { error: 'That starting point is not available from here.', progress: current };
+  }
+  if (current.pathway !== 'self_directed' && current.pathway !== 'additional_time') {
+    return { error: 'That starting point cannot be changed from here.', progress: current };
+  }
+  const copy = await getPathwayCopy(pathway);
+  if (!copy) return { error: 'That starting point is not available.', progress: current };
+
+  const { error } = await supabaseServer
+    .from('user_progress')
+    .update({
+      readiness_pathway: pathway,
+      readiness_allow_sessions: copy.allowSessions,
+      readiness_ack_at: null,
+      readiness_at: new Date().toISOString(),
+    })
+    .eq('user_id', userId);
+  if (error) {
+    if (missingPathwayColumn(error)) {
+      return {
+        error: null,
+        progress: { pathway, allowSessions: copy.allowSessions, acknowledged: false },
+      };
+    }
+    console.error('[pathway] choose', error.message, error.code);
+    return { error: 'Could not update that starting point. Try again.', progress: current };
+  }
+  return {
+    error: null,
+    progress: { pathway, allowSessions: copy.allowSessions, acknowledged: false },
+  };
 }
 
 export async function optionalRequestUser(request: NextRequest) {

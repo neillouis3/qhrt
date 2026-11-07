@@ -1,3 +1,4 @@
+import { scoreReadiness } from '@/lib/pathwayScoring';
 import { supabaseServer } from '@/lib/supabaseClient';
 import { isPracticeId, practiceById, PRACTICE_DONE, type PracticeId } from '@/lib/practices';
 
@@ -295,6 +296,17 @@ export function evaluateAssessment(
     categoryScores,
     outcomes: chosen.map(toMatched),
   };
+}
+
+/** Initial Access pathway from the hybrid scoring rules. A mean score is not used. */
+export function selectReadinessOutcome(
+  assessment: Pick<AssessmentDefinition, 'outcomes'>,
+  answers: AssessmentAnswers
+): MatchedOutcome | null {
+  const scored = scoreReadiness(answers);
+  if (!scored.appPathway) return null;
+  const outcome = assessment.outcomes.find((item) => item.key === scored.appPathway);
+  return outcome ? toMatched(outcome) : null;
 }
 
 export function groupQuestionsBySection<Q extends { key: string; section: string | null }>(

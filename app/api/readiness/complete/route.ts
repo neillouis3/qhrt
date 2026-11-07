@@ -4,11 +4,12 @@ import { requireCsrf } from '@/lib/csrf';
 import { rateLimit } from '@/lib/rateLimiter';
 import { apiError, missingRelation, schemaMissingResponse } from '@/lib/apiError';
 import {
-  evaluateAssessment,
   getActiveReadinessAssessment,
+  selectReadinessOutcome,
   validateAnswers,
   type MatchedOutcome,
 } from '@/lib/assessments';
+import { preparationFocus, scoreReadiness } from '@/lib/pathwayScoring';
 import {
   issueReadinessCookieValue,
   READINESS_COOKIE,
@@ -20,6 +21,7 @@ import {
   loadPathwayProgress,
   optionalRequestUser,
   persistReadinessForUser,
+  preparationActivitiesForUser,
 } from '@/lib/pathway';
 
 function copyFromOutcome(outcome: MatchedOutcome) {
@@ -50,6 +52,7 @@ export async function GET(request: NextRequest) {
               allowSessions: copy.allowSessions,
             }
           : null,
+        preparationFocus: await preparationActivitiesForUser(user.id, progress.pathway),
       });
     }
   }
@@ -97,14 +100,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Answer each question before continuing.' }, { status: 400 });
   }
 
-  const answersRaw = raw && typeof raw === 'object' && 'answers' in raw ? raw.answers : raw;
+  const body = raw && typeof raw === 'object' ? raw : {};
+  const answersRaw = 'answers' in body ? body.answers : raw;
+  const attemptId = 'attemptId' in body && typeof body.attemptId === 'string' ? body.attemptId : null;
   const { answers, errors } = validateAnswers(assessment.questions, answersRaw);
   if (errors.length > 0) {
     return NextResponse.json({ error: errors[0], errors }, { status: 400 });
   }
 
-  const evaluation = evaluateAssessment(assessment, answers);
-  const outcome = evaluation.outcomes[0];
+  const scored = scoreReadiness(answers);
+  if (scored.status === 'INCOMPLETE' || !scored.appPathway) {
+    return NextResponse.json(
+      { error: 'Please answer every question before your starting point is chosen.' },
+      { status: 400 }
+    );
+  }
+  const outcome = selectReadinessOutcome(assessment, answers);
   if (!outcome) {
     return NextResponse.json({ error: 'No starting point matched these answers.' }, { status: 400 });
   }
@@ -118,7 +129,8 @@ export async function POST(request: NextRequest) {
       pathway: outcome.key,
       allowSessions: outcome.allowSessions,
       answers,
-      evaluation,
+      evaluation: { score: null, topCategory: null, categoryScores: {}, outcomes: [outcome] },
+      attemptId,
     });
   }
 
@@ -128,7 +140,6 @@ export async function POST(request: NextRequest) {
       allowSignup: false,
       allowSessions: false,
       copy,
-      evaluation,
     });
     response.cookies.delete(READINESS_COOKIE);
     return response;
@@ -140,7 +151,7 @@ export async function POST(request: NextRequest) {
     allowSignup: true,
     allowSessions: outcome.allowSessions,
     answers,
-    evaluation,
+    evaluation: { score: null, topCategory: null, categoryScores: {}, outcomes: [outcome] },
   });
   if (!token) {
     return NextResponse.json({ error: 'Could not save those answers. Try again.' }, { status: 500 });
@@ -151,7 +162,7 @@ export async function POST(request: NextRequest) {
     allowSignup: true,
     allowSessions: outcome.allowSessions,
     copy,
-    evaluation,
+    preparationFocus: preparationFocus(scored),
   });
   response.cookies.set(READINESS_COOKIE, token, readinessCookieOptions());
   return response;
