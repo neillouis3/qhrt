@@ -10,22 +10,29 @@ import {
 import {
   isProgramSessionApi,
   isProgramSessionPath,
-  loadPathwayProgress,
+  accessHoldTarget,
   pathwayHoldResponse,
-  programSessionsOpen,
-  STARTING_POINT_PATH,
 } from '@/lib/pathway';
-import { readReadinessPass } from '@/lib/readiness';
+import { READINESS_PATH } from '@/lib/readiness';
 import {
   createRequestClient,
   hasSupabaseAuthCookie,
   supabaseServer,
 } from '@/lib/supabaseClient';
 
-async function sessionsHeldForUser(userId: string, role: string | null): Promise<boolean> {
-  if (role === 'admin') return false;
-  const progress = await loadPathwayProgress(userId);
-  return !programSessionsOpen(progress);
+async function heldSessionResponse(userId: string, role: string | null, request: NextRequest) {
+  const target = await accessHoldTarget(userId, role);
+  if (!target) return null;
+  if (request.nextUrl.pathname.startsWith('/api/')) {
+    if (target === READINESS_PATH) {
+      return NextResponse.json(
+        { error: 'Complete the program readiness check first.', code: 'READINESS_REQUIRED' },
+        { status: 403 }
+      );
+    }
+    return pathwayHoldResponse();
+  }
+  return NextResponse.redirect(new URL(target, request.url));
 }
 
 function canadaUnavailableRedirect(request: NextRequest) {
@@ -81,9 +88,8 @@ export async function proxy(request: NextRequest) {
           .select('role')
           .eq('user_id', apiUser.id)
           .maybeSingle();
-        if (await sessionsHeldForUser(apiUser.id, roleData?.role ?? null)) {
-          return pathwayHoldResponse();
-        }
+        const held = await heldSessionResponse(apiUser.id, roleData?.role ?? null, request);
+        if (held) return held;
       }
     }
     return NextResponse.next();
@@ -165,20 +171,14 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
 
-    if (isProgramSessionPath(pathname) && user && (await sessionsHeldForUser(user.id, role))) {
-      return NextResponse.redirect(new URL(STARTING_POINT_PATH, request.url));
+    if (user && (isProgramSessionPath(pathname) || pathname.startsWith('/onboarding'))) {
+      const held = await heldSessionResponse(user.id, role, request);
+      if (held) return held;
     }
   }
 
   if (isSettingsRoute && !isAuthenticated) {
     return NextResponse.redirect(new URL('/login', request.url));
-  }
-
-  if (pathname === '/signup' && !isAuthenticated) {
-    const pass = await readReadinessPass(request);
-    if (!pass) {
-      return NextResponse.redirect(new URL('/readiness', request.url));
-    }
   }
 
   // Redirect authenticated users away from auth pages

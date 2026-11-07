@@ -248,7 +248,7 @@ export default function AuthScreen({ mode }: AuthScreenProps) {
     clearSessionCache();
 
     if (mode === 'signup') {
-      setPhase('transition');
+      router.push('/readiness');
       return;
     }
 
@@ -297,7 +297,7 @@ export default function AuthScreen({ mode }: AuthScreenProps) {
                 <Typography type="body-sm" color="muted">
                   {isLogin ? "Don't have an account? " : 'Already have an account? '}
                   <Link
-                    href={isLogin ? '/readiness' : '/login'}
+                    href={isLogin ? '/signup' : '/login'}
                     className="text-brand hover:opacity-80"
                   >
                     {isLogin ? 'Sign up' : 'Sign in'}
