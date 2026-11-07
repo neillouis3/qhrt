@@ -51,39 +51,38 @@ export function ModulesTab({
   }, [modules, search]);
 
   return (
-    <ContentErrorBoundary fallbackTitle="Modules failed to load">
+    <ContentErrorBoundary fallbackTitle="Lessons failed to load">
       <div>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-muted">
-            A module is a path. Lessons can be an introduction (slides and voice), a guide, or an
-            assessment.
+            A lesson is a path. Open one to add a practice, a questionnaire, or a presentation.
           </p>
           <div className="flex flex-wrap items-center gap-3">
-            <SearchBox placeholder="Search modules" onSearch={setSearch} />
+            <SearchBox placeholder="Search lessons" onSearch={setSearch} />
             <button
               type="button"
               onClick={() => router.push('/content/modules/new')}
               className={`${primaryButtonClass} flex shrink-0 items-center gap-2`}
             >
               <PlusIcon />
-              Add Module
+              Add lesson
             </button>
           </div>
         </div>
 
         {loading ? (
-          <p className="py-12 text-center text-sm text-muted">Loading modules…</p>
+          <p className="py-12 text-center text-sm text-muted">Loading lessons…</p>
         ) : (
           <Table>
             <Table.ScrollContainer>
-              <Table.Content aria-label="Modules">
+              <Table.Content aria-label="Lessons">
                 <Table.Header>
                   <Table.Column isRowHeader>Title</Table.Column>
-                  <Table.Column>Lessons</Table.Column>
+                  <Table.Column>Modules</Table.Column>
                   <Table.Column>Visible</Table.Column>
                   <Table.Column>Actions</Table.Column>
                 </Table.Header>
-                <Table.Body renderEmptyState={() => 'No modules yet.'}>
+                <Table.Body renderEmptyState={() => 'No lessons yet.'}>
                   {rows.map((module) => {
                     const minutes = module.lessons.reduce((sum, lesson) => sum + (lesson.minutes || 0), 0);
                     return (
@@ -113,7 +112,7 @@ export function ModulesTab({
                                   isActive: !module.isActive,
                                 }),
                               }).then((res) => {
-                                if (!res.ok) showToast('Failed to update module', 'error');
+                                if (!res.ok) showToast('Failed to update lesson', 'error');
                                 void load();
                               });
                             }}
@@ -145,15 +144,15 @@ export function ModulesTab({
               body: JSON.stringify({ id: confirmDelete.id }),
             }).then(async (res) => {
               setConfirmDelete(null);
-              if (!res.ok) showToast('Could not delete module', 'error');
+              if (!res.ok) showToast('Could not delete lesson', 'error');
               else {
                 showToast('Module deleted', 'success');
                 await load();
               }
             });
           }}
-          title="Delete module"
-          message="This removes the module and its lessons. Assessments themselves stay in the assessment list."
+          title="Delete lesson"
+          message="This removes the lesson and the modules inside it. Assessments themselves stay in the assessment list."
           confirmLabel="Delete"
         />
       </div>
