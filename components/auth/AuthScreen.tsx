@@ -191,9 +191,13 @@ export default function AuthScreen({ mode }: AuthScreenProps) {
             router.push('/dashboard');
             return;
           }
-          if (mode === 'signup' && !data.intakeCompleted) {
-            setPhase('onboarding');
-            setChecking(false);
+          if (!data.intakeCompleted) {
+            if (mode === 'signup') {
+              setPhase('onboarding');
+              setChecking(false);
+              return;
+            }
+            router.push('/onboarding');
             return;
           }
           router.push(data.programOpen === false ? '/starting-point' : '/home');
@@ -247,20 +251,25 @@ export default function AuthScreen({ mode }: AuthScreenProps) {
   const handleSuccess = async () => {
     clearSessionCache();
 
-    if (mode === 'signup') {
-      router.push('/readiness');
-      return;
-    }
-
     try {
       const response = await fetch('/api/auth/session');
       if (response.ok) {
         const data = await response.json();
         if (data.user) {
           const role = data.role ?? 'user';
-          router.push(
-            role === 'admin' ? '/dashboard' : data.programOpen === false ? '/starting-point' : '/home'
-          );
+          if (role === 'admin') {
+            router.push('/dashboard');
+            return;
+          }
+          if (!data.intakeCompleted) {
+            if (mode === 'signup') {
+              setPhase('onboarding');
+              return;
+            }
+            router.push('/onboarding');
+            return;
+          }
+          router.push(data.programOpen === false ? '/starting-point' : '/home');
           return;
         }
       }
@@ -297,7 +306,7 @@ export default function AuthScreen({ mode }: AuthScreenProps) {
                 <Typography type="body-sm" color="muted">
                   {isLogin ? "Don't have an account? " : 'Already have an account? '}
                   <Link
-                    href={isLogin ? '/signup' : '/login'}
+                    href={isLogin ? '/readiness' : '/login'}
                     className="text-brand hover:opacity-80"
                   >
                     {isLogin ? 'Sign up' : 'Sign in'}

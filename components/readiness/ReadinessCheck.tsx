@@ -292,6 +292,23 @@ export default function ReadinessCheck() {
     setLoading(true);
     setError('');
     try {
+      if (!session?.user) {
+        const response = await fetch('/api/readiness/complete', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'choose', pathway: 'preparation' }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          setError(typeof data.error === 'string' ? data.error : 'Could not switch to Preparation & Readiness.');
+          return;
+        }
+        setPathway('preparation');
+        setLearnMore(false);
+        setPage('result');
+        return;
+      }
       const response = await fetch('/api/user/pathway', {
         method: 'POST',
         credentials: 'same-origin',
@@ -314,6 +331,10 @@ export default function ReadinessCheck() {
   };
 
   const finish = async (href: string) => {
+    if (!session?.user) {
+      router.push(pathway && CONFIRM_PATHS.has(pathway) ? '/signup' : href);
+      return;
+    }
     if (pathway && CONFIRM_PATHS.has(pathway)) {
       setLoading(true);
       setError('');
@@ -330,7 +351,7 @@ export default function ReadinessCheck() {
           return;
         }
         clearSessionCache();
-        const next = pathway === 'additional_time' ? '/home' : typeof data.nextHref === 'string' ? data.nextHref : href;
+        const next = typeof data.nextHref === 'string' ? data.nextHref : href;
         router.push(next);
         router.refresh();
       } catch {
@@ -357,25 +378,6 @@ export default function ReadinessCheck() {
         Loading…
       </Typography>,
       'loading'
-    );
-  }
-
-  if (!session?.user) {
-    return frame(
-      <>
-        <Typography type="h1" weight="normal">
-          Create an account
-        </Typography>
-        <Typography type="body-sm" color="muted">
-          The Program Readiness & Suitability Check comes after you create an account. It helps find the right starting point for self-directed QHRT.
-        </Typography>
-        <div>
-          <Link href="/signup" className={buttonVariants({ variant: 'primary' })}>
-            Create an account
-          </Link>
-        </div>
-      </>,
-      'account'
     );
   }
 
@@ -532,7 +534,7 @@ export default function ReadinessCheck() {
               <Button variant="primary" isDisabled={loading} onPress={() => void choosePreparation()}>
                 Begin Preparation & Readiness
               </Button>
-              <Button variant="ghost" onPress={() => router.push('/home')}>
+              <Button variant="ghost" onPress={() => router.push(session?.user ? '/home' : '/signup')}>
                 Pause and Return When I Feel More Ready
               </Button>
               <Button variant="ghost" onPress={() => setSupportNote(true)}>
@@ -542,11 +544,11 @@ export default function ReadinessCheck() {
           ) : null}
           {pathway === 'practical' ? (
             <>
-              <Button variant="primary" onPress={() => router.push('/home')}>
+              <Button variant="primary" onPress={() => router.push(session?.user ? '/home' : '/signup')}>
                 I’ll Prepare My Space and Return
               </Button>
-              <Link href="/home" className={buttonVariants({ variant: 'ghost' })}>
-                Return to My Account
+              <Link href={session?.user ? '/home' : '/signup'} className={buttonVariants({ variant: 'ghost' })}>
+                {session?.user ? 'Return to My Account' : 'Create an account'}
               </Link>
             </>
           ) : null}

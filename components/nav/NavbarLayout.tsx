@@ -111,7 +111,7 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
           <Link href="/login" className={buttonVariants({ size: 'sm', variant: 'ghost' })}>
             {t('nav.login')}
           </Link>
-          <Link href="/signup" className={buttonVariants({ size: 'sm', variant: 'primary' })}>
+          <Link href="/readiness" className={buttonVariants({ size: 'sm', variant: 'primary' })}>
             {t('nav.signup')}
           </Link>
         </>

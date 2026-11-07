@@ -13,7 +13,7 @@ import {
   accessHoldTarget,
   pathwayHoldResponse,
 } from '@/lib/pathway';
-import { READINESS_PATH } from '@/lib/readiness';
+import { READINESS_PATH, readReadinessPass } from '@/lib/readiness';
 import {
   createRequestClient,
   hasSupabaseAuthCookie,
@@ -116,6 +116,11 @@ export async function proxy(request: NextRequest) {
   const isAuthRoute =
     pathname === '/login' || pathname === '/signup' || pathname === '/reset-password';
 
+  if (pathname === '/signup' && !hasSupabaseAuthCookie(request)) {
+    const pass = await readReadinessPass(request);
+    if (!pass) return NextResponse.redirect(new URL(READINESS_PATH, request.url));
+  }
+
   if (!isAdminRoute && !isUserRoute && !isSettingsRoute && !isAuthRoute) {
     return NextResponse.next();
   }
@@ -171,7 +176,7 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
 
-    if (user && (isProgramSessionPath(pathname) || pathname.startsWith('/onboarding'))) {
+    if (user && isProgramSessionPath(pathname)) {
       const held = await heldSessionResponse(user.id, role, request);
       if (held) return held;
     }

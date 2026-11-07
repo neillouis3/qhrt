@@ -101,6 +101,45 @@ export async function POST(request: NextRequest) {
   }
 
   const body = raw && typeof raw === 'object' ? raw : {};
+  if ('action' in body && body.action === 'choose' && 'pathway' in body && body.pathway === 'preparation') {
+    const pass = await readReadinessPass(request);
+    if (!pass || (pass.pathway !== 'self_directed' && pass.pathway !== 'additional_time')) {
+      return NextResponse.json({ error: 'That starting point cannot be changed from here.' }, { status: 400 });
+    }
+    const copy = await getPathwayCopy('preparation');
+    if (!copy?.allowSignup) {
+      return NextResponse.json({ error: 'That starting point is not available.' }, { status: 400 });
+    }
+    const token = await issueReadinessCookieValue({
+      assessmentId: pass.assessmentId,
+      pathway: 'preparation',
+      allowSignup: true,
+      allowSessions: copy.allowSessions,
+      answers: pass.answers,
+      evaluation: {
+        score: null,
+        topCategory: null,
+        categoryScores: {},
+        outcomes: [
+          {
+            key: 'preparation',
+            label: copy.title,
+            summary: copy.body,
+            workbookIds: [],
+            allowSignup: true,
+            allowSessions: copy.allowSessions,
+          },
+        ],
+      },
+    });
+    if (!token) {
+      return NextResponse.json({ error: 'Could not update that starting point. Try again.' }, { status: 500 });
+    }
+    const response = NextResponse.json({ pathway: 'preparation', allowSessions: copy.allowSessions });
+    response.cookies.set(READINESS_COOKIE, token, readinessCookieOptions());
+    return response;
+  }
+
   const answersRaw = 'answers' in body ? body.answers : raw;
   const attemptId = 'attemptId' in body && typeof body.attemptId === 'string' ? body.attemptId : null;
   const { answers, errors } = validateAnswers(assessment.questions, answersRaw);

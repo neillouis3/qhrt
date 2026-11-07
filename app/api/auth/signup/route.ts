@@ -26,6 +26,12 @@ export async function POST(request: NextRequest) {
     }
 
     const pass = await readReadinessPass(request);
+    if (!pass) {
+      return NextResponse.json(
+        { error: 'Complete the program readiness check first.', code: 'READINESS_REQUIRED' },
+        { status: 403 }
+      );
+    }
 
     if (typeof password === 'string' && password.length < 6) {
       return NextResponse.json(

@@ -9,7 +9,7 @@ const steps = [
     step: '01',
     title: 'See if QHRT is a fit',
     description:
-      'Create your account, then a short readiness check. Pick what you want to work on: sleep, stress, habits, or whatever you add next.',
+      'A short readiness check, then your account. Pick what you want to work on: sleep, stress, habits, or whatever you add next.',
     tone: 'bloom' as LandingGrainTone,
   },
   {
