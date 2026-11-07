@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Table } from '@heroui/react';
 import type { LearningModule, ModuleLesson } from '@/lib/modules';
-import { lessonKindLabel } from '@/lib/modules';
+import { lessonKindLabel, looksLikePresentation } from '@/lib/modules';
 import { slugify } from '@/lib/modules';
 import { BuilderShell } from '../BuilderShell';
 import { ConfirmModal } from '../shared/ConfirmModal';
@@ -70,14 +70,14 @@ export function ModuleEditor({ moduleId }: { moduleId: string }) {
     const json = await res.json().catch(() => ({}));
     setSaving(false);
     if (!res.ok) {
-      setToast({ message: json.error ?? 'Could not save module', type: 'error' });
+      setToast({ message: json.error ?? 'Could not save lesson', type: 'error' });
       return;
     }
     if (isNew && json.module?.id) {
       router.replace(`/content/modules/${json.module.id}`);
       return;
     }
-    setToast({ message: 'Module saved', type: 'success' });
+    setToast({ message: 'Lesson saved', type: 'success' });
     await load();
   };
 
@@ -87,7 +87,7 @@ export function ModuleEditor({ moduleId }: { moduleId: string }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: item.id, direction }),
     });
-    if (!res.ok) setToast({ message: 'Could not reorder lesson', type: 'error' });
+    if (!res.ok) setToast({ message: 'Could not reorder module', type: 'error' });
     await load();
   };
 
@@ -97,27 +97,46 @@ export function ModuleEditor({ moduleId }: { moduleId: string }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: item.id }),
     });
-    if (!res.ok) setToast({ message: 'Could not delete lesson', type: 'error' });
-    else setToast({ message: 'Lesson deleted', type: 'success' });
+    if (!res.ok) setToast({ message: 'Could not delete module', type: 'error' });
+    else setToast({ message: 'Module deleted', type: 'success' });
     await load();
   };
 
   return (
     <BuilderShell
       backHref="/content?tab=modules"
-      backLabel="Modules"
-      title={isNew ? 'New module' : title || 'Edit module'}
+      backLabel="Lessons"
+      title={isNew ? 'New lesson' : title || 'Edit lesson'}
       subtitle={
         isNew
-          ? 'Name the path first. After it is created you can add lessons one at a time.'
-          : 'Save the path details, then add lessons. A lesson is either a guide or an assessment.'
+          ? 'Name the lesson first. After it is created you can add a practice, a questionnaire, or a presentation.'
+          : 'Save the lesson, then add a practice, a questionnaire, or a presentation.'
+      }
+      actions={
+        loading ? null : (
+          <div className="flex flex-wrap justify-end gap-2">
+            <button
+              type="button"
+              className={primaryButtonClass}
+              disabled={saving || !title.trim()}
+              onClick={() => void saveModule()}
+            >
+              {isNew ? 'Create lesson' : 'Save lesson'}
+            </button>
+            {!isNew ? (
+              <button type="button" className={secondaryButtonClass} onClick={() => setConfirmDelete(true)}>
+                Delete lesson
+              </button>
+            ) : null}
+          </div>
+        )
       }
     >
       {loading ? (
         <p className="text-sm text-muted">Loading…</p>
       ) : (
-        <div className="flex flex-col gap-8">
-          <div className="grid gap-4 sm:grid-cols-2">
+        <div className="flex flex-col gap-6">
+          <section className="grid gap-4 rounded-xl border border-border p-5 sm:grid-cols-2">
             <Field label="Title" required>
               <input
                 className={inputClass}
@@ -146,49 +165,48 @@ export function ModuleEditor({ moduleId }: { moduleId: string }) {
                 onChange={(event) => setDescription(event.target.value)}
               />
             </Field>
-          </div>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={isActive} onChange={(event) => setIsActive(event.target.checked)} />
-            Visible to users
-          </label>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              className={primaryButtonClass}
-              disabled={saving || !title.trim()}
-              onClick={() => void saveModule()}
-            >
-              {isNew ? 'Create module' : 'Save module'}
-            </button>
-            {!isNew ? (
-              <button type="button" className={secondaryButtonClass} onClick={() => setConfirmDelete(true)}>
-                Delete module
-              </button>
-            ) : null}
-          </div>
+            <label className="flex items-center gap-2 text-sm sm:col-span-2">
+              <input type="checkbox" checked={isActive} onChange={(event) => setIsActive(event.target.checked)} />
+              Visible to users
+            </label>
+          </section>
 
           {!isNew && module ? (
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between gap-3">
+            <section className="flex flex-col gap-4 rounded-xl border border-border p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-sm font-medium">Lessons</h3>
-                  <p className="text-xs text-muted">Opened in order. Add a guide or point at an assessment.</p>
+                  <h3 className="text-sm font-medium">Modules</h3>
+                  <p className="text-xs text-muted">A practice, a questionnaire, or a presentation. Opened in order.</p>
                 </div>
-                <Link
-                  href={`/content/modules/${module.id}/lessons/new`}
-                  className={`${primaryButtonClass} inline-flex items-center gap-2`}
-                >
-                  <PlusIcon /> Add lesson
-                </Link>
+                <div className="flex flex-wrap gap-2">
+                  <Link
+                    href={`/content/modules/${module.id}/lessons/new?type=guide`}
+                    className={`${secondaryButtonClass} inline-flex items-center gap-2`}
+                  >
+                    <PlusIcon /> Practice
+                  </Link>
+                  <Link
+                    href={`/content/modules/${module.id}/lessons/new?type=assessment`}
+                    className={`${secondaryButtonClass} inline-flex items-center gap-2`}
+                  >
+                    <PlusIcon /> Questionnaire
+                  </Link>
+                  <Link
+                    href={`/content/modules/${module.id}/lessons/new?type=presentation`}
+                    className={`${primaryButtonClass} inline-flex items-center gap-2`}
+                  >
+                    <PlusIcon /> Presentation
+                  </Link>
+                </div>
               </div>
               {module.lessons.length === 0 ? (
-                <p className="text-sm text-muted">No lessons yet.</p>
+                <p className="text-sm text-muted">No modules yet. Choose a type above.</p>
               ) : (
                 <Table>
                   <Table.ScrollContainer>
-                    <Table.Content aria-label="Lessons">
+                    <Table.Content aria-label="Modules">
                       <Table.Header>
-                        <Table.Column isRowHeader>Lesson</Table.Column>
+                        <Table.Column isRowHeader>Module</Table.Column>
                         <Table.Column>Type</Table.Column>
                         <Table.Column>Actions</Table.Column>
                       </Table.Header>
@@ -205,9 +223,13 @@ export function ModuleEditor({ moduleId }: { moduleId: string }) {
                                 ) : null}
                               </div>
                             </Table.Cell>
-                            <Table.Cell>{lessonKindLabel(item.kind)}</Table.Cell>
                             <Table.Cell>
-                              <div className="flex flex-wrap justify-end gap-1">
+                              {item.kind !== 'assessment' && looksLikePresentation(item.steps)
+                                ? 'Presentation'
+                                : lessonKindLabel(item.kind)}
+                            </Table.Cell>
+                            <Table.Cell>
+                              <div className="flex flex-nowrap justify-end gap-1">
                                 <button
                                   type="button"
                                   className={smallButtonClass}
@@ -244,7 +266,7 @@ export function ModuleEditor({ moduleId }: { moduleId: string }) {
                   </Table.ScrollContainer>
                 </Table>
               )}
-            </div>
+            </section>
           ) : null}
         </div>
       )}
@@ -259,12 +281,12 @@ export function ModuleEditor({ moduleId }: { moduleId: string }) {
             body: JSON.stringify({ id: moduleId }),
           }).then(async (res) => {
             setConfirmDelete(false);
-            if (!res.ok) setToast({ message: 'Could not delete module', type: 'error' });
+            if (!res.ok) setToast({ message: 'Could not delete lesson', type: 'error' });
             else router.push('/content?tab=modules');
           });
         }}
-        title="Delete module"
-        message="This removes the module and its lessons. Assessments themselves stay in the assessment list."
+        title="Delete lesson"
+        message="This removes the lesson and the modules inside it. Assessments themselves stay in the assessment list."
         confirmLabel="Delete"
       />
       {toast ? <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} /> : null}
