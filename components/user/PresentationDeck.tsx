@@ -176,7 +176,7 @@ export default function PresentationDeck({ payload }: { payload: DeckPayload }) 
 
   if (!step) {
     return (
-      <FocusSessionLayout progress={progress} progressLabel="Introduction">
+      <FocusSessionLayout progress={progress} progressLabel="Module">
         <Typography type="body-sm" color="muted">
           Loading…
         </Typography>
@@ -186,7 +186,7 @@ export default function PresentationDeck({ payload }: { payload: DeckPayload }) 
 
   return (
     <FocusSessionLayout
-      progressLabel={`${payload.module.title} · Introduction`}
+      progressLabel={`${payload.module.title} · Module ${payload.lesson.position}`}
       progress={progress}
       leadingActions={
         index === 0 ? (
