@@ -11,6 +11,7 @@ import { createPortal } from 'react-dom';
 import { Button, Typography } from '@heroui/react';
 import AppCard from '@/components/ui/AppCard';
 import { InsightCard } from '@/components/admin/InsightCard';
+import BuildPanel from '@/components/admin/BuildPanel';
 import { PageHeader } from '@/components/layout/UserPageShell';
 import { DashboardBodySkeleton } from '@/components/layout/PageSkeleton';
 import UserPageShell from '@/components/layout/UserPageShell';
@@ -634,6 +635,8 @@ export default function AdminDashboard() {
           </div>
         }
       />
+
+      <BuildPanel />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <InsightCard
