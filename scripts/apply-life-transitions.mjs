@@ -410,3 +410,448 @@ const understanding = [
     ]
   ),
 ];
+
+const exploring = [
+  laidOut(
+    'welcome',
+    'Exploring Your Experience',
+    'Life Transitions and Continuity. Exploring Your Experience and What You Want to Carry Forward. A self-paced educational wellness module.',
+    [
+      photo('/life-transitions/m2-01.jpg', 0, 0, 960, 540),
+      text(72, 140, 760, 80, 'Life Transitions\n& Continuity', { size: 44, weight: 600 }),
+      rule(72, 248, 280),
+      text(72, 276, 760, 90, 'Exploring Your Experience and\nWhat You Want to Carry Forward', { size: 22, weight: 600 }),
+      text(72, 388, 640, 36, 'A self-paced educational wellness module', { size: 16, color: MUTED }),
+    ]
+  ),
+  laidOut(
+    'understand-explore',
+    'From Understanding to Exploration',
+    'In the first module, we explored how significant life changes can affect many parts of everyday life. Now you are invited to become curious about your own experience. Use six simple steps: Notice, Reflect, Choose, Experiment, Observe, and Record. There is no required answer and no required outcome.',
+    [
+      text(48, 28, 860, 48, 'From Understanding to Exploration', { size: 32, weight: 600 }),
+      text(48, 88, 860, 72, 'In the first module, we explored how significant life changes can affect many parts of everyday life.\nNow you are invited to become curious about your own experience.', { size: 16 }),
+      text(48, 168, 400, 28, 'Use six simple steps:', { size: 16 }),
+      ...stepCard(48, 206, 280, 108, 'NOTICE', 'What stands out?'),
+      ...stepCard(340, 206, 280, 108, 'REFLECT', 'What does it represent to you?'),
+      ...stepCard(632, 206, 280, 108, 'CHOOSE', 'Is there a perspective you would like to explore?'),
+      ...stepCard(48, 326, 280, 108, 'EXPERIMENT', 'What small everyday choice could you try?'),
+      ...stepCard(340, 326, 280, 108, 'OBSERVE', 'What happens?'),
+      ...stepCard(632, 326, 280, 108, 'RECORD', 'What did you notice?'),
+      text(48, 460, 820, 36, 'There is no required answer and no required outcome.', { size: 18 }),
+    ]
+  ),
+  laidOut(
+    'notice',
+    'Step 1 — Notice',
+    'Begin with everyday observation. You do not need to search for anything. Simply notice what naturally catches your attention. What has been standing out to me lately?',
+    [
+      photo('/life-transitions/m2-02.jpg', 690, 0, 270, 540),
+      text(48, 28, 620, 48, 'Step 1 — Notice', { size: 32, weight: 600 }),
+      text(48, 92, 620, 100, 'Begin with everyday observation.\nYou do not need to search for anything.\nSimply notice what naturally catches your attention.', { size: 16 }),
+      text(48, 210, 400, 28, 'Examples may include:', { size: 16, color: MUTED }),
+      rule(48, 246, 260),
+      rule(340, 246, 280),
+      text(48, 264, 270, 180, '•  a memory\n•  a photograph\n•  a song\n•  a place\n•  an anniversary or date\n•  an old routine', { size: 15 }),
+      text(340, 264, 310, 200, '•  an activity you once shared\n•  something you miss\n•  something that has changed\n•  something you expected would still be part of your life\n•  a thought about the future', { size: 15 }),
+      text(48, 480, 620, 32, 'What has been standing out to me lately?', { size: 16, weight: 600 }),
+    ]
+  ),
+  laidOut(
+    'describe',
+    'Describe Before You Interpret',
+    'Start by describing what happened as simply as possible. Begin with the experience itself. You can explore what it represents afterward.',
+    [
+      text(48, 32, 860, 48, 'Describe Before You Interpret', { size: 34, weight: 600 }),
+      text(48, 100, 820, 36, 'Start by describing what happened as simply as possible.', { size: 18 }),
+      text(48, 156, 200, 28, 'Examples:', { size: 16, color: MUTED }),
+      card(48, 196, 420, 200, PAPER),
+      card(492, 196, 420, 200, PAPER),
+      text(72, 216, 372, 160, '“I heard a familiar song.”\n\n“I drove past a place I used to visit.”\n\n“I thought about an old routine.”', { size: 16 }),
+      text(516, 216, 372, 160, '“I remembered something we used to do.”\n\n“I noticed that weekends feel different now.”\n\n“I thought about something I once expected to happen.”', { size: 16 }),
+      text(48, 430, 820, 64, 'Begin with the experience itself.\nYou can explore what it represents afterward.', { size: 18 }),
+    ]
+  ),
+  laidOut(
+    'reflect',
+    'Step 2 — Reflect',
+    'What does this represent to you? The same memory, place, activity, or change can represent different things to different people. Instead of asking why you are reacting this way, consider asking what this represents to you. Your interpretation belongs to you.',
+    [
+      text(48, 28, 860, 48, 'Step 2 — Reflect', { size: 34, weight: 600 }),
+      text(48, 88, 860, 36, 'What Does This Represent to You?', { size: 22, weight: 600 }),
+      text(48, 136, 860, 56, 'The same memory, place, activity, or change can represent different things to different people.', { size: 18 }),
+      card(48, 210, 400, 210, GOLD_CARD),
+      text(72, 230, 352, 170, 'Instead of asking:\n“Why am I reacting this way?”\n\nconsider asking:\n“What does this represent to me?”', { size: 16 }),
+      text(480, 210, 420, 28, 'Possible examples:', { size: 16, color: MUTED }),
+      text(480, 246, 200, 180, '•  companionship\n•  belonging\n•  family\n•  a stage of life\n•  freedom\n•  security', { size: 16 }),
+      text(700, 246, 220, 180, '•  shared experiences\n•  familiarity\n•  an expected future\n•  a version of myself\n•  an important role\n•  something else entirely', { size: 16 }),
+      text(48, 460, 800, 36, 'Your interpretation belongs to you.', { size: 18 }),
+    ]
+  ),
+  laidOut(
+    'many-things',
+    'One Memory Can Represent Many Things',
+    'A memory about one event may also remind you of other parts of that time. When you think about this experience, what else seems connected to it? You may notice one thing, several things, or nothing in particular.',
+    [
+      text(48, 28, 860, 80, 'One Memory Can Represent\nMany Things', { size: 34, weight: 600 }),
+      text(48, 124, 820, 36, 'A memory about one event may also remind you of:', { size: 18 }),
+      rule(48, 176, 380),
+      rule(480, 176, 380),
+      text(48, 196, 400, 180, '•  who was there\n•  how everyday life looked\n•  who you were at the time\n•  a role you occupied\n•  a familiar routine', { size: 18 }),
+      text(480, 196, 420, 180, '•  a place you associated with that period\n•  plans you had\n•  expectations about the future\n•  a sense of belonging', { size: 18 }),
+      text(48, 420, 860, 72, 'When I think about this experience, what else seems connected to it?\nYou may notice one thing, several things, or nothing in particular.', { size: 18 }),
+    ]
+  ),
+  laidOut(
+    'chapter-map',
+    'What Was Part of That Life Chapter?',
+    'Notice which areas feel relevant to you. You do not need to select them all.',
+    [
+      text(48, 24, 860, 44, 'What Was Part of That Life Chapter?', { size: 30, weight: 600 }),
+      card(36, 88, 168, 40, PAPER), text(36, 96, 168, 24, 'PEOPLE', { size: 13, weight: 600, align: 'center' }),
+      card(214, 88, 168, 40, PAPER), text(214, 96, 168, 24, 'ROUTINES', { size: 13, weight: 600, align: 'center' }),
+      card(392, 88, 168, 40, PAPER), text(392, 96, 168, 24, 'PLACES', { size: 13, weight: 600, align: 'center' }),
+      card(570, 88, 168, 40, PAPER), text(570, 96, 168, 24, 'ROLES', { size: 13, weight: 600, align: 'center' }),
+      card(748, 88, 168, 40, PAPER), text(748, 96, 168, 24, 'TRADITIONS', { size: 13, weight: 600, align: 'center' }),
+      card(36, 210, 200, 40, PAPER), text(36, 218, 200, 24, 'ACTIVITIES', { size: 13, weight: 600, align: 'center' }),
+      card(724, 210, 200, 40, PAPER), text(724, 218, 200, 24, 'BELONGING', { size: 13, weight: 600, align: 'center' }),
+      card(360, 188, 240, 88, GOLD_CARD),
+      text(360, 206, 240, 56, 'THAT LIFE\nCHAPTER', { size: 18, weight: 600, align: 'center' }),
+      card(36, 320, 168, 40, PAPER), text(36, 328, 168, 24, 'PLANS', { size: 13, weight: 600, align: 'center' }),
+      card(214, 320, 200, 40, PAPER), text(214, 328, 200, 24, 'EXPECTATIONS', { size: 13, weight: 600, align: 'center' }),
+      card(424, 320, 200, 40, GOLD_CARD), text(424, 328, 200, 24, 'FUTURE PICTURE', { size: 13, weight: 600, align: 'center' }),
+      card(634, 320, 140, 40, PAPER), text(634, 328, 140, 24, 'IDENTITY', { size: 13, weight: 600, align: 'center' }),
+      card(784, 320, 140, 40, PAPER), text(784, 328, 140, 24, 'MEANING', { size: 12, weight: 600, align: 'center' }),
+      text(48, 420, 820, 64, 'Notice which areas feel relevant to you.\nYou do not need to select them all.', { size: 18 }),
+    ]
+  ),
+  laidOut(
+    'changed',
+    'What Changed — and What Continues?',
+    'Change and continuity can exist at the same time.',
+    [
+      text(48, 28, 860, 48, 'What Changed — and What Continues?', { size: 30, weight: 600 }),
+      card(48, 100, 420, 340, PAPER),
+      card(492, 100, 420, 340, GOLD_CARD),
+      text(72, 120, 372, 28, 'WHAT CHANGED?', { size: 16, weight: 600 }),
+      text(516, 120, 372, 28, 'WHAT CONTINUES?', { size: 16, weight: 600 }),
+      text(72, 164, 372, 250, '•  circumstances\n•  routines\n•  relationships\n•  roles\n•  plans\n•  responsibilities\n•  where I spend my time\n•  how everyday life looks\n•  expectations about the future', { size: 16 }),
+      text(516, 164, 372, 250, '•  memories\n•  knowledge\n•  values\n•  interests\n•  abilities\n•  relationships that remain\n•  qualities I developed\n•  things I still enjoy\n•  my ability to make new choices', { size: 16 }),
+      text(48, 468, 860, 36, 'Change and continuity can exist at the same time.', { size: 18 }),
+    ]
+  ),
+  laidOut(
+    'once-expected',
+    'The Future I Once Expected',
+    'People naturally form ideas about what their future may look like. A significant transition can change that picture. Privately complete any statement that feels useful. Notice the expectation without judging it.',
+    [
+      photo('/life-transitions/m2-03.jpg', 0, 0, 360, 540),
+      text(390, 32, 530, 72, 'The Future I Once Expected', { size: 28, weight: 600 }),
+      text(390, 112, 530, 80, 'People naturally form ideas about what their future may look like. A significant transition can change that picture.', { size: 16 }),
+      text(390, 200, 530, 28, 'Privately complete any statement that feels useful:', { size: 15, color: MUTED }),
+      text(390, 244, 520, 28, '“I once expected...”', { size: 16 }),
+      rule(390, 278, 360),
+      text(390, 300, 520, 28, '“I assumed this would continue...”', { size: 16 }),
+      rule(390, 334, 360),
+      text(390, 356, 520, 28, '“I pictured my future including...”', { size: 16 }),
+      rule(390, 390, 360),
+      text(390, 412, 520, 28, '“One part of that future that mattered to me was...”', { size: 16 }),
+      rule(390, 446, 360),
+      text(390, 470, 520, 32, 'Notice the expectation without judging it.', { size: 16 }),
+    ]
+  ),
+  laidOut(
+    'two-ideas',
+    'Two Different Ideas',
+    'That particular future did not happen. A meaningful future is not available to me. These are not automatically the same idea. Have I ever treated them as though they were?',
+    [
+      text(48, 36, 860, 48, 'Two Different Ideas', { size: 34, weight: 600 }),
+      card(48, 160, 420, 140, PAPER),
+      card(492, 160, 420, 140, GOLD_CARD),
+      text(72, 196, 372, 80, '“That particular future\ndid not happen.”', { size: 22, weight: 600 }),
+      text(516, 196, 372, 80, '“A meaningful future\nis not available to me.”', { size: 22, weight: 600 }),
+      text(48, 340, 820, 36, 'These are not automatically the same idea.', { size: 18 }),
+      text(48, 400, 820, 36, 'Have I ever treated them as though they were?', { size: 20, weight: 600 }),
+    ]
+  ),
+  laidOut(
+    'asking-future',
+    'What Are You Asking the Future to Do?',
+    'Sometimes something new can quietly acquire a job. Am I expecting something in my future to reproduce something from my past? Could something new be valuable without having to reproduce what came before? Simply notice your answer.',
+    [
+      text(48, 24, 860, 72, 'What Are You Asking\nthe Future to Do?', { size: 32, weight: 600 }),
+      text(48, 112, 860, 56, 'Sometimes something new can quietly acquire a job. A future relationship, opportunity, home, role, friendship, or experience might be expected to:', { size: 16 }),
+      text(72, 184, 760, 160, '•  recreate something from the past\n•  replace something important\n•  reproduce a familiar way of living\n•  make an earlier change feel different\n•  look like the future originally imagined', { size: 18 }),
+      text(48, 370, 860, 56, 'Am I expecting something in my future to reproduce something from my past?', { size: 18, weight: 600 }),
+      text(48, 430, 860, 36, 'Could something new be valuable without having to reproduce what came before?', { size: 16 }),
+      text(48, 480, 700, 32, 'Simply notice your answer.', { size: 18 }),
+    ]
+  ),
+  laidOut(
+    'belonged',
+    'What Belonged to That Chapter?',
+    'Consider what belonged specifically to that particular time or circumstance. Recognizing that something belonged to a particular chapter does not diminish its importance.',
+    [
+      text(48, 32, 860, 48, 'What Belonged to That Chapter?', { size: 32, weight: 600 }),
+      text(48, 100, 860, 56, 'Consider what belonged specifically to that particular time or circumstance.', { size: 18 }),
+      rule(48, 172, 360),
+      rule(480, 172, 360),
+      text(48, 192, 400, 180, '•  a certain routine\n•  a particular relationship\n•  a shared role\n•  a specific home', { size: 18 }),
+      text(480, 192, 420, 180, '•  certain plans\n•  particular traditions\n•  a familiar social structure\n•  one version of everyday life', { size: 18 }),
+      text(48, 440, 860, 64, 'Recognizing that something belonged to a particular chapter does not diminish its importance.', { size: 18 }),
+    ]
+  ),
+  laidOut(
+    'still-belongs',
+    'What Still Belongs to You?',
+    'Now consider what existed during that chapter but is not owned by that chapter. What would you like to carry forward?',
+    [
+      text(48, 28, 700, 48, 'What Still Belongs to You?', { size: 32, weight: 600 }),
+      text(48, 92, 700, 56, 'Now consider what existed during that chapter but is not owned by that chapter.', { size: 16 }),
+      photo('/life-transitions/m2-04.jpg', 780, 0, 180, 540),
+      rule(48, 164, 320),
+      rule(400, 164, 340),
+      text(48, 184, 330, 220, '•  my ability to love\n•  my ability to connect\n•  my humour\n•  my creativity\n•  my values\n•  my interests\n•  what I learned', { size: 16 }),
+      text(400, 184, 360, 220, '•  my ability to enjoy companionship\n•  my curiosity\n•  qualities I developed\n•  memories I value\n•  traditions I choose to continue\n•  my ability to find meaning in new experiences', { size: 15 }),
+      text(48, 470, 700, 32, 'What would I like to carry forward?', { size: 18, weight: 600 }),
+    ]
+  ),
+  laidOut(
+    'bridge',
+    'Your Continuity Bridge',
+    'You decide what belongs in each part: what was, what you carry forward, and what remains open.',
+    [
+      text(48, 24, 860, 44, 'Your Continuity Bridge', { size: 34, weight: 600 }),
+      card(36, 88, 288, 340, PAPER),
+      card(336, 88, 288, 340, GOLD_CARD),
+      card(636, 88, 288, 340, PAPER),
+      text(52, 104, 256, 48, 'WHAT WAS', { size: 16, weight: 600 }),
+      text(352, 104, 256, 48, 'WHAT I\nCARRY FORWARD', { size: 16, weight: 600 }),
+      text(652, 104, 256, 28, 'WHAT REMAINS OPEN', { size: 15, weight: 600 }),
+      text(52, 168, 256, 230, '•  experiences\n•  relationships\n•  roles\n•  routines\n•  expectations', { size: 16 }),
+      text(352, 188, 256, 210, '•  values\n•  learning\n•  memories\n•  qualities\n•  interests\n•  capacities', { size: 16 }),
+      text(652, 168, 256, 230, '•  possibilities\n•  relationships\n•  experiences\n•  choices\n•  routines\n•  future chapters', { size: 16 }),
+      text(48, 460, 820, 36, 'You decide what belongs in each part.', { size: 18 }),
+    ]
+  ),
+  laidOut(
+    'choose',
+    'Step 3 — Choose a Perspective',
+    'A perspective is one possible way of looking at an experience. You are not being asked to convince yourself that a statement is true. You can choose something you are curious about exploring. Which perspective feels relevant enough to explore? There is no correct choice.',
+    [
+      photo('/life-transitions/m2-05.jpg', 600, 0, 360, 540),
+      text(48, 32, 520, 72, 'Step 3 — Choose a Perspective', { size: 28, weight: 600 }),
+      text(48, 120, 520, 180, 'A perspective is one possible way of looking at an experience.\n\nYou are not being asked to convince yourself that a statement is true.\n\nInstead, you can choose something you are curious about exploring.', { size: 16 }),
+      card(48, 330, 520, 120, GOLD_CARD),
+      text(72, 354, 472, 80, 'Which perspective feels relevant enough to explore?\nThere is no correct choice.', { size: 18, weight: 600 }),
+    ]
+  ),
+  laidOut(
+    'previous',
+    'Valuing the Previous Chapter',
+    'Perspectives for valuing the previous chapter. Choose one only if it feels relevant to you.',
+    [
+      text(48, 24, 860, 64, 'Perspectives — Valuing\nthe Previous Chapter', { size: 30, weight: 600 }),
+      card(48, 110, 420, 100, PAPER),
+      card(492, 110, 420, 100, PAPER),
+      card(48, 224, 420, 100, PAPER),
+      card(492, 224, 420, 100, PAPER),
+      card(48, 338, 864, 80, GOLD_CARD),
+      text(68, 136, 380, 60, '“That chapter of my life mattered, even though it ended.”', { size: 16 }),
+      text(512, 128, 380, 70, '“I can value what happened without needing to recreate it.”', { size: 16 }),
+      text(68, 250, 380, 60, '“What belonged to that chapter can remain part of my story.”', { size: 16 }),
+      text(512, 242, 380, 70, '“I can remember something important without requiring my future to reproduce it.”', { size: 16 }),
+      text(68, 360, 820, 40, '“The importance of an experience is not determined by whether it continued.”', { size: 16 }),
+      text(48, 460, 800, 32, 'Choose one only if it feels relevant to you.', { size: 18 }),
+    ]
+  ),
+  laidOut(
+    'continuity-views',
+    'Perspectives — Continuity',
+    'Continuity perspectives. Choose one only if it feels relevant to you.',
+    [
+      text(48, 28, 860, 48, 'Perspectives — Continuity', { size: 32, weight: 600 }),
+      card(48, 100, 420, 110, PAPER),
+      card(492, 100, 420, 110, PAPER),
+      card(48, 224, 420, 110, PAPER),
+      card(492, 224, 420, 120, PAPER),
+      card(48, 360, 864, 80, GOLD_CARD),
+      text(68, 128, 380, 64, '“I can carry forward what belongs to me.”', { size: 16 }),
+      text(512, 120, 380, 76, '“Some circumstances changed, but not everything meaningful about me changed.”', { size: 16 }),
+      text(68, 252, 380, 64, '“What I learned and developed remains available to me.”', { size: 16 }),
+      text(512, 244, 380, 84, '“My capacity for connection, meaning, enjoyment, and belonging is not limited to one chapter of my life.”', { size: 16 }),
+      text(68, 380, 820, 44, '“I can keep what is meaningful without keeping life exactly as it was.”', { size: 16 }),
+      text(48, 470, 800, 32, 'Choose one only if it feels relevant to you.', { size: 18 }),
+    ]
+  ),
+  laidOut(
+    'next-views',
+    'Perspectives — What Comes Next',
+    'Perspectives for what comes next. Choose one only if it feels relevant to you.',
+    [
+      text(48, 24, 860, 48, 'Perspectives — What Comes Next', { size: 30, weight: 600 }),
+      card(48, 92, 420, 110, PAPER),
+      card(492, 92, 420, 90, PAPER),
+      card(48, 214, 420, 100, PAPER),
+      card(492, 214, 420, 110, PAPER),
+      card(48, 338, 420, 120, PAPER),
+      card(492, 338, 420, 90, PAPER),
+      text(68, 112, 380, 76, '“A different future is not automatically a lesser future.”', { size: 16 }),
+      text(512, 112, 380, 56, '“My future does not have to replace my past.”', { size: 16 }),
+      text(68, 234, 380, 64, '“Something new can be meaningful in its own way.”', { size: 16 }),
+      text(512, 234, 380, 76, '“I do not need to know exactly what comes next in order to participate in my life now.”', { size: 16 }),
+      text(68, 358, 380, 84, '“A future relationship or experience can be valuable without being responsible for recreating a previous one.”', { size: 16 }),
+      text(512, 358, 380, 56, '“My life can develop in ways I have not yet imagined.”', { size: 16 }),
+      text(48, 480, 800, 32, 'Choose one only if it feels relevant to you.', { size: 18 }),
+    ]
+  ),
+  laidOut(
+    'own',
+    'Or Choose Your Own Perspective',
+    'The examples are simply starting points. You may create a perspective that fits your own experience more accurately. Keep it simple, personally meaningful, and open to exploration.',
+    [
+      text(48, 48, 860, 48, 'Or Choose Your Own Perspective', { size: 32, weight: 600 }),
+      text(48, 130, 820, 72, 'The examples are simply starting points.\nYou may create a perspective that fits your own experience more accurately.', { size: 18 }),
+      text(48, 240, 760, 32, 'A perspective I would like to experiment with is:', { size: 18, weight: 600 }),
+      rule(48, 300, 640),
+      text(48, 400, 820, 56, 'Keep it simple, personally meaningful, and open to exploration.', { size: 18 }),
+    ]
+  ),
+  laidOut(
+    'explore-choice',
+    'Would You Like to Explore This Perspective?',
+    'The choice remains yours. You can continue with this perspective, choose another, or leave it for today.',
+    [
+      text(48, 24, 860, 64, 'Would You Like to Explore\nThis Perspective?', { size: 30, weight: 600 }),
+      text(48, 108, 500, 28, 'My selected perspective:', { size: 16, color: MUTED }),
+      rule(48, 148, 480),
+      text(72, 176, 800, 100, 'Does this feel relevant to something I have been noticing?\nAm I curious about what it would be like to experiment with this perspective?\nWould I like to explore it further?', { size: 16 }),
+      ...stepCard(36, 300, 288, 130, 'YES', 'I would like to continue with this perspective.'),
+      ...stepCard(336, 300, 288, 130, 'CHOOSE ANOTHER', 'I would like to explore a different perspective.'),
+      ...stepCard(636, 300, 288, 130, 'NOT TODAY', 'I would prefer to leave it here.'),
+      text(48, 470, 700, 32, 'The choice remains yours.', { size: 18 }),
+    ]
+  ),
+  laidOut(
+    'experiment',
+    'Step 4 — Try One Small Everyday Experiment',
+    'You can explore a perspective by seeing what it looks like in ordinary life. Choose one small action that fits the perspective you selected. Keep the experiment small and realistic.',
+    [
+      photo('/life-transitions/m2-06.jpg', 780, 0, 180, 540),
+      text(48, 20, 700, 72, 'Step 4 — Try One Small\nEveryday Experiment', { size: 30, weight: 600 }),
+      text(48, 108, 700, 56, 'You can explore a perspective by seeing what it looks like in ordinary life.\nChoose one small action that fits the perspective you selected.', { size: 16 }),
+      text(48, 176, 200, 24, 'Examples:', { size: 16, color: MUTED }),
+      text(48, 208, 340, 230, '•  return to an activity you enjoy\n•  accept an invitation\n•  create a new routine\n•  return to an old interest in a different way\n•  continue a valued tradition differently\n•  spend time with someone', { size: 16 }),
+      text(400, 208, 360, 230, '•  visit somewhere new\n•  make a plan based on your present circumstances\n•  try something you previously postponed\n•  allow a meaningful memory to arise without deciding what it must mean', { size: 16 }),
+      text(48, 470, 700, 32, 'Keep the experiment small and realistic.', { size: 18 }),
+    ]
+  ),
+  laidOut(
+    'experiment-card',
+    'Your Everyday Experiment',
+    'This is an experiment, not a test. Note the perspective, one small action, why you chose it, and when or where you might try it.',
+    [
+      text(48, 36, 860, 48, 'Your Everyday Experiment', { size: 34, weight: 600 }),
+      card(48, 120, 420, 140, PAPER),
+      card(492, 120, 420, 140, PAPER),
+      card(48, 276, 420, 140, PAPER),
+      card(492, 276, 420, 140, PAPER),
+      text(68, 140, 380, 48, 'The perspective I am experimenting with:', { size: 16 }),
+      rule(68, 210, 300),
+      text(512, 140, 380, 48, 'One small action I would like to try:', { size: 16 }),
+      rule(512, 210, 300),
+      text(68, 296, 380, 36, 'I chose this because:', { size: 16 }),
+      rule(68, 360, 300),
+      text(512, 296, 380, 36, 'When or where might I try it?', { size: 16 }),
+      rule(512, 360, 300),
+      text(48, 460, 700, 32, 'This is an experiment, not a test.', { size: 18 }),
+    ]
+  ),
+  laidOut(
+    'observe',
+    'Step 5 — Observe',
+    'Afterward, simply notice what happened. All observations provide information. There is no required result.',
+    [
+      photo('/life-transitions/m2-07.jpg', 0, 0, 180, 540),
+      text(210, 28, 700, 48, 'Step 5 — Observe', { size: 34, weight: 600 }),
+      text(210, 92, 700, 36, 'Afterward, simply notice what happened.', { size: 18 }),
+      text(210, 144, 300, 28, 'You might notice:', { size: 16, color: MUTED }),
+      text(210, 184, 340, 200, '•  what felt familiar\n•  what felt different\n•  thoughts that appeared\n•  memories that appeared\n•  what you enjoyed', { size: 16 }),
+      text(560, 184, 360, 200, '•  what felt uncomfortable\n•  what surprised you\n•  whether the perspective seemed useful\n•  whether another perspective occurred to you\n•  whether nothing particular changed', { size: 16 }),
+      text(210, 430, 700, 64, 'All observations provide information.\nThere is no required result.', { size: 18 }),
+    ]
+  ),
+  laidOut(
+    'memory-stays',
+    'A Memory Does Not Need to Disappear',
+    'The purpose of observation is not to erase a memory or require it to become emotionally neutral. Instead of asking whether the memory disappeared, ask what you noticed this time.',
+    [
+      text(48, 24, 860, 72, 'A Memory Does Not Need\nto Disappear', { size: 32, weight: 600 }),
+      text(48, 112, 860, 56, 'The purpose of observation is not to erase a memory or require it to become emotionally neutral.', { size: 16 }),
+      text(48, 184, 360, 28, 'A memory may still feel:', { size: 16, color: MUTED }),
+      text(48, 220, 360, 240, '•  important\n•  warm\n•  bittersweet\n•  sad\n•  enjoyable\n•  complicated\n•  distant\n•  vivid\n•  mixed', { size: 16 }),
+      card(460, 200, 440, 200, GOLD_CARD),
+      text(484, 232, 396, 140, 'Instead of asking:\n“Did the memory disappear?”\n\nask:\n“What did I notice this time?”', { size: 18 }),
+    ]
+  ),
+  laidOut(
+    'record',
+    'Step 6 — Record What You Notice',
+    'Record what happened, what stood out, what it represented, and what you noticed about the perspective you selected.',
+    [
+      photo('/life-transitions/m2-08.jpg', 700, 0, 260, 540),
+      text(48, 24, 620, 48, 'Step 6 — Record What You Notice', { size: 28, weight: 600 }),
+      text(72, 90, 600, 400, 'What happened?\n\nWhat stood out to me?\n\nWhat did the experience represent to me?\n\nWhat thoughts or feelings did I notice?\n\nDid anything feel different from previous occasions?\n\nWhat did I notice about the perspective I selected?\n\nWould I like to continue experimenting with it?\n\nIs there another perspective I would like to explore?\n\nWhat would I like to carry forward?', { size: 16 }),
+    ]
+  ),
+  laidOut(
+    'decide',
+    'You Decide What Comes Next',
+    'After observing your experience, you may choose what to do next. Self-directed learning includes deciding when you have explored enough.',
+    [
+      text(48, 24, 860, 44, 'You Decide What Comes Next', { size: 32, weight: 600 }),
+      text(48, 84, 820, 36, 'After observing your experience, you may choose to:', { size: 16 }),
+      ...stepCard(36, 140, 288, 120, 'CONTINUE', 'with the same perspective.'),
+      ...stepCard(336, 140, 288, 120, 'MODIFY', 'the perspective.'),
+      ...stepCard(636, 140, 288, 120, 'CHOOSE', 'a different perspective.'),
+      ...stepCard(36, 276, 288, 120, 'TRY', 'another everyday experiment.'),
+      ...stepCard(336, 276, 288, 120, 'PAUSE', 'and return another time.'),
+      ...stepCard(636, 276, 288, 120, 'FINISH', 'the activity here.'),
+      text(48, 440, 860, 56, 'Self-directed learning includes deciding when you have explored enough.', { size: 18 }),
+    ]
+  ),
+  laidOut(
+    'optional-next',
+    'Optional Next Step',
+    'You may now choose whether you would like to take a participant-selected perspective into the separate Guided QHRT Reflection.',
+    [
+      text(48, 32, 860, 40, 'Optional Next Step', { size: 28, weight: 600, color: MUTED }),
+      text(48, 88, 860, 72, 'Explore Your Selected\nPerspective Further', { size: 32, weight: 600 }),
+      text(48, 180, 820, 64, 'You may now choose whether you would like to take a participant-selected perspective into the separate:', { size: 16 }),
+      text(48, 260, 700, 32, 'GUIDED QHRT REFLECTION', { size: 18, weight: 600 }),
+      text(72, 320, 760, 140, 'Continue to Guided QHRT Reflection\n\nSave my selected perspective for later\n\nReturn to Life Transitions & Continuity\n\nFinish for now', { size: 18 }),
+    ]
+  ),
+  laidOut(
+    'carry-forward',
+    'What Would You Like to Carry Forward?',
+    'Before leaving this module, consider what you noticed, what matters, what belonged to an earlier chapter, and what still belongs to you. Your past can remain part of your story while your life continues to take shape.',
+    [
+      photo('/life-transitions/m2-09.jpg', 640, 0, 320, 540),
+      text(48, 28, 560, 80, 'What Would You Like\nto Carry Forward?', { size: 30, weight: 600 }),
+      text(48, 128, 560, 28, 'Before leaving this module, consider:', { size: 16, color: MUTED }),
+      text(72, 172, 540, 240, 'What did I notice?\n\nWhat matters to me?\n\nWhat belonged to an earlier chapter?\n\nWhat still belongs to me?\n\nWhat perspective would I like to experiment with?\n\nWhat am I curious to discover next?', { size: 16 }),
+      text(48, 450, 560, 56, 'Your past can remain part of your story while your life continues to take shape.', { size: 16 }),
+    ]
+  ),
+  laidOut(
+    'sources',
+    'Sources & Further Reading',
+    'Sources and further reading. Bonanno, 2004. Park, 2010. Fivush, 2011. Sedikides, Hong, and Wildschut, 2023. McAdams and McLean, 2013. Wrosch, Scheier, Miller, Schulz, and Carver, 2003.',
+    [
+      text(48, 24, 860, 40, 'Sources & Further Reading', { size: 28, weight: 600 }),
+      text(48, 80, 420, 420, 'Bonanno, G. A. (2004). Loss, trauma, and human resilience: Have we underestimated the human capacity to thrive after extremely aversive events? American Psychologist, 59(1), 20–28.\n\nFivush, R. (2011). The development of autobiographical memory. Annual Review of Psychology, 62, 559–582.\n\nMcAdams, D. P., & McLean, K. C. (2013). Narrative identity. Current Directions in Psychological Science, 22(3), 233–238.', { size: 13 }),
+      text(500, 80, 420, 430, 'Park, C. L. (2010). Making sense of the meaning literature: An integrative review of meaning making and its effects on adjustment to stressful life events. Psychological Bulletin, 136(2), 257–301.\n\nSedikides, C., Hong, E. K., & Wildschut, T. (2023). Self-continuity. Annual Review of Psychology, 74, 333–361.\n\nWrosch, C., Scheier, M. F., Miller, G. E., Schulz, R., & Carver, C. S. (2003). Adaptive self-regulation of unattainable goals. Personality and Social Psychology Bulletin, 29(12), 1494–1508.', { size: 13 }),
+    ]
+  ),
+];
