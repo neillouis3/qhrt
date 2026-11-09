@@ -18,6 +18,7 @@ import type { TabKey } from '@/components/admin/content/types';
 import { AssessmentsTab } from '@/components/admin/content/assessments/AssessmentsTab';
 import { WorkbooksTab } from '@/components/admin/content/assessments/WorkbooksTab';
 import { ModulesTab } from '@/components/admin/content/modules/ModulesTab';
+import { ReflectionThemesTab } from '@/components/admin/content/reflection/ReflectionThemesTab';
 
 function CatalogPanel({
   tab,
@@ -28,6 +29,7 @@ function CatalogPanel({
 }) {
   if (tab === 'workbooks') return <WorkbooksTab showToast={showToast} />;
   if (tab === 'modules') return <ModulesTab showToast={showToast} />;
+  if (tab === 'reflection-themes') return <ReflectionThemesTab showToast={showToast} />;
   return <AssessmentsTab showToast={showToast} />;
 }
 

@@ -227,6 +227,11 @@ export default function ModuleDetailPage({ slug }: { slug: string }) {
               </div>
             </AppCard>
 
+            {module.slug === 'sleep' ? (
+              <Link href="/modules/sleep/themes" className="text-sm text-muted transition-opacity hover:opacity-60">
+                Choose a QHRT Reflection Theme
+              </Link>
+            ) : null}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {path.map((item) => (
                 <LessonCard

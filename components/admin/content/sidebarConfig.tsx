@@ -22,6 +22,7 @@ export const CONTENT_GROUPS: ContentNavGroup[] = [
       { key: 'workbooks', label: 'Workbooks' },
       { key: 'assessment-builder', label: 'Assessments' },
       { key: 'modules', label: 'Modules' },
+      { key: 'reflection-themes', label: 'Reflection themes' },
     ],
   },
 ];
