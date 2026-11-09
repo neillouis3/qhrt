@@ -25,12 +25,23 @@ type PathItem = {
   seed: string;
 };
 
-function metaLine(item: Pick<PathItem, 'position' | 'kindLabel' | 'minutes' | 'completed'>) {
-  const parts = [`Module ${item.position}`];
-  if (item.kindLabel) parts.push(item.kindLabel);
-  if (item.minutes) parts.push(minutesLabel(item.minutes));
-  if (item.completed) parts.push('Complete');
-  return parts.join(' · ');
+function LessonLines({ text }: { text: string }) {
+  const lines = text
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (lines.length === 0) return null;
+  const [lead, ...rest] = lines;
+  return (
+    <div className="flex flex-col gap-1">
+      <Typography type="body-sm">{lead}</Typography>
+      {rest.map((line) => (
+        <Typography key={line} type="body-sm" color="muted">
+          {line}
+        </Typography>
+      ))}
+    </div>
+  );
 }
 
 function kindLabel(kind: ModuleLesson['kind']) {
@@ -50,7 +61,7 @@ function pathFromModule(module: LearningModule): PathItem[] {
     completed: Boolean(lesson.completedAt),
     seed: `${module.slug}-${lesson.position}`,
   }));
-  const extras = Math.max(0, PATH_SLOTS - items.length);
+  const extras = module.slug === 'sleep' ? 0 : Math.max(0, PATH_SLOTS - items.length);
   for (let index = 0; index < extras; index += 1) {
     const position = items.length + 1;
     items.push({
@@ -69,11 +80,18 @@ function pathFromModule(module: LearningModule): PathItem[] {
 function LessonCard({ item, upNext }: { item: PathItem; upNext?: boolean }) {
   return (
     <AppCard className={`flex flex-col gap-2 p-5 ${item.ready ? '' : 'opacity-55'}`}>
-      <Typography type="body-xs" color="muted">
-        {upNext ? `Up next · ${metaLine(item)}` : metaLine(item)}
-      </Typography>
-      <AppCard.Title className="font-normal tracking-tight">{item.title}</AppCard.Title>
-      {item.subtitle ? <AppCard.Description>{item.subtitle}</AppCard.Description> : null}
+      {upNext ? (
+        <Typography type="body-xs" color="muted">
+          Up next
+        </Typography>
+      ) : null}
+      <AppCard.Title className="font-normal tracking-tight">{`Module ${item.position}: ${item.title}`}</AppCard.Title>
+      {item.subtitle ? <LessonLines text={item.subtitle} /> : null}
+      {item.completed ? (
+        <Typography type="body-xs" color="muted">
+          Complete
+        </Typography>
+      ) : null}
       {item.href && item.action ? (
         <Link href={item.href} className={`${buttonVariants({ size: 'sm', variant: 'outline' })} mt-1 w-fit`}>
           {item.action}
@@ -146,11 +164,8 @@ export default function ModuleDetailPage({ slug }: { slug: string }) {
                   className="flex items-center justify-between gap-3 rounded-md px-3 py-2.5"
                 >
                   <div className="min-w-0">
-                    <Typography type="body-xs" color="muted">
-                      {item.minutes ? `Module ${item.position} · ${minutesLabel(item.minutes)}` : `Module ${item.position}`}
-                    </Typography>
                     <Typography type="body-sm" className="truncate">
-                      {item.title}
+                      {`Module ${item.position}: ${item.title}`}
                     </Typography>
                   </div>
                   {item.href ? (
@@ -182,15 +197,9 @@ export default function ModuleDetailPage({ slug }: { slug: string }) {
                       : 'This path is still being written.'}
                   </Typography>
                   <Typography type="h4" weight="normal">
-                    {next?.title ?? 'More soon'}
+                    {next ? `Module ${next.position}: ${next.title}` : 'More soon'}
                   </Typography>
-                  {next ? (
-                    <Typography type="body-sm" color="muted">
-                      {`Lesson ${next.position} of ${openCount || path.length}${
-                        next.kindLabel ? ` · ${next.kindLabel}` : ''
-                      }${next.minutes ? ` · ${minutesLabel(next.minutes)}` : ''}`}
-                    </Typography>
-                  ) : null}
+                  {next?.subtitle ? <LessonLines text={next.subtitle} /> : null}
                   {openCount > 0 ? (
                     <div className="mt-1 flex max-w-xs flex-col gap-1.5">
                       <div className="h-1 overflow-hidden rounded-full bg-foreground/10">

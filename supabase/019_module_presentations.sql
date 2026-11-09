@@ -35,16 +35,17 @@ VALUES (
   'b0000000-0000-4000-8000-000000000022',
   'b0000000-0000-4000-8000-000000000002',
   1,
-  'Sleep introduction',
-  'A short slide deck that explains this module before any questions.',
+  'The Foundations of Sleep',
+  E'Sleep Better, Live Better\nWhy sleep matters and practical steps to restore it',
   'presentation',
   $slides$[
     {
       "key": "welcome",
       "section": "Welcome",
-      "title": "Sleep",
+      "title": "The Foundations of Sleep",
       "paragraphs": [
-        "A short introduction before the sleep work."
+        "Sleep Better, Live Better",
+        "Why sleep matters and practical steps to restore it."
       ],
       "points": [],
       "voiceover": "Welcome to the Sleep module. This introduction is the same kind of opening every QHRT module will have. For now, we start with sleep. It takes a few minutes. You can pause or leave whenever you need to."
@@ -192,6 +193,9 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at = now();
 
 UPDATE public.module_lessons
-SET position = 2, updated_at = now()
-WHERE id = 'b0000000-0000-4000-8000-000000000021'
-  AND position = 90;
+SET
+  position = 2,
+  title = 'Observe, Choose, and Experiment',
+  description = 'Sleep, Daily Functioning & Quality of Life',
+  updated_at = now()
+WHERE id = 'b0000000-0000-4000-8000-000000000021';
