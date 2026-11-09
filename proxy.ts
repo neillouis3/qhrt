@@ -111,7 +111,8 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith('/wind-down') ||
     pathname.startsWith('/pause') ||
     pathname.startsWith('/practice') ||
-    pathname.startsWith('/starting-point');
+    pathname.startsWith('/starting-point') ||
+    pathname.startsWith('/reflection');
   const isSettingsRoute = pathname.startsWith('/settings');
   const isAuthRoute =
     pathname === '/login' || pathname === '/signup' || pathname === '/reset-password';

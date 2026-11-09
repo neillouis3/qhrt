@@ -58,6 +58,7 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
       pathname?.startsWith('/wind-down') ||
       pathname?.startsWith('/starting-out') ||
       pathname?.startsWith('/starting-point') ||
+      pathname?.startsWith('/reflection') ||
       pathname?.startsWith('/settings')) ??
     false;
   const isAdminRoute =

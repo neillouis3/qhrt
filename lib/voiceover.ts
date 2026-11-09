@@ -19,8 +19,9 @@ export function voiceConfigured(): boolean {
   return Boolean(apiKey());
 }
 
-export function voiceCacheKey(text: string): string {
-  return createHash('sha256').update(`${voiceId()}:${DEFAULT_MODEL}:${text}`).digest('hex');
+export function voiceCacheKey(text: string, pace?: 'slow'): string {
+  const marker = pace === 'slow' ? `${voiceId()}:${DEFAULT_MODEL}:slow:` : `${voiceId()}:${DEFAULT_MODEL}:`;
+  return createHash('sha256').update(`${marker}${text}`).digest('hex');
 }
 
 type CacheRow = { mime: string; audio_base64: string };
@@ -58,14 +59,16 @@ export async function writeVoiceCache(cacheKey: string, mime: string, buffer: Bu
 }
 
 export async function synthesizeSpeech(
-  text: string
+  text: string,
+  options?: { pace?: 'slow' }
 ): Promise<{ buffer: Buffer; mime: string } | { error: string; status: number }> {
   const spoken = text.trim();
   if (!spoken) return { error: 'Nothing to speak on this slide.', status: 400 };
   const key = apiKey();
   if (!key) return { error: VOICE_BUCKET_UNAVAILABLE, status: 204 };
+  const pace = options?.pace;
 
-  const cacheKey = voiceCacheKey(spoken);
+  const cacheKey = voiceCacheKey(spoken, pace);
   const cached = await readVoiceCache(cacheKey);
   if (cached) return cached;
 
@@ -79,12 +82,10 @@ export async function synthesizeSpeech(
     body: JSON.stringify({
       text: spoken.slice(0, 4500),
       model_id: DEFAULT_MODEL,
-      voice_settings: {
-        stability: 0.55,
-        similarity_boost: 0.7,
-        style: 0.15,
-        use_speaker_boost: true,
-      },
+      voice_settings:
+        pace === 'slow'
+          ? { stability: 0.72, similarity_boost: 0.75, style: 0, use_speaker_boost: true, speed: 0.86 }
+          : { stability: 0.55, similarity_boost: 0.7, style: 0.15, use_speaker_boost: true },
     }),
   });
 

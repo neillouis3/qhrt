@@ -59,7 +59,8 @@ export function isProgramSessionPath(pathname: string): boolean {
     pathname.startsWith('/practice') ||
     pathname.startsWith('/pause') ||
     pathname.startsWith('/starting-out') ||
-    pathname.startsWith('/diary')
+    pathname.startsWith('/diary') ||
+    pathname.startsWith('/reflection')
   );
 }
 
@@ -67,7 +68,8 @@ export function isProgramSessionApi(pathname: string): boolean {
   return (
     pathname.startsWith('/api/assessments') ||
     pathname.startsWith('/api/modules') ||
-    pathname.startsWith('/api/diary')
+    pathname.startsWith('/api/diary') ||
+    pathname.startsWith('/api/reflection')
   );
 }
 
