@@ -855,3 +855,186 @@ const exploring = [
     ]
   ),
 ];
+
+const MODULE_ID = 'b0000000-0000-4000-8000-000000000004';
+const UNDERSTANDING_ID = 'b0000000-0000-4000-8000-000000000041';
+const EXPLORING_ID = 'b0000000-0000-4000-8000-000000000042';
+
+const themes = [
+  {
+    id: 'c1000000-0000-4000-8000-000000000101',
+    key: 'LT_PREVIOUS_CHAPTER',
+    label: 'Valuing the Previous Chapter',
+    order: 1,
+    statements: [
+      'That chapter of my life mattered, even though it ended.',
+      'I can value what happened without needing to recreate it.',
+      'What belonged to that chapter can remain part of my story.',
+      'I can remember something important without requiring my future to reproduce it.',
+      'The importance of an experience is not determined by whether it continued.',
+    ],
+  },
+  {
+    id: 'c1000000-0000-4000-8000-000000000102',
+    key: 'LT_CONTINUITY',
+    label: 'Continuity',
+    order: 2,
+    statements: [
+      'I can carry forward what belongs to me.',
+      'Some circumstances changed, but not everything meaningful about me changed.',
+      'What I learned and developed remains available to me.',
+      'My capacity for connection, meaning, enjoyment, and belonging is not limited to one chapter of my life.',
+      'I can keep what is meaningful without keeping life exactly as it was.',
+    ],
+  },
+  {
+    id: 'c1000000-0000-4000-8000-000000000103',
+    key: 'LT_WHAT_COMES_NEXT',
+    label: 'What Comes Next',
+    order: 3,
+    statements: [
+      'A different future is not automatically a lesser future.',
+      'My future does not have to replace my past.',
+      'Something new can be meaningful in its own way.',
+      'I do not need to know exactly what comes next in order to participate in my life now.',
+      'A future relationship or experience can be valuable without being responsible for recreating a previous one.',
+      'My life can develop in ways I have not yet imagined.',
+    ],
+  },
+  {
+    id: 'c1000000-0000-4000-8000-000000000104',
+    key: 'LT_OTHER',
+    label: 'Something else',
+    order: 4,
+    statements: [],
+  },
+];
+
+loadEnv('.env.local');
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+const key = process.env.SUPABASE_SECRET_KEY?.trim();
+if (!url || !key) {
+  console.error('Missing Supabase URL or secret key');
+  process.exit(1);
+}
+
+const supabase = createClient(url, key, {
+  global: { fetch: fetchWithoutOpaqueBearer(key) },
+  auth: { autoRefreshToken: false, persistSession: false },
+});
+
+const now = new Date().toISOString();
+
+const moduleSave = await supabase.from('learning_modules').upsert({
+  id: MODULE_ID,
+  slug: 'life-transitions',
+  title: 'Life Transitions & Continuity',
+  description: 'Change, loss, and what can continue. Start with the Guided QHRT Reflection, then the education modules and their questions.',
+  display_order: 4,
+  is_active: true,
+  updated_at: now,
+}, { onConflict: 'id' });
+if (moduleSave.error) {
+  console.error('Could not save the lesson:', moduleSave.error.message);
+  process.exit(1);
+}
+
+async function saveLesson(id, position, title, description, steps) {
+  const row = {
+    id,
+    module_id: MODULE_ID,
+    position,
+    title,
+    description,
+    steps,
+    assessment_id: null,
+    is_active: true,
+    updated_at: now,
+  };
+  let result = await supabase.from('module_lessons').upsert({ ...row, kind: 'presentation' }, { onConflict: 'id' });
+  if (result.error) {
+    result = await supabase.from('module_lessons').upsert({ ...row, kind: 'guide' }, { onConflict: 'id' });
+  }
+  if (result.error) {
+    console.error(`Could not save ${title}:`, result.error.message);
+    process.exit(1);
+  }
+}
+
+await saveLesson(
+  UNDERSTANDING_ID,
+  1,
+  'Understanding Change, Loss, and What We Carry Forward',
+  'A self-paced educational wellness module.',
+  understanding
+);
+await saveLesson(
+  EXPLORING_ID,
+  2,
+  'Exploring Your Experience and What You Want to Carry Forward',
+  'A self-paced educational wellness module.',
+  exploring
+);
+
+const savedLessons = await supabase
+  .from('module_lessons')
+  .select('position, title, kind')
+  .eq('module_id', MODULE_ID)
+  .order('position');
+console.log(savedLessons.error ? savedLessons.error.message : JSON.stringify(savedLessons.data));
+
+for (const theme of themes) {
+  const saved = await supabase.from('reflection_themes').upsert({
+    id: theme.id,
+    theme_key: theme.key,
+    domain: 'LIFE_TRANSITIONS',
+    label: theme.label,
+    locale: 'en',
+    display_order: theme.order,
+    enabled: true,
+    content_version: '1.0',
+    updated_at: now,
+  }, { onConflict: 'id' });
+  if (saved.error) {
+    const missing = /schema cache|does not exist|relation/i.test(saved.error.message);
+    if (missing) {
+      console.log('Lesson modules are saved. Reflection theme tables are not in this database yet, so the lesson uses its built-in perspectives.');
+      process.exit(0);
+    }
+    console.error(`Could not save theme ${theme.label}:`, saved.error.message);
+    process.exit(1);
+  }
+  const clarifiers = theme.statements.map((body, index) => ({
+    id: `c2000000-0000-4000-8000-${String(theme.order * 100 + index + 1).padStart(12, '0')}`,
+    theme_id: theme.id,
+    clarifier_key: `LT_${theme.order}_${index + 1}`,
+    body,
+    allows_custom: false,
+    locale: 'en',
+    display_order: index + 1,
+    enabled: true,
+    content_version: '1.0',
+    updated_at: now,
+  }));
+  clarifiers.push({
+    id: `c2000000-0000-4000-8000-${String(theme.order * 100 + 90).padStart(12, '0')}`,
+    theme_id: theme.id,
+    clarifier_key: 'CUSTOM',
+    body: theme.key === 'LT_OTHER'
+      ? 'A perspective I would like to experiment with is:'
+      : 'Something different feels more accurate for me.',
+    allows_custom: true,
+    locale: 'en',
+    display_order: clarifiers.length + 1,
+    enabled: true,
+    content_version: '1.0',
+    updated_at: now,
+  });
+  const clarifierSave = await supabase.from('reflection_clarifiers').upsert(clarifiers, { onConflict: 'id' });
+  if (clarifierSave.error) {
+    console.error(`Could not save statements for ${theme.label}:`, clarifierSave.error.message);
+    process.exit(1);
+  }
+}
+
+console.log(`Life Transitions is saved. Understanding ${understanding.length} slides. Exploring ${exploring.length} slides. Perspectives ${themes.length}.`);
