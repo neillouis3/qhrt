@@ -441,3 +441,119 @@ const slides = [
     ]
   ),
 ];
+
+loadEnv('.env.local');
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+const key = process.env.SUPABASE_SECRET_KEY?.trim();
+if (!url || !key) {
+  console.error('Missing Supabase URL or secret key');
+  process.exit(1);
+}
+
+const supabase = createClient(url, key, {
+  global: { fetch: fetchWithoutOpaqueBearer(key) },
+  auth: { autoRefreshToken: false, persistSession: false },
+});
+
+const now = new Date().toISOString();
+
+const listed = await supabase
+  .from('module_lessons')
+  .select('id, position, title, kind')
+  .eq('module_id', MODULE_ID)
+  .order('position');
+if (listed.error) {
+  console.error('Could not list Sleep modules:', listed.error.message);
+  process.exit(1);
+}
+
+const lessons = listed.data ?? [];
+const used = new Set(lessons.map((lesson) => lesson.position));
+
+async function moveTo(id, position, extra = {}) {
+  const saved = await supabase
+    .from('module_lessons')
+    .update({ position, updated_at: now, ...extra })
+    .eq('id', id)
+    .select('id, position, title');
+  if (saved.error) {
+    console.error(`Could not move ${id} to position ${position}:`, saved.error.message);
+    process.exit(1);
+  }
+  return saved.data?.[0];
+}
+
+const foundations = lessons.find((lesson) => lesson.id === INTRO_ID);
+if (foundations && foundations.position === 1) {
+  let parked = 90;
+  while (used.has(parked)) parked += 1;
+  used.delete(foundations.position);
+  used.add(parked);
+  const parkedRow = await moveTo(INTRO_ID, parked, { is_active: false });
+  console.log(`Parked the earlier opening at position ${parkedRow?.position}.`);
+}
+
+const deckOccupant = lessons.find((lesson) => lesson.position === 1 && lesson.id !== DECK_ID && lesson.id !== INTRO_ID);
+if (deckOccupant) {
+  let parked = 91;
+  while (used.has(parked)) parked += 1;
+  used.add(parked);
+  await moveTo(deckOccupant.id, parked);
+}
+
+const row = {
+  id: DECK_ID,
+  module_id: MODULE_ID,
+  position: 1,
+  title: 'Sleep Better, Live Better',
+  description: 'Why sleep matters and practical steps to restore it.\nA friendly guide to better everyday rest.',
+  steps: slides,
+  assessment_id: null,
+  is_active: true,
+  updated_at: now,
+};
+
+let saved = await supabase.from('module_lessons').upsert({ ...row, kind: 'presentation' }, { onConflict: 'id' });
+if (saved.error) {
+  saved = await supabase.from('module_lessons').upsert({ ...row, kind: 'guide' }, { onConflict: 'id' });
+}
+if (saved.error) {
+  console.error('Could not save Sleep Better, Live Better:', saved.error.message);
+  process.exit(1);
+}
+
+const dailyFunctioning = await supabase
+  .from('module_lessons')
+  .update({
+    title: 'Sleep, Daily Functioning & Quality of Life',
+    description: 'A QHRT Self-Directed Learning Experience',
+    is_active: false,
+    updated_at: now,
+  })
+  .eq('id', ASSESSMENT_ID)
+  .select('id, position, title');
+if (dailyFunctioning.error) {
+  console.error('Could not close the separate Daily Functioning module:', dailyFunctioning.error.message);
+  process.exit(1);
+}
+
+const moduleSave = await supabase
+  .from('learning_modules')
+  .update({
+    description: 'Learn about sleep and notice what seems relevant. Then explore one theme at a time in the Guided QHRT Reflection.',
+    updated_at: now,
+  })
+  .eq('id', MODULE_ID);
+if (moduleSave.error) {
+  console.error('Could not update the Sleep lesson:', moduleSave.error.message);
+  process.exit(1);
+}
+
+const check = await supabase
+  .from('module_lessons')
+  .select('position, title, kind')
+  .eq('module_id', MODULE_ID)
+  .eq('is_active', true)
+  .order('position');
+console.log(check.error ? check.error.message : JSON.stringify(check.data));
+console.log(`Sleep Better, Live Better saved with ${slides.length} slides.`);
