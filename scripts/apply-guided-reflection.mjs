@@ -227,3 +227,104 @@ function screens(closing) {
     ),
   ];
 }
+
+loadEnv('.env.local');
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+const key = process.env.SUPABASE_SECRET_KEY?.trim();
+if (!url || !key) {
+  console.error('Missing Supabase URL or secret key');
+  process.exit(1);
+}
+
+const supabase = createClient(url, key, {
+  global: { fetch: fetchWithoutOpaqueBearer(key) },
+  auth: { autoRefreshToken: false, persistSession: false },
+});
+
+const now = new Date().toISOString();
+
+async function freePosition(moduleId, position) {
+  const listed = await supabase.from('module_lessons').select('id, position').eq('module_id', moduleId);
+  if (listed.error) {
+    console.error(listed.error.message);
+    process.exit(1);
+  }
+  const occupant = (listed.data ?? []).find((lesson) => lesson.position === position);
+  if (!occupant) return;
+  const used = new Set((listed.data ?? []).map((lesson) => lesson.position));
+  let parked = 90;
+  while (used.has(parked)) parked += 1;
+  const moved = await supabase.from('module_lessons').update({ position: parked, updated_at: now }).eq('id', occupant.id);
+  if (moved.error) {
+    console.error(moved.error.message);
+    process.exit(1);
+  }
+}
+
+async function saveLesson(id, moduleId, position, description, steps) {
+  await freePosition(moduleId, position);
+  const row = {
+    id,
+    module_id: moduleId,
+    position,
+    title: 'Guided QHRT Reflection',
+    description,
+    steps,
+    assessment_id: null,
+    is_active: true,
+    updated_at: now,
+  };
+  let saved = await supabase.from('module_lessons').upsert({ ...row, kind: 'presentation' }, { onConflict: 'id' });
+  if (saved.error) saved = await supabase.from('module_lessons').upsert({ ...row, kind: 'guide' }, { onConflict: 'id' });
+  if (saved.error) {
+    console.error(saved.error.message);
+    process.exit(1);
+  }
+}
+
+await saveLesson(
+  SLEEP_REFLECTION_ID,
+  SLEEP_ID,
+  3,
+  'Voice-guided. Choose one theme, then the still-frame, rating, and breathing sequence.',
+  screens({
+    domain: 'SLEEP',
+    note: 'Explore one theme at a time. Notice what happens in everyday life. Return whenever another aspect of your sleep experience feels worth exploring.',
+    points: [
+      'Continue Observing: Keep noticing this experience in everyday life.',
+      'Explore Another Theme: Return to your themes and choose another one that feels relevant.',
+      'Return to Sleep Education: Return to the Sleep Education & Self-Observation module.',
+    ],
+    voiceover: 'You have completed this Guided QHRT Reflection for {theme}. You can continue observing, explore another theme, or return to Sleep Education and Self-Observation. Explore one theme at a time.',
+  })
+);
+
+await saveLesson(
+  LIFE_REFLECTION_ID,
+  LIFE_ID,
+  3,
+  'Voice-guided. Choose one perspective, then the still-frame, rating, and breathing sequence.',
+  screens({
+    domain: 'LIFE_TRANSITIONS',
+    note: 'Explore one perspective at a time. Notice what happens in everyday life. Return whenever another aspect feels worth exploring.',
+    points: [
+      'Continue Observing: Keep noticing this experience in everyday life.',
+      'Explore Another Theme: Return and choose another perspective that feels relevant.',
+      'Return to Life Transitions: Return to the Life Transitions modules.',
+    ],
+    voiceover: 'You have completed this Guided QHRT Reflection for {theme}. You can continue observing, explore another perspective, or return to Life Transitions. Explore one theme at a time.',
+  })
+);
+
+const hidden = await supabase
+  .from('module_lessons')
+  .update({ is_active: false, updated_at: now })
+  .eq('id', ASSESSMENT_ID);
+if (hidden.error) console.error(hidden.error.message);
+
+const check = await supabase
+  .from('module_lessons')
+  .select('module_id, position, title')
+  .in('id', [SLEEP_REFLECTION_ID, LIFE_REFLECTION_ID])
+  .order('position');
+console.log(check.error ? check.error.message : JSON.stringify(check.data));
