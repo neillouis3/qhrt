@@ -349,3 +349,93 @@ const slides = [
     'Explore one theme at a time. Observe what you notice. Return whenever another aspect of your sleep experience feels worth exploring.',
   ]),
 ];
+
+loadEnv('.env.local');
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+const key = process.env.SUPABASE_SECRET_KEY?.trim();
+if (!url || !key) {
+  console.error('Missing Supabase URL or secret key');
+  process.exit(1);
+}
+
+const supabase = createClient(url, key, {
+  global: { fetch: fetchWithoutOpaqueBearer(key) },
+  auth: { autoRefreshToken: false, persistSession: false },
+});
+
+const now = new Date().toISOString();
+
+const listed = await supabase
+  .from('module_lessons')
+  .select('id, position, title')
+  .eq('module_id', MODULE_ID)
+  .order('position');
+if (listed.error) {
+  console.error('Could not list Sleep modules:', listed.error.message);
+  process.exit(1);
+}
+
+const lessons = listed.data ?? [];
+const used = new Set(lessons.map((lesson) => lesson.position));
+
+async function moveTo(id, position) {
+  const current = lessons.find((lesson) => lesson.id === id);
+  if (current) used.delete(current.position);
+  const saved = await supabase
+    .from('module_lessons')
+    .update({ position, updated_at: now })
+    .eq('id', id)
+    .select('id, position, title');
+  if (saved.error) {
+    console.error(`Could not move ${id} to position ${position}:`, saved.error.message);
+    process.exit(1);
+  }
+  used.add(position);
+  if (current) current.position = position;
+  return saved.data?.[0];
+}
+
+async function park(id) {
+  let parked = 90;
+  while (used.has(parked)) parked += 1;
+  return moveTo(id, parked);
+}
+
+const blockingThird = lessons.find((lesson) => lesson.position === 3 && lesson.id !== REFLECTION_ID);
+if (blockingThird) await park(blockingThird.id);
+
+const reflection = lessons.find((lesson) => lesson.id === REFLECTION_ID);
+if (reflection && reflection.position !== 3) {
+  await moveTo(REFLECTION_ID, 3);
+}
+
+const blockingSecond = lessons.find((lesson) => lesson.position === 2 && lesson.id !== DECK_ID);
+if (blockingSecond) await park(blockingSecond.id);
+
+const row = {
+  id: DECK_ID,
+  module_id: MODULE_ID,
+  position: 2,
+  title: 'Observe, Choose, and Experiment',
+  description: 'Sleep, Daily Functioning & Quality of Life\nA QHRT Self-Directed Learning Experience',
+  steps: slides,
+  assessment_id: null,
+  is_active: true,
+  updated_at: now,
+};
+
+let saved = await supabase.from('module_lessons').upsert({ ...row, kind: 'presentation' }, { onConflict: 'id' });
+if (saved.error) saved = await supabase.from('module_lessons').upsert({ ...row, kind: 'guide' }, { onConflict: 'id' });
+if (saved.error) {
+  console.error('Could not save Observe, Choose, and Experiment:', saved.error.message);
+  process.exit(1);
+}
+
+const check = await supabase
+  .from('module_lessons')
+  .select('position, title, is_active')
+  .eq('module_id', MODULE_ID)
+  .eq('is_active', true)
+  .order('position');
+console.log(check.error ? check.error.message : JSON.stringify(check.data));
+console.log(`Observe, Choose, and Experiment saved with ${slides.length} slides.`);
