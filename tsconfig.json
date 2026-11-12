@@ -38,7 +38,6 @@
     "**/*.mts"
   ],
   "exclude": [
-    "node_modules",
-    "scripts/test-pathway-scoring.mts"
+    "node_modules"
   ]
 }

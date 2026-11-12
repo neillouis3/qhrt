@@ -38,26 +38,6 @@ const SCALE_PRESETS: { id: string; label: string; options: AnswerOption[] }[] = 
       { value: 'no', label: 'No', score: 0 },
     ],
   },
-  {
-    id: 'readiness-independence',
-    label: 'Yes → Not Yet (3–0)',
-    options: [
-      { value: 'yes', label: 'Yes', score: 3 },
-      { value: 'mostly', label: 'Mostly', score: 2 },
-      { value: 'sometimes', label: 'Sometimes', score: 1 },
-      { value: 'not_yet', label: 'Not Yet', score: 0 },
-    ],
-  },
-  {
-    id: 'readiness-suitability',
-    label: 'Yes → Not Right Now (3–0)',
-    options: [
-      { value: 'yes', label: 'Yes', score: 3 },
-      { value: 'mostly', label: 'Mostly', score: 2 },
-      { value: 'unsure', label: 'Unsure', score: 1 },
-      { value: 'not_right_now', label: 'Not Right Now', score: 0 },
-    ],
-  },
 ];
 
 function nextOptionValue(options: AnswerOption[]): string {

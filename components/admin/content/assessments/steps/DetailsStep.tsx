@@ -29,25 +29,6 @@ export function DetailsStep() {
             className={inputClass}
           />
         </Field>
-        <Field
-          label="Type"
-          hint={
-            draft.kind === 'readiness'
-              ? 'Shown at /readiness before an account is created. The first active readiness check is used.'
-              : `Shown at /assessments/${draft.slug || '…'}`
-          }
-        >
-          <select
-            value={draft.kind ?? 'check_in'}
-            onChange={(e) =>
-              set({ kind: e.target.value === 'readiness' ? 'readiness' : 'check_in' })
-            }
-            className={inputClass}
-          >
-            <option value="check_in">Focus-area check-in</option>
-            <option value="readiness">Program readiness</option>
-          </select>
-        </Field>
         <Field label="URL slug" required hint={`Shown at /assessments/${draft.slug || '…'}`}>
           <input
             type="text"

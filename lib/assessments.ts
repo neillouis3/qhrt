@@ -1,11 +1,10 @@
-import { scoreReadiness } from '@/lib/pathwayScoring';
 import { supabaseServer } from '@/lib/supabaseClient';
 import { isPracticeId, practiceById, PRACTICE_DONE, type PracticeId } from '@/lib/practices';
 
 export type ScoringMethod = 'sum' | 'mean' | 'top_category';
 export type QuestionType = 'choice' | 'text' | 'practice' | 'info';
 export type OutcomeMatch = 'score_range' | 'top_category' | 'fallback' | 'stop';
-export type AssessmentKind = 'check_in' | 'readiness';
+export type AssessmentKind = 'check_in';
 
 export interface AnswerOption {
   value: string;
@@ -39,7 +38,7 @@ export interface AssessmentQuestion {
   practiceId: PracticeId | null;
   /** Optional title above the question body. */
   heading: string | null;
-  /** Groups questions onto the same page (readiness and similar flows). */
+  /** Groups questions onto the same page. */
   section: string | null;
   /** If this answer matches, scoring stops and that outcome is returned. */
   stopIf: StopCondition | null;
@@ -54,10 +53,6 @@ export interface AssessmentOutcome {
   max: number | null;
   category: string | null;
   workbookIds: string[];
-  /** False for crisis / do-not-continue pathways. */
-  allowSignup: boolean;
-  /** False holds the person on their starting point before program sessions. */
-  allowSessions: boolean;
   /** Skip this outcome when an earlier answer matches. */
   excludeIf: QuestionCondition | null;
 }
@@ -96,8 +91,6 @@ export interface MatchedOutcome {
   label: string;
   summary: string;
   workbookIds: string[];
-  allowSignup: boolean;
-  allowSessions: boolean;
 }
 
 export interface AssessmentEvaluation {
@@ -224,8 +217,6 @@ function toMatched(outcome: AssessmentOutcome): MatchedOutcome {
     label: outcome.label,
     summary: outcome.summary,
     workbookIds: outcome.workbookIds,
-    allowSignup: outcome.allowSignup,
-    allowSessions: outcome.allowSessions,
   };
 }
 
@@ -298,30 +289,6 @@ export function evaluateAssessment(
   };
 }
 
-/** Initial Access pathway from the hybrid scoring rules. A mean score is not used. */
-export function selectReadinessOutcome(
-  assessment: Pick<AssessmentDefinition, 'outcomes'>,
-  answers: AssessmentAnswers
-): MatchedOutcome | null {
-  const scored = scoreReadiness(answers);
-  if (!scored.appPathway) return null;
-  const outcome = assessment.outcomes.find((item) => item.key === scored.appPathway);
-  return outcome ? toMatched(outcome) : null;
-}
-
-export function groupQuestionsBySection<Q extends { key: string; section: string | null }>(
-  questions: Q[]
-): { key: string; items: Q[] }[] {
-  const groups: { key: string; items: Q[] }[] = [];
-  for (const question of questions) {
-    const key = question.section?.trim() || question.key;
-    const last = groups[groups.length - 1];
-    if (last && last.key === key) last.items.push(question);
-    else groups.push({ key, items: [question] });
-  }
-  return groups;
-}
-
 /** Lowest and highest possible score for sum-scored assessments (ignores branching). */
 export function scoreBounds(questions: AssessmentQuestion[]): { min: number; max: number } {
   let min = 0;
@@ -338,8 +305,6 @@ export function scoreBounds(questions: AssessmentQuestion[]): { min: number; max
 const SCORING_METHODS: ScoringMethod[] = ['sum', 'mean', 'top_category'];
 const QUESTION_TYPES: QuestionType[] = ['choice', 'text', 'practice', 'info'];
 const OUTCOME_MATCHES: OutcomeMatch[] = ['score_range', 'top_category', 'fallback', 'stop'];
-const ASSESSMENT_KINDS: AssessmentKind[] = ['check_in', 'readiness'];
-
 const KEY_PATTERN = /^[a-z0-9_]+$/;
 export const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const MAX_TEXT_ANSWER = 2000;
@@ -427,8 +392,6 @@ export function normalizeOutcome(raw: unknown): AssessmentOutcome {
     max: num(o.max),
     category: optStr(o.category),
     workbookIds: Array.isArray(o.workbookIds) ? o.workbookIds.map(str).filter(Boolean) : [],
-    allowSignup: o.allowSignup !== false,
-    allowSessions: o.allowSignup === false ? false : o.allowSessions !== false,
     excludeIf,
   };
 }
@@ -467,9 +430,7 @@ export function validateAssessmentInput(
   const slug = str(body.slug).toLowerCase();
   const title = str(body.title);
   const scoringMethod = body.scoring_method as ScoringMethod;
-  const kind = ASSESSMENT_KINDS.includes(body.kind as AssessmentKind)
-    ? (body.kind as AssessmentKind)
-    : 'check_in';
+  const kind: AssessmentKind = 'check_in';
   if (!title) errors.push('Title is required.');
   if (!SLUG_PATTERN.test(slug)) errors.push('Slug must be lowercase letters, numbers, and single dashes.');
   if (!SCORING_METHODS.includes(scoringMethod)) errors.push('Choose a scoring method.');
@@ -627,19 +588,21 @@ export const ASSESSMENT_COLUMNS =
 export function toDefinition(row: Record<string, unknown>): AssessmentDefinition {
   return {
     ...(row as unknown as AssessmentDefinition),
-    kind: row.kind === 'readiness' ? 'readiness' : 'check_in',
+    kind: 'check_in',
     questions: normalizeQuestions(row.questions),
     outcomes: normalizeOutcomes(row.outcomes),
   };
 }
 
 export async function getActiveAssessmentBySlug(slug: string) {
+  if (slug === 'program-readiness') return { assessment: null, error: null };
   const { data, error } = await supabaseServer
     .from('assessments')
     .select(ASSESSMENT_COLUMNS)
     .eq('slug', slug)
     .eq('is_active', true)
     .maybeSingle();
+  if (data?.kind === 'readiness') return { assessment: null, error: null };
   return { assessment: data ? toDefinition(data) : null, error };
 }
 
@@ -667,18 +630,6 @@ export function toPublicAssessment(a: AssessmentDefinition): PublicAssessment {
     })),
     outcomes: a.outcomes.map((o) => ({ key: o.key, label: o.label })),
   };
-}
-
-export async function getActiveReadinessAssessment() {
-  const { data, error } = await supabaseServer
-    .from('assessments')
-    .select(ASSESSMENT_COLUMNS)
-    .eq('kind', 'readiness')
-    .eq('is_active', true)
-    .order('display_order', { ascending: true })
-    .limit(1)
-    .maybeSingle();
-  return { assessment: data ? toDefinition(data) : null, error };
 }
 
 /** Attach active workbook details to each matched outcome. */

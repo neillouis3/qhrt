@@ -64,29 +64,6 @@ export function OutcomeEditor({
         />
       </Field>
 
-      <label className="flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          checked={outcome.allowSignup}
-          onChange={(e) =>
-            set({
-              allowSignup: e.target.checked,
-              allowSessions: e.target.checked ? outcome.allowSessions : false,
-            })
-          }
-        />
-        Allow creating an account from this result
-      </label>
-      <label className="flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          checked={outcome.allowSignup && outcome.allowSessions}
-          disabled={!outcome.allowSignup}
-          onChange={(e) => set({ allowSessions: e.target.checked })}
-        />
-        Allow program sessions from this result
-      </label>
-
       <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
         <Field label="Show when">
           <select

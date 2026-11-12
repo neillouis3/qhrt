@@ -13,7 +13,6 @@ interface SessionData {
   user: SessionUser;
   role: string;
   intakeCompleted: boolean;
-  programOpen: boolean;
 }
 
 interface FetchResult {
@@ -62,7 +61,7 @@ function fetchSessionInternal(): Promise<FetchResult> {
           return { data: null, error: null };
         }
         const session = data as SessionData;
-        cachedSession = { ...session, programOpen: session.programOpen !== false };
+        cachedSession = session;
         cachedAt = Date.now();
         return { data: cachedSession, error: null };
       }

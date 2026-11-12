@@ -5,6 +5,10 @@ import { apiError, missingRelation, schemaMissingResponse } from '@/lib/apiError
 import { supabaseServer } from '@/lib/supabaseClient';
 import type { AssessmentSummary } from '@/lib/assessments';
 
+function isListedAssessment(row: { kind?: unknown; slug?: unknown }) {
+  return row.kind !== 'readiness' && row.slug !== 'program-readiness';
+}
+
 /** GET — active assessments with the caller's latest completion date. */
 export async function GET(request: NextRequest) {
   const userResult = await requireUser(request);
@@ -16,7 +20,6 @@ export async function GET(request: NextRequest) {
       .from('assessments')
       .select('id, slug, title, description, cover_image, questions, kind')
       .eq('is_active', true)
-      .neq('kind', 'readiness')
       .order('display_order', { ascending: true })
       .order('created_at', { ascending: true }),
     supabaseServer
@@ -26,14 +29,31 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false }),
   ]);
 
+  let rows: Array<{
+    id: string;
+    slug: string;
+    title: string;
+    description: string | null;
+    cover_image: string | null;
+    questions: unknown;
+    kind?: string | null;
+  }> = assessmentsRes.data ?? [];
   if (assessmentsRes.error) {
     if (missingRelation(assessmentsRes.error)) {
       return schemaMissingResponse('Assessment', 'supabase/009_assessment_engine.sql');
     }
     if (assessmentsRes.error.code === '42703' || assessmentsRes.error.code === 'PGRST204') {
-      return schemaMissingResponse('Readiness', 'supabase/017_assessment_kind_and_readiness.sql');
+      const retry = await supabaseServer
+        .from('assessments')
+        .select('id, slug, title, description, cover_image, questions')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true })
+        .order('created_at', { ascending: true });
+      if (retry.error) return apiError(retry.error, '[api/assessments] GET');
+      rows = retry.data ?? [];
+    } else {
+      return apiError(assessmentsRes.error, '[api/assessments] GET');
     }
-    return apiError(assessmentsRes.error, '[api/assessments] GET');
   }
 
   const lastByAssessment = new Map<string, string>();
@@ -41,7 +61,7 @@ export async function GET(request: NextRequest) {
     if (!lastByAssessment.has(s.assessment_id)) lastByAssessment.set(s.assessment_id, s.created_at);
   }
 
-  const assessments: AssessmentSummary[] = (assessmentsRes.data ?? []).map((a) => ({
+  const assessments: AssessmentSummary[] = rows.filter(isListedAssessment).map((a) => ({
     id: a.id,
     slug: a.slug,
     title: a.title,

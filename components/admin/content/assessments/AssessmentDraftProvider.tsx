@@ -233,8 +233,6 @@ export function AssessmentDraftProvider({
           max: null,
           category: null,
           workbookIds: [],
-          allowSignup: true,
-          allowSessions: true,
           excludeIf: null,
         },
       ],
