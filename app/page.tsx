@@ -137,11 +137,11 @@ export default function LandingPage() {
                 Begin when you are ready
               </Typography>
               <Typography type="body-sm" color="muted">
-                Take a short readiness check, then create an account. Pick a focus area and
+                Create an account, then a few questions about you. Pick a focus area and
                 open a matching workbook. Pause or return whenever you like.
               </Typography>
               <div>
-                <Link href="/readiness" className={buttonVariants({ size: 'sm', variant: 'primary' })}>
+                <Link href="/signup" className={buttonVariants({ size: 'sm', variant: 'primary' })}>
                   Get started
                 </Link>
               </div>

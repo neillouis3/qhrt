@@ -18,7 +18,7 @@ export default function OnboardingPage() {
 
   const finishOnboarding = () => {
     clearSessionCache();
-    router.push(session?.programOpen === false ? '/starting-point' : '/home');
+    router.push('/home');
   };
 
   const skipOnboarding = () => {

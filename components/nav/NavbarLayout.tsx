@@ -57,7 +57,6 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
       pathname?.startsWith('/practice') ||
       pathname?.startsWith('/wind-down') ||
       pathname?.startsWith('/starting-out') ||
-      pathname?.startsWith('/starting-point') ||
       pathname?.startsWith('/reflection') ||
       pathname?.startsWith('/settings')) ??
     false;
@@ -112,7 +111,7 @@ export default function NavbarLayout({ children }: NavbarLayoutProps) {
           <Link href="/login" className={buttonVariants({ size: 'sm', variant: 'ghost' })}>
             {t('nav.login')}
           </Link>
-          <Link href="/readiness" className={buttonVariants({ size: 'sm', variant: 'primary' })}>
+          <Link href="/signup" className={buttonVariants({ size: 'sm', variant: 'primary' })}>
             {t('nav.signup')}
           </Link>
         </>

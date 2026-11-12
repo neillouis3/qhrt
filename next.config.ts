@@ -10,6 +10,9 @@ const nextConfig: NextConfig = {
       { source: '/auth', destination: '/login', permanent: true },
       { source: '/auth/login', destination: '/login', permanent: true },
       { source: '/auth/signup', destination: '/signup', permanent: true },
+      { source: '/readiness', destination: '/signup', permanent: false },
+      { source: '/readiness/:path*', destination: '/signup', permanent: false },
+      { source: '/starting-point', destination: '/home', permanent: false },
     ];
   },
   async headers() {

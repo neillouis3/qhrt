@@ -8,32 +8,10 @@ import {
   UNAVAILABLE_PATH,
 } from '@/lib/geo';
 import {
-  isProgramSessionApi,
-  isProgramSessionPath,
-  accessHoldTarget,
-  pathwayHoldResponse,
-} from '@/lib/pathway';
-import { READINESS_PATH, readReadinessPass } from '@/lib/readiness';
-import {
   createRequestClient,
   hasSupabaseAuthCookie,
   supabaseServer,
 } from '@/lib/supabaseClient';
-
-async function heldSessionResponse(userId: string, role: string | null, request: NextRequest) {
-  const target = await accessHoldTarget(userId, role);
-  if (!target) return null;
-  if (request.nextUrl.pathname.startsWith('/api/')) {
-    if (target === READINESS_PATH) {
-      return NextResponse.json(
-        { error: 'Complete the program readiness check first.', code: 'READINESS_REQUIRED' },
-        { status: 403 }
-      );
-    }
-    return pathwayHoldResponse();
-  }
-  return NextResponse.redirect(new URL(target, request.url));
-}
 
 function canadaUnavailableRedirect(request: NextRequest) {
   const dest = request.nextUrl.clone();
@@ -79,19 +57,6 @@ export async function proxy(request: NextRequest) {
 
   // Skip API routes and static files — they don't need session checks.
   if (pathname.startsWith('/api/')) {
-    if (isProgramSessionApi(pathname) && hasSupabaseAuthCookie(request)) {
-      const apiClient = createRequestClient(request);
-      const apiUser = (await apiClient.auth.getUser()).data.user;
-      if (apiUser) {
-        const { data: roleData } = await supabaseServer
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', apiUser.id)
-          .maybeSingle();
-        const held = await heldSessionResponse(apiUser.id, roleData?.role ?? null, request);
-        if (held) return held;
-      }
-    }
     return NextResponse.next();
   }
 
@@ -111,15 +76,14 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith('/wind-down') ||
     pathname.startsWith('/pause') ||
     pathname.startsWith('/practice') ||
-    pathname.startsWith('/starting-point') ||
     pathname.startsWith('/reflection');
   const isSettingsRoute = pathname.startsWith('/settings');
   const isAuthRoute =
     pathname === '/login' || pathname === '/signup' || pathname === '/reset-password';
 
-  if (pathname === '/signup' && !hasSupabaseAuthCookie(request)) {
-    const pass = await readReadinessPass(request);
-    if (!pass) return NextResponse.redirect(new URL(READINESS_PATH, request.url));
+  if (pathname === '/readiness' || pathname.startsWith('/readiness/')) {
+    const dest = hasSupabaseAuthCookie(request) ? '/home' : '/signup';
+    return NextResponse.redirect(new URL(dest, request.url));
   }
 
   if (!isAdminRoute && !isUserRoute && !isSettingsRoute && !isAuthRoute) {
@@ -175,11 +139,6 @@ export async function proxy(request: NextRequest) {
     // Admins get redirected to dashboard
     if (role === 'admin') {
       return NextResponse.redirect(new URL('/dashboard', request.url));
-    }
-
-    if (user && isProgramSessionPath(pathname)) {
-      const held = await heldSessionResponse(user.id, role, request);
-      if (held) return held;
     }
   }
 
