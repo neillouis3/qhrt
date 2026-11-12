@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { requireUser } from '@/lib/adminAuth';
-import { apiError, schemaMissingResponse } from '@/lib/apiError';
-import { isReflectionDomain, lifeTransitionThemeRows } from '@/lib/reflection';
-import { REFLECTION_SCHEMA, listReflectionThemes } from '@/lib/reflectionStore';
+import { apiError } from '@/lib/apiError';
+import { builtinThemeRows, isReflectionDomain } from '@/lib/reflection';
+import { listReflectionThemes } from '@/lib/reflectionStore';
 
 export async function GET(request: NextRequest) {
   const userResult = await requireUser(request);
@@ -17,11 +17,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'That lesson does not have reflection themes.' }, { status: 400 });
     }
     const result = await listReflectionThemes({ locale, domain, includeDisabled: false });
-    if ('missing' in result) {
-      if (domain === 'LIFE_TRANSITIONS') return NextResponse.json({ themes: lifeTransitionThemeRows() });
-      return schemaMissingResponse('Reflection theme', REFLECTION_SCHEMA);
-    }
-    return NextResponse.json({ themes: result.themes });
+    const themes = 'missing' in result || result.themes.length === 0
+      ? builtinThemeRows(domain)
+      : result.themes;
+    return NextResponse.json({ themes });
   } catch (err) {
     return apiError(err, '[api/reflection/themes] GET');
   }

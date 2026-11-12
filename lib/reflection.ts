@@ -66,26 +66,101 @@ export const LIFE_TRANSITION_THEMES = [
   },
 ] as const;
 
-export function lifeTransitionThemeRows() {
-  return LIFE_TRANSITION_THEMES.map((theme) => ({
+const PERSONAL_TIME_CLARIFIERS = [
+  'Late evening feels like time that belongs to me.',
+  'I enjoy having fewer demands at night.',
+  'I do not want the quiet part of my day to end.',
+  'I use late evening as a reward after a demanding day.',
+  'I continue an enjoyable activity even when I had planned to stop.',
+  'I sometimes choose additional personal time even when I know I may feel tired the next morning.',
+] as const;
+
+export const SLEEP_THEMES = [
+  { id: 'c1000000-0000-4000-8000-000000000001', themeKey: 'PERSONAL_TIME', label: 'Personal Time', clarifiers: PERSONAL_TIME_CLARIFIERS },
+  { id: 'c1000000-0000-4000-8000-000000000002', themeKey: 'UNFINISHED_TASKS', label: 'Unfinished Tasks', clarifiers: [] as readonly string[] },
+  { id: 'c1000000-0000-4000-8000-000000000003', themeKey: 'TOMORROW_PLANNING', label: 'Tomorrow & Planning', clarifiers: [] as readonly string[] },
+  { id: 'c1000000-0000-4000-8000-000000000004', themeKey: 'RESPONSIBILITIES', label: 'Responsibilities', clarifiers: [] as readonly string[] },
+  { id: 'c1000000-0000-4000-8000-000000000005', themeKey: 'AVAILABILITY_TO_OTHERS', label: 'Being Available to Others', clarifiers: [] as readonly string[] },
+  { id: 'c1000000-0000-4000-8000-000000000006', themeKey: 'DIFFICULTY_STOPPING', label: 'Difficulty Stopping', clarifiers: [] as readonly string[] },
+  { id: 'c1000000-0000-4000-8000-000000000007', themeKey: 'PRODUCTIVITY', label: 'Productivity', clarifiers: [] as readonly string[] },
+  { id: 'c1000000-0000-4000-8000-000000000008', themeKey: 'CONTROL_CHOICE', label: 'Control & Choice', clarifiers: [] as readonly string[] },
+  { id: 'c1000000-0000-4000-8000-000000000009', themeKey: 'ANTICIPATION', label: 'Anticipation', clarifiers: [] as readonly string[] },
+  { id: 'c1000000-0000-4000-8000-00000000000a', themeKey: 'MENTAL_ACTIVITY', label: 'Mental Activity', clarifiers: [] as readonly string[] },
+  { id: 'c1000000-0000-4000-8000-00000000000b', themeKey: 'REPLAYING_DAY', label: 'Replaying the Day', clarifiers: [] as readonly string[] },
+  { id: 'c1000000-0000-4000-8000-00000000000c', themeKey: 'CLOCK_AWARENESS', label: 'Clock Awareness', clarifiers: [] as readonly string[] },
+  { id: 'c1000000-0000-4000-8000-00000000000d', themeKey: 'QUIET_SOLITUDE', label: 'Quiet & Solitude', clarifiers: [] as readonly string[] },
+  { id: 'c1000000-0000-4000-8000-00000000000e', themeKey: 'REWARD', label: 'Reward After a Demanding Day', clarifiers: [] as readonly string[] },
+  { id: 'c1000000-0000-4000-8000-00000000000f', themeKey: 'AUTONOMY', label: 'Autonomy', clarifiers: [] as readonly string[] },
+  { id: 'c1000000-0000-4000-8000-000000000010', themeKey: 'TRANSITIONS', label: 'Transitions', clarifiers: [] as readonly string[] },
+  { id: 'c1000000-0000-4000-8000-000000000011', themeKey: 'COMFORT', label: 'Comfort', clarifiers: [] as readonly string[] },
+  { id: 'c1000000-0000-4000-8000-000000000012', themeKey: 'WAKING_MENTAL_ENGAGEMENT', label: 'Waking & Becoming Mentally Engaged', clarifiers: [] as readonly string[] },
+  { id: 'c1000000-0000-4000-8000-000000000013', themeKey: 'RETURN_TO_SLEEP', label: 'Returning to Sleep', clarifiers: [] as readonly string[] },
+  { id: 'c1000000-0000-4000-8000-000000000014', themeKey: 'REST_PERMISSION', label: 'Rest & Permission to Pause', clarifiers: [] as readonly string[] },
+  { id: 'c1000000-0000-4000-8000-000000000015', themeKey: 'SLEEP_EXPECTATIONS', label: 'Expectations About Sleep', clarifiers: [] as readonly string[] },
+  { id: 'c1000000-0000-4000-8000-000000000016', themeKey: 'OTHER', label: 'Something Else', clarifiers: [] as readonly string[] },
+] as const;
+
+function padThemeSuffix(value: number) {
+  return String(value).padStart(12, '0');
+}
+
+function catalogThemeRows(
+  themes: ReadonlyArray<{ id: string; themeKey: string; label: string; clarifiers: readonly string[] }>,
+  options: {
+    listedId: (theme: { id: string; themeKey: string }, index: number) => string;
+    customId: (theme: { id: string; themeKey: string }, displayOrder: number) => string;
+    customBody: (themeKey: string) => string;
+  }
+) {
+  return themes.map((theme, index) => ({
     id: theme.id,
     themeKey: theme.themeKey,
     label: theme.label,
     clarifiers: [
-      ...theme.clarifiers.map((body, index) => ({
-        id: `${theme.id}-${index + 1}`,
+      ...theme.clarifiers.map((body, clarifierIndex) => ({
+        id: options.listedId(theme, clarifierIndex),
         body,
         allowsCustom: false,
       })),
       {
-        id: `${theme.id}-custom`,
-        body: theme.themeKey === 'LT_OTHER'
-          ? 'A perspective I would like to experiment with is:'
-          : 'Something different feels more accurate for me.',
+        id: options.customId(theme, index + 1),
+        body: options.customBody(theme.themeKey),
         allowsCustom: true,
       },
     ],
   }));
+}
+
+export function lifeTransitionThemeRows() {
+  return catalogThemeRows(LIFE_TRANSITION_THEMES, {
+    listedId: (theme, index) => `${theme.id}-${index + 1}`,
+    customId: (theme) => `${theme.id}-custom`,
+    customBody: (themeKey) =>
+      themeKey === 'LT_OTHER'
+        ? 'A perspective I would like to experiment with is:'
+        : 'Something different feels more accurate for me.',
+  });
+}
+
+export function sleepThemeRows() {
+  return catalogThemeRows(SLEEP_THEMES, {
+    listedId: (theme, index) =>
+      theme.themeKey === 'PERSONAL_TIME'
+        ? `c2000000-0000-4000-8000-${padThemeSuffix(index + 1)}`
+        : `${theme.id}-${index + 1}`,
+    customId: (theme, displayOrder) =>
+      theme.themeKey === 'PERSONAL_TIME'
+        ? 'c2000000-0000-4000-8000-000000000007'
+        : `c2100000-0000-4000-8000-${padThemeSuffix(displayOrder)}`,
+    customBody: (themeKey) =>
+      themeKey === 'OTHER'
+        ? 'A theme I would like to explore is:'
+        : 'Something different feels more accurate for me.',
+  });
+}
+
+export function builtinThemeRows(domain: string) {
+  return domain === 'LIFE_TRANSITIONS' ? lifeTransitionThemeRows() : sleepThemeRows();
 }
 
 export const REFLECTION_STATES = [
